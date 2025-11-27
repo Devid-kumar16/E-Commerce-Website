@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.backdrop-brightness-60 { background-color: rgba(0,0,0,0.18); }
