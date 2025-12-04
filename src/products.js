@@ -4,10 +4,10 @@ export const PRODUCTS = [
 { id: 3, title: "Bluetooth Speaker", price: 1899, category: "Electronics", image: "/images/product 3.jpg" },
 { id: 4, title: "Gaming Mouse", price: 999, category: "Electronics", image: "/images/product 4.jpg" },
 { id: 5, title: "Mobile", price: 9999, category: "Mobiles & Tablets", image: "/images/mobile.jpg" },
-{ id: 21, title: "Robot Toy", price: 899, category: "Toys", image: "/images/toys.jpg" },
+{ id: 29, title: "Robot Toy", price: 899, category: "Toys", image: "/images/toys.jpg" },
 { id: 29, title: "Fitness Band", price: 999, category: "Sports", image: "/images/sports1.jpg" },
-{ id: 35, title: "Basmati Rice 5kg", price: 399, category: "Grocery", image: "/images/grocery1.jpg" },
-{ id: 43, title: '42" Smart LED TV', price: 24999, category: "TVs & Appliances", image: "/images/tv1.jpg" },
+{ id: 43, title: "Basmati Rice 5kg", price: 399, category: "Grocery", image: "/images/grocery1.jpg" },
+{ id: 69, title: '42" Smart LED TV', price: 24999, category: "TVs & Appliances", image: "/images/tv1.jpg" },
 // ... add the rest or import your full array
 ];
 

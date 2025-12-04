@@ -1,41 +1,61 @@
 ﻿// src/admin/components/Sidebar.jsx
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import "../AdminStyles.css";
 
-const items = [
-  { to: "/admin", label: "Dashboard" },
-  { to: "/admin/ecommerce", label: "E-commerce" },
-  { to: "/admin/products", label: "Products" },
-  { to: "/admin/categories", label: "Categories" },
-  { to: "/admin/orders", label: "Orders" },
-  { to: "/admin/bestsellers", label: "Best Sellers" },
-  { to: "/admin/overview", label: "Product Overview" },
-];
+const linkClass = ({ isActive }) =>
+  isActive ? "admin-nav-item admin-nav-item-active" : "admin-nav-item";
 
 export default function Sidebar() {
-  const loc = useLocation();
   return (
-    <aside className="sidebar" role="navigation" aria-label="Admin sidebar">
-      <div className="logo">
-        <div className="badge">RS</div>
-        <div>
-          <div style={{fontWeight:700}}>Remos Admin</div>
-          <div className="small">E-commerce panel</div>
-        </div>
+    <aside className="admin-sidebar">
+      <div className="admin-logo">E-Store Admin</div>
+
+      {/* MAIN SECTION */}
+      <div className="admin-menu-group">
+        <div className="admin-menu-label">MAIN</div>
+        <NavLink to="/admin/orders" className={linkClass}>
+          Orders
+        </NavLink>
+        <NavLink to="/admin/dashboard" className={linkClass}>
+          Dashboard
+        </NavLink>
       </div>
 
-      <nav className="nav">
-        {items.map(i => (
-          <Link key={i.to} to={i.to} className={loc.pathname === i.to ? "active" : ""}>
-            <div style={{width:8,height:8,background:"#e6eefc",borderRadius:4}}></div>
-            <div style={{flex:1}}>{i.label}</div>
-          </Link>
-        ))}
-      </nav>
+      {/* CATALOG SECTION */}
+      <div className="admin-menu-group">
+        <div className="admin-menu-label">CATALOG</div>
+        <NavLink to="/admin/products" className={linkClass}>
+          Products
+        </NavLink>
+        <NavLink to="/admin/categories" className={linkClass}>
+          Categories
+        </NavLink>
+        <NavLink to="/admin/brands" className={linkClass}>
+          Brands
+        </NavLink>
+        <NavLink to="/admin/inventory" className={linkClass}>
+          Inventory
+        </NavLink>
+      </div>
 
-      <div style={{marginTop:"auto"}} className="small">
-        <div style={{marginBottom:8}}>Quick actions</div>
-        <Link to="/admin/products" className="btn secondary" style={{display:"inline-block"}}>Manage products</Link>
+      {/* CUSTOMERS SECTION */}
+      <div className="admin-menu-group">
+        <div className="admin-menu-label">CUSTOMERS</div>
+        <NavLink to="/admin/customers" className={linkClass}>
+          Customers
+        </NavLink>
+        <NavLink to="/admin/reviews" className={linkClass}>
+          Reviews
+        </NavLink>
+      </div>
+
+      {/* SETTINGS SECTION */}
+      <div className="admin-menu-group">
+        <div className="admin-menu-label">SETTINGS</div>
+        <NavLink to="/admin/settings" className={linkClass}>
+          Settings
+        </NavLink>
       </div>
     </aside>
   );

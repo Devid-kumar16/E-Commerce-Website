@@ -1,4 +1,4 @@
-﻿// src/data/products.js
+// src/data/products.js
 
 export const PRODUCTS = [
   // ---------- Electronics ----------
@@ -104,3 +104,4 @@ export const PRODUCTS = [
 ];
 
 export default PRODUCTS;
+

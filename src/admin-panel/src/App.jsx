@@ -1,7 +1,8 @@
 // src/admin/AdminApp.jsx
 import React from "react";
+import PRODUCTS from "./data/products";
 import { Routes, Route } from "react-router-dom";
-
+import AdminApp from "./admin/AdminApp";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import Dashboard from "./components/Dashboard";
@@ -23,6 +24,7 @@ export default function AdminApp() {
         <Topbar />
         <main className="admin-content">
           <Routes>
+            <Route path="/admin/*" element={<AdminApp />} />
             <Route path="/" element={<Dashboard />} />
             <Route path="/ecommerce" element={<Ecommerce />} />
             <Route path="/products" element={<Products />} />
