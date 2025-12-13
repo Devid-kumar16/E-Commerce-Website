@@ -1,0 +1,90 @@
+// src/admin/components/Sidebar.jsx
+import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from '../context/AuthProvider';
+
+export default function Sidebar({
+  open = false,
+  onClose = () => {},
+  categories = [],
+  categoryImages = {},
+}) {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const buildSrc = (slug) => {
+    const entry = categoryImages && categoryImages[slug];
+    if (!entry) return "/images/category-1.jpg";
+    if (Array.isArray(entry)) return `/images/${entry[0]}`;
+    return `/images/${entry}`;
+  };
+
+  return (
+    <div
+      className={`fixed inset-0 z-50 ${open ? "pointer-events-auto" : "pointer-events-none"}`}
+      aria-hidden={!open}
+    >
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 bg-black/40 transition-opacity ${open ? "opacity-100" : "opacity-0"}`}
+      />
+      <aside
+        className={`absolute left-0 top-0 h-full w-[320px] bg-white shadow-xl transform transition-transform ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+        role="dialog"
+      >
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+              E
+            </div>
+            <div>
+              <div className="font-semibold">{user?.name ?? "Hello, Guest"}</div>
+              <div className="text-xs text-gray-500">Account & Lists</div>
+
+              {/* Show Manage Users only to admins */}
+              {user?.role === "admin" && (
+                <div className="mt-1">
+                  <Link to="/admin/manage-users" onClick={onClose} className="text-sm text-sky-600 hover:underline">
+                    Manage Users
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="Close menu" className="p-2 rounded hover:bg-gray-100">
+            ?
+          </button>
+        </div>
+
+        <div className="overflow-y-auto h-[calc(100%-64px)]">
+          <div className="p-4">
+            <h4 className="font-semibold mb-2">Shop by Category</h4>
+            <ul className="text-sm space-y-1">
+              {categories.map((cat) => (
+                <li key={cat.key} className="py-2 hover:bg-gray-50 rounded px-2">
+                  <Link to={`/category/${encodeURIComponent(cat.key)}`} onClick={onClose} className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                      <img src={buildSrc(cat.key)} alt={cat.label} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1">{cat.label}</div>
+                    <div className="text-gray-400">›</div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </aside>
+    </div>
+  );
+}
+

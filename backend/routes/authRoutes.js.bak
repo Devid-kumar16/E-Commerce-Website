@@ -1,0 +1,24 @@
+// routes/authRoutes.js
+import express from "express";
+const router = express.Router();
+
+// Simple test login route (drop-in). Replace with your real auth logic later.
+router.post("/login", (req, res) => {
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: "Missing credentials" });
+    }
+
+    // demo credentials — replace with DB lookup / bcrypt / JWT as needed
+    if (email === "ram123@gmail.com" && password === "rs@2000") {
+      return res.json({ success: true, token: "fake-jwt-token" });
+    }
+    return res.status(401).json({ success: false, message: "Invalid credentials" });
+  } catch (err) {
+    console.error("Auth route error:", err && err.stack ? err.stack : err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+export default router;

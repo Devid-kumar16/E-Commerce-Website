@@ -1,0 +1,80 @@
+// server.js
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import authRouter from "./routes/authRoutes.js";
+
+dotenv.config();
+const app = express();
+
+// crash handlers (show stack on crash)
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION', err && err.stack ? err.stack : err);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason, p) => {
+  console.error('UNHANDLED REJECTION at', p, 'reason:', reason && reason.stack ? reason.stack : reason);
+});
+
+// middlewares
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json({ limit: "5mb" }));
+app.use(express.urlencoded({ extended: true, limit: "5mb" }));
+
+// very small request logger to see incoming requests in console
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} -> ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// health
+app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+// mount auth router
+app.use("/api/auth", authRouter);
+
+// api fallback 404
+app.use("/api/*", (req, res) => {
+  return res.status(404).json({ success: false, message: "API route not found" });
+});
+
+// helper: list mounted routes (useful for debugging)
+function listRoutes() {
+  const routes = [];
+  app._router.stack.forEach(mw => {
+    if (mw.route) {
+      const methods = Object.keys(mw.route.methods).map(m => m.toUpperCase()).join(',');
+      routes.push(`${methods}\t${mw.route.path}`);
+    } else if (mw.name === 'router' && mw.handle && mw.handle.stack) {
+      mw.handle.stack.forEach(r => {
+        if (r.route) {
+          const methods = Object.keys(r.route.methods).map(m => m.toUpperCase()).join(',');
+          routes.push(`${methods}\t${r.route.path}`);
+        }
+      });
+    }
+  });
+  console.log('--- Registered routes ---\n' + routes.join('\n') + '\n-------------------------');
+}
+
+const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || "0.0.0.0"; // bind all interfaces to avoid IPv4/IPv6 confusion
+
+const server = app.listen(PORT, HOST, (err) => {
+  if (err) {
+    console.error('Server failed to start:', err);
+    process.exit(1);
+  }
+  console.log(`Server listening on ${HOST}:${PORT}`);
+  listRoutes();
+});
+
+// optional: graceful shutdown signals
+process.on('SIGINT', () => {
+  console.log('SIGINT received — shutting down server');
+  server.close(() => process.exit(0));
+});
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received — shutting down server');
+  server.close(() => process.exit(0));
+});
