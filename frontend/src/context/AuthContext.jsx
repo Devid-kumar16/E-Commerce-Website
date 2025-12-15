@@ -6,29 +6,59 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("user"));
+      const raw = localStorage.getItem("user");
+      return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
     }
   });
 
-  // 🔑 COMMON LOGIN HANDLER
-  const login = (token, userData) => {
+  /* ================= LOGIN ================= */
+  const login = async ({ email, password }) => {
+    const res = await api.post("/auth/login", { email, password });
+
+    const token = res.data?.token;
+    const userData = res.data?.user;
+
+    if (!token || !userData) {
+      throw new Error("Invalid login response");
+    }
+
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
-    api.defaults.headers.common.Authorization = `Bearer ${token}`;
+
+    // ensure axios always has token
+    api.defaults.headers.common.authorization = `Bearer ${token}`;
+
     setUser(userData);
+
+    return { user: userData }; // ✅ REQUIRED by Login.jsx
   };
 
-  // 🔥 SIGNUP = LOGIN (THIS WAS MISSING)
-  const signup = (token, userData) => {
-    login(token, userData);
+  /* ================= SIGNUP ================= */
+  const signup = async (payload) => {
+    const res = await api.post("/auth/register", payload);
+
+    const token = res.data?.token;
+    const userData = res.data?.user;
+
+    if (!token || !userData) {
+      throw new Error("Invalid signup response");
+    }
+
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(userData));
+    api.defaults.headers.common.authorization = `Bearer ${token}`;
+    setUser(userData);
+
+    return { user: userData };
   };
 
+  /* ================= LOGOUT ================= */
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    delete api.defaults.headers.common.Authorization;
+    delete api.defaults.headers.common.authorization;
     setUser(null);
   };
 

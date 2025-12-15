@@ -1,4 +1,4 @@
-// controllers/productController.js
+import { pool } from "../config/db.js";
 import ProductModel from "../models/Product.js";
 
 /* ---------- helpers ---------- */
@@ -7,12 +7,26 @@ function makeSlug(text) {
   return String(text)
     .trim()
     .toLowerCase()
-    .replace(/[^\w\s-]/g, "")   // remove non-word chars
-    .replace(/\s+/g, "-")       // spaces -> hyphens
-    .replace(/-+/g, "-");       // collapse dashes
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
-/* ---------- public listings ---------- */
+async function generateUniqueSlug(baseSlug) {
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (true) {
+    const [[row]] = await pool.query(
+      "SELECT id FROM products WHERE slug = ? LIMIT 1",
+      [slug]
+    );
+
+    if (!row) return slug;
+    slug = `${baseSlug}-${counter++}`;
+  }
+}
+
+/* ---------- PUBLIC PRODUCTS ---------- */
 export async function listPublicProducts(req, res, next) {
   try {
     const page = Number(req.query.page) || 1;
@@ -20,131 +34,190 @@ export async function listPublicProducts(req, res, next) {
     const q = req.query.q || "";
     const categoryId = req.query.categoryId || undefined;
 
-    const products = await ProductModel.list({ page, limit, q, categoryId, published: true, active: true });
-    const total = await ProductModel.count({ q, categoryId, published: true, active: true });
+    const products = await ProductModel.list({
+      page,
+      limit,
+      q,
+      categoryId,
+      published: true,
+      active: true,
+    });
+
+    const total = await ProductModel.count({
+      q,
+      categoryId,
+      published: true,
+      active: true,
+    });
+
     res.json({ page, limit, total, products });
-  } catch (err) { next(err); }
-}
-
-// admin: list all (active/inactive, etc.)
-export async function listAdminProducts(req, res, next) {
-  try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 20;
-    const q = req.query.q || "";
-    const status = req.query.status; // optional
-    const active = typeof req.query.active !== "undefined" ? (req.query.active === "1" || req.query.active === "true") : undefined;
-    const products = await ProductModel.list({ page, limit, q, active, published: typeof req.query.published !== "undefined" ? (req.query.published === "1" || req.query.published === "true") : undefined });
-    const total = await ProductModel.count({ q, active });
-    res.json({ page, limit, total, products });
-  } catch (err) { next(err); }
-}
-
-export async function getProduct(req, res, next) {
-  try {
-    const id = req.params.id;
-    const p = await ProductModel.findById(id);
-    if (!p) return res.status(404).json({ message: "Product not found" });
-    res.json(p);
-  } catch (err) { next(err); }
-}
-
-/* ---------- CREATE (fixed) ---------- */
-export async function createProduct(req, res, next) {
-  try {
-    const incoming = req.body || {};
-
-    // basic validation
-    const name = incoming.name && String(incoming.name).trim();
-    const priceRaw = incoming.price;
-    if (!name || priceRaw == null) {
-      return res.status(400).json({ message: "name and price are required" });
-    }
-
-    // prepare sanitized data object to send to ProductModel.create
-    const slug = incoming.slug && String(incoming.slug).trim().length ? String(incoming.slug).trim() : makeSlug(name);
-    if (!slug) return res.status(400).json({ message: "slug could not be generated; provide slug or valid name" });
-
-    const data = {
-      name,
-      slug,
-      price: Number(priceRaw) || 0,
-      inventory: typeof incoming.inventory !== "undefined" ? Number(incoming.inventory) || 0 : 0,
-      stock: typeof incoming.stock !== "undefined" ? Number(incoming.stock) || 0 : 0,
-      description: typeof incoming.description !== "undefined" ? incoming.description : null,
-      active: typeof incoming.active !== "undefined" ? (incoming.active === 1 || incoming.active === "1" || incoming.active === true || incoming.active === "true") : 1,
-      status: typeof incoming.status !== "undefined" ? incoming.status : "draft",
-      category_id: typeof incoming.category_id !== "undefined" ? incoming.category_id : null,
-    };
-
-    // attach admin id from req.user if available
-    if (req.user && req.user.id) data.admin_id = req.user.id;
-
-    // create via model
-    const p = await ProductModel.create(data);
-
-    // return created product (model should return inserted row or id)
-    // if model returned inserted id, attempt to fetch full row
-    if (p && p.id) {
-      // assume model returns full product; if it only returns id, the model should be patched.
-      return res.status(201).json(p);
-    }
-
-    // fallback: return whatever model returned
-    return res.status(201).json(p);
   } catch (err) {
-    // handle duplicate slug / unique violations
-    // If your model throws underlying SQL error, adapt checks. Common code: ER_DUP_ENTRY
-    if (err && (err.code === "ER_DUP_ENTRY" || (err.sqlMessage && err.sqlMessage.toLowerCase().includes("duplicate")))) {
-      return res.status(400).json({ message: "Duplicate entry (probably slug already exists)", error: err.sqlMessage || err.message });
-    }
-    // generic pass-through to error handler
     next(err);
   }
 }
 
-/* ---------- updates / deletes ---------- */
+/* ---------- ADMIN PRODUCTS ---------- */
+export async function listAdminProducts(req, res) {
+  try {
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.max(parseInt(req.query.limit) || 10, 1);
+    const offset = (page - 1) * limit;
+
+    const [products] = await pool.query(
+      "SELECT * FROM products ORDER BY id DESC LIMIT ? OFFSET ?",
+      [limit, offset]
+    );
+
+    const [[count]] = await pool.query(
+      "SELECT COUNT(*) AS total FROM products"
+    );
+
+    res.json({
+      ok: true,
+      products,
+      total: count.total,
+      page,
+      limit,
+    });
+  } catch (err) {
+    console.error("listAdminProducts error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load admin products",
+    });
+  }
+}
+
+/* ---------- SINGLE PRODUCT ---------- */
+export async function getProduct(req, res, next) {
+  try {
+    const product = await ProductModel.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    res.json(product);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* ---------- CREATE PRODUCT ---------- */
+export async function createProduct(req, res) {
+  try {
+    console.log("CREATE PRODUCT BODY:", req.body);
+    console.log("USER FROM TOKEN:", req.user);
+
+    const {
+      name,
+      description,
+      price,
+      inventory,
+      stock,
+      category_id,
+      status,
+    } = req.body || {};
+
+    if (!name || price == null) {
+      return res.status(400).json({
+        message: "Product name and price are required",
+      });
+    }
+
+    const baseSlug = makeSlug(name);
+    const slug = await generateUniqueSlug(baseSlug); // ✅ FIX
+
+    const data = {
+      name: String(name).trim(),
+      slug,
+      description: description || null,
+      price: Number(price),
+      inventory: Number(inventory) || 0,
+      stock: Number(stock) || 0,
+      category_id: category_id ? Number(category_id) : null,
+      status: status || "draft",
+      active: 1,
+      admin_id: req.user.id,
+    };
+
+    const product = await ProductModel.create(data);
+
+    res.status(201).json({
+      ok: true,
+      message: "Product created successfully",
+      product,
+    });
+  } catch (err) {
+    console.error("CREATE PRODUCT ERROR:", err);
+
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({
+        message: "Product with same name already exists",
+      });
+    }
+
+    res.status(500).json({
+      message: "Failed to create product",
+    });
+  }
+}
+
+/* ---------- UPDATE PRODUCT ---------- */
 export async function updateProduct(req, res, next) {
   try {
-    const id = req.params.id;
-    const fields = req.body;
-    const p = await ProductModel.update(id, fields);
-    res.json(p);
-  } catch (err) { next(err); }
+    const product = await ProductModel.update(req.params.id, req.body);
+    res.json(product);
+  } catch (err) {
+    next(err);
+  }
 }
 
+/* ---------- DELETE PRODUCT ---------- */
 export async function deleteProduct(req, res, next) {
   try {
-    const id = req.params.id;
-    await ProductModel.remove(id);
+    await ProductModel.remove(req.params.id);
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 }
 
-/* ---------- toggles / inventory ---------- */
+/* ---------- PUBLISH / DRAFT ---------- */
 export async function publishToggle(req, res, next) {
   try {
-    const id = req.params.id;
-    const { published } = req.body;
-    const p = await ProductModel.setPublished(id, published === true || published === "true" || published === 1);
-    res.json(p);
-  } catch (err) { next(err); }
+    const published =
+      req.body.published === true ||
+      req.body.published === "true" ||
+      req.body.published === 1;
+
+    const product = await ProductModel.setPublished(req.params.id, published);
+    res.json(product);
+  } catch (err) {
+    next(err);
+  }
 }
 
+/* ---------- ACTIVE / INACTIVE ---------- */
 export async function activeToggle(req, res, next) {
   try {
-    const id = req.params.id;
-    const { active } = req.body;
-    const p = await ProductModel.setActive(id, active === true || active === "true" || active === 1);
-    res.json(p);
-  } catch (err) { next(err); }
+    const active =
+      req.body.active === true ||
+      req.body.active === "true" ||
+      req.body.active === 1;
+
+    const product = await ProductModel.setActive(req.params.id, active);
+    res.json(product);
+  } catch (err) {
+    next(err);
+  }
 }
 
+/* ---------- UPDATE INVENTORY ---------- */
 export async function updateInventory(req, res, next) {
   try {
-    const id = req.params.id;
-    const { inventory } = req.body;
-    const p = await ProductModel.setInventory(id, inventory);
-    res.json(p);
-  } catch (err) { next(err); }
+    const inventory = Number(req.body.inventory) || 0;
+    const product = await ProductModel.setInventory(req.params.id, inventory);
+    res.json(product);
+  } catch (err) {
+    next(err);
+  }
 }

@@ -1,13 +1,19 @@
-// src/admin/ProtectedAdminRoute.jsx
-import { useAuth } from "../context/AuthProvider";
+import React from "react";
 import { Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthProvider";
 
 export default function ProtectedAdminRoute({ children }) {
-  const { user, token } = useAuth();
+  const { user, loading } = useAuth();
 
-  if (!token || !user) return <Navigate to="/login" />;
+  if (loading) return null;
 
-  if (user.role !== "admin") return <Navigate to="/" />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role !== "admin") {
+    return <Navigate to="/" replace />;
+  }
 
   return children;
 }

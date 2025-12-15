@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
 
 export default function Login() {
-  const { login } = useAuth();        // auth logic comes from context
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -14,49 +14,63 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
-      setLoading(true);
+      // ✅ login() should return { user }
+      const result = await login({ email, password });
 
-      const user = await login({email, password});
+      const user = result?.user;
 
-      if (user?.role === "admin") {
-        navigate("/admin");
+      if (!user) {
+        throw new Error("Login failed");
+      }
+
+      // ✅ role-based redirect
+      if (user.role === "admin") {
+        navigate("/admin", { replace: true });
       } else {
-        navigate("/");
+        navigate("/", { replace: true });
       }
     } catch (err) {
-      setError(err?.response?.data?.error || "Login failed");
+      // ✅ show backend message if available
+      setError(
+        err?.response?.data?.message ||
+        err?.message ||
+        "Invalid email or password"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h2>Sign in to E-Store</h2>
+    <div className="login-page">
+      <form onSubmit={handleSubmit}>
+        <h2>Login</h2>
 
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
+        {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          required
+        />
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          required
+        />
 
-      <button type="submit" disabled={loading}>
-        {loading ? "Logging in..." : "Login"}
-      </button>
-    </form>
+        <button type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
+        </button>
+      </form>
+    </div>
   );
 }

@@ -1,133 +1,163 @@
-import React, { useEffect, useState } from "react";
-import api from "../../api/client";
+import { useEffect, useState } from "react";
+import { getProducts, createProduct } from "./useAdminApi";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
+  const [error, setError] = useState("");
 
-  const limit = 10; // per page
+  const [form, setForm] = useState({
+    name: "",
+    price: "",
+    inventory: "",
+    status: "published",
+  });
 
+  /* ================= FETCH PRODUCTS ================= */
   const fetchProducts = async () => {
     setLoading(true);
-    setErr("");
+    setError(""); // ✅ CLEAR OLD ERROR
+
     try {
-      const res = await api.get("/admin/products", {
-        params: {
-          search,
-          page,
-          limit,
-        },
-      });
-      // assume res.data = { items: [...], totalPages }
-      setProducts(res.data.items);
-      setPages(res.data.totalPages);
-    } catch (ex) {
-      setErr(ex.response?.data?.message || ex.message);
+      const res = await getProducts({ page: 1, limit: 10 });
+
+      // ✅ IMPORTANT: backend already returns products
+      if (res && Array.isArray(res.products)) {
+        setProducts(res.products);
+      } else {
+        setProducts([]);
+      }
+    } catch (err) {
+      console.error("Fetch products error:", err);
+      setError("Failed to load products");
+      setProducts([]);
     } finally {
       setLoading(false);
     }
   };
 
+  /* ================= LOAD ON PAGE OPEN ================= */
   useEffect(() => {
     fetchProducts();
-    // eslint-disable-next-line
-  }, [page]);
+  }, []);
 
-  const handleSearchSubmit = (e) => {
+  /* ================= CREATE PRODUCT ================= */
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setPage(1);
-    fetchProducts();
-  };
+    setError("");
 
-  const toggleActive = async (id, active) => {
     try {
-      await api.patch(`/admin/products/${id}/status`, { active: !active });
-      fetchProducts();
-    } catch (ex) {
-      alert(ex.response?.data?.message || ex.message);
+      const res = await createProduct(form);
+
+      if (!res?.ok) {
+        throw new Error(res?.message || "Failed to save product");
+      }
+
+      alert("✅ Product added successfully");
+
+      setForm({
+        name: "",
+        price: "",
+        inventory: "",
+        status: "published",
+      });
+
+      // 🔥 THIS WAS THE MAIN FIX
+      await fetchProducts();
+    } catch (err) {
+      console.error("Create product error:", err);
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Failed to save product"
+      );
     }
   };
 
   return (
-    <div>
+    <>
       <h1>Products</h1>
 
-      <form onSubmit={handleSearchSubmit} style={{ marginBottom: "1rem" }}>
-        <input
-          type="text"
-          placeholder="Search by name or category"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <button type="submit">Search</button>
-      </form>
+      {/* States */}
+      {loading && <p>Loading products...</p>}
+      {error && !loading && <p style={{ color: "red" }}>{error}</p>}
 
-      {err && <p style={{ color: "red" }}>{err}</p>}
-      {loading && <p>Loading...</p>}
-
-      {!loading && (
-        <>
-          <table border="1" cellPadding="6" cellSpacing="0">
-            <thead>
+      {/* Products table */}
+      {!loading && !error && (
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Inventory</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.length === 0 ? (
               <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Price</th>
-                <th>Inventory</th>
-                <th>Publish/Draft</th>
-                <th>Active?</th>
+                <td colSpan="6">No products found</td>
               </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => (
+            ) : (
+              products.map((p) => (
                 <tr key={p.id}>
                   <td>{p.id}</td>
-                  <td>{p.title}</td>
-                  <td>{p.status}</td> {/* "publish" / "draft" */}
-                  <td>{p.price}</td>
-                  <td>{p.inventory}</td>
+                  <td>{p.name}</td>
+                  <td>₹{p.price}</td>
                   <td>{p.status}</td>
+                  <td>{p.inventory}</td>
                   <td>
-                    <button onClick={() => toggleActive(p.id, p.active)}>
-                      {p.active ? "Deactivate" : "Activate"}
-                    </button>
+                    <button>Edit</button>
+                    <button>Publish</button>
+                    <button>Draft</button>
+                    <button className="danger">Inactive</button>
                   </td>
                 </tr>
-              ))}
-
-              {products.length === 0 && (
-                <tr>
-                  <td colSpan="7">No products found</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          {/* Pagination */}
-          <div style={{ marginTop: "1rem" }}>
-            <button
-              disabled={page <= 1}
-              onClick={() => setPage((prev) => prev - 1)}
-            >
-              Prev
-            </button>
-            <span style={{ margin: "0 10px" }}>
-              Page {page} of {pages}
-            </span>
-            <button
-              disabled={page >= pages}
-              onClick={() => setPage((prev) => prev + 1)}
-            >
-              Next
-            </button>
-          </div>
-        </>
+              ))
+            )}
+          </tbody>
+        </table>
       )}
-    </div>
+
+      {/* Add product */}
+      <h2>Add new product</h2>
+
+      <form onSubmit={handleSubmit}>
+        <input
+          placeholder="Name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          required
+        />
+
+        <input
+          type="number"
+          placeholder="Price"
+          value={form.price}
+          onChange={(e) => setForm({ ...form, price: e.target.value })}
+          required
+        />
+
+        <input
+          type="number"
+          placeholder="Inventory"
+          value={form.inventory}
+          onChange={(e) => setForm({ ...form, inventory: e.target.value })}
+          required
+        />
+
+        <select
+          value={form.status}
+          onChange={(e) => setForm({ ...form, status: e.target.value })}
+        >
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+        </select>
+
+        <button type="submit">Save</button>
+      </form>
+    </>
   );
 }

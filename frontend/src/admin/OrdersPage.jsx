@@ -1,10 +1,7 @@
-// src/admin/pages/OrdersPage.jsx
 import React, { useEffect, useState, useCallback } from "react";
-import useAdminApi from "../useAdminApi";
+import api from "../api/axios";
 
 export default function OrdersPage() {
-  const api = useAdminApi();
-
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -18,64 +15,79 @@ export default function OrdersPage() {
     status: "created",
   });
 
+  const PAGE_SIZE = 10;
+
+  /* ---------- LOAD ORDERS ---------- */
   const load = useCallback(
     async (pageToLoad = 1) => {
       try {
         setLoading(true);
         setErr("");
 
-        const params = new URLSearchParams();
-        params.set("page", pageToLoad);
-        params.set("limit", 10);
-        if (search) params.set("search", search);
+        const res = await api.get("/orders/admin", {
+          params: {
+            page: pageToLoad,
+            limit: PAGE_SIZE,
+            q: search,
+          },
+        });
 
-        const data = await api(`/orders?${params.toString()}`);
-        setItems(data.data || []);
-        setPage(data.page || pageToLoad);
-        setTotalPages(data.totalPages || 1);
+        setItems(res.data.orders || []);
+        setPage(res.data.page || pageToLoad);
+        setTotalPages(
+          Math.ceil((res.data.total || 0) / PAGE_SIZE) || 1
+        );
       } catch (e) {
-        setErr(e.message || "Server error");
+        setErr(
+          e.response?.data?.message ||
+            e.message ||
+            "Failed to load orders"
+        );
       } finally {
         setLoading(false);
       }
     },
-    [api, search]
+    [search]
   );
 
   useEffect(() => {
     load(1);
   }, [load]);
 
+  /* ---------- CREATE ORDER (ADMIN) ---------- */
   const saveOrder = async (e) => {
     e.preventDefault();
     try {
       setErr("");
 
-      await api("/orders", {
-        method: "POST",
-        body: {
-          user_id: Number(form.user_id),
-          total_amount: Number(form.total_amount),
-          status: form.status,
-        },
+      await api.post("/orders/admin", {
+        user_id: Number(form.user_id),
+        total_amount: Number(form.total_amount),
+        status: form.status,
       });
 
       setForm({ user_id: "", total_amount: "", status: "created" });
       load(page);
     } catch (e) {
-      setErr(e.message || "Server error");
+      setErr(
+        e.response?.data?.message ||
+          e.message ||
+          "Failed to save order"
+      );
     }
   };
 
   const goPrev = () => page > 1 && load(page - 1);
   const goNext = () => page < totalPages && load(page + 1);
 
+  /* ---------- UI ---------- */
   return (
     <section className="admin-main-content">
       <div className="admin-page-header-row">
         <h2 className="admin-page-title">Orders</h2>
       </div>
 
+      {/* Search */}
       <div className="admin-filters-row">
         <div className="admin-search-input">
           <span className="icon">🔍</span>
@@ -91,6 +103,7 @@ export default function OrdersPage() {
       {err && <div className="admin-error">{err}</div>}
       {loading && <div className="admin-loading">Loading...</div>}
 
+      {/* Table */}
       <div className="admin-table-wrapper">
         <table className="admin-table">
           <thead>
@@ -107,18 +120,20 @@ export default function OrdersPage() {
               <tr key={o.id}>
                 <td>{o.id}</td>
                 <td>
-                  {o.customer_name || "-"}{" "}
-                  {o.customer_email ? `(${o.customer_email})` : ""}
+                  <td>{o.customer_name || "-"}</td>
+
+
                 </td>
                 <td>{o.total_amount}</td>
                 <td>{o.status}</td>
                 <td>{String(o.created_at).slice(0, 10)}</td>
               </tr>
             ))}
+
             {!items.length && !loading && (
               <tr>
                 <td colSpan="5" style={{ textAlign: "center", padding: 16 }}>
-                  No data
+                  No orders found
                 </td>
               </tr>
             )}
@@ -126,6 +141,7 @@ export default function OrdersPage() {
         </table>
       </div>
 
+      {/* Pagination */}
       <div className="admin-pagination">
         <button disabled={page <= 1} onClick={goPrev} type="button">
           Prev
@@ -138,8 +154,10 @@ export default function OrdersPage() {
         </button>
       </div>
 
+      {/* Admin Create Order */}
       <div className="admin-edit-panel">
         <h3 className="admin-panel-title">Create order (admin)</h3>
+
         <form onSubmit={saveOrder} className="admin-form-grid">
           <label>
             Customer user_id
@@ -152,6 +170,7 @@ export default function OrdersPage() {
               required
             />
           </label>
+
           <label>
             Total amount (₹)
             <input
@@ -163,6 +182,7 @@ export default function OrdersPage() {
               required
             />
           </label>
+
           <label>
             Status
             <select
@@ -177,6 +197,7 @@ export default function OrdersPage() {
               <option value="cancelled">Cancelled</option>
             </select>
           </label>
+
           <div className="admin-form-actions">
             <button type="submit" className="btn-primary">
               Save order

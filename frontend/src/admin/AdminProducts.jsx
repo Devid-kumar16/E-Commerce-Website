@@ -1,107 +1,156 @@
-// src/admin/components/AdminProducts.jsx
-import React, { useMemo, useState } from "react";
-import { PRODUCTS } from "../../data/products";
+
+
+import { useEffect, useState } from "react";
+import { getProducts, createProduct } from "./useAdminApi";
 
 export default function AdminProducts() {
-  const [query, setQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  console.log("🔥 AdminProducts.jsx RENDERED");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const categories = useMemo(() => {
-    const set = new Set();
-    PRODUCTS.forEach((p) => set.add(p.category || "Uncategorized"));
-    return Array.from(set);
+  const [form, setForm] = useState({
+    name: "",
+    price: "",
+    inventory: "",
+    status: "published",
+  });
+
+  /* ================= FETCH PRODUCTS ================= */
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await getProducts({ page: 1, limit: 10 });
+
+      console.log("ADMIN PRODUCTS RESPONSE:", res);
+
+      // ✅ this is the correct way
+      setProducts(Array.isArray(res.products) ? res.products : []);
+    } catch (err) {
+      console.error("Fetch products error:", err);
+      setProducts([]);
+      setError("Failed to load products");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ================= LOAD ON MOUNT ================= */
+  useEffect(() => {
+    fetchProducts();
   }, []);
 
-  const filteredProducts = useMemo(() => {
-    const q = query.toLowerCase().trim();
+  /* ================= CREATE PRODUCT ================= */
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
 
-    return PRODUCTS.filter((p) => {
-      const name = (p.title || "").toLowerCase();
-      const cat = (p.category || "Uncategorized").toLowerCase();
+    try {
+      const res = await createProduct(form);
 
-      const matchText =
-        !q || name.includes(q) || String(p.id).toLowerCase().includes(q);
+      if (!res?.ok) {
+        throw new Error(res?.message || "Failed to save product");
+      }
 
-      const matchCategory =
-        categoryFilter === "all"
-          ? true
-          : (p.category || "Uncategorized") === categoryFilter;
+      alert("✅ Product added successfully");
 
-      return matchText && matchCategory;
-    });
-  }, [query, categoryFilter]);
+      setForm({
+        name: "",
+        price: "",
+        inventory: "",
+        status: "published",
+      });
+
+      // 🔥 THIS IS CRITICAL
+      await fetchProducts();
+    } catch (err) {
+      console.error("Create product error:", err);
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Failed to save product"
+      );
+    }
+  };
 
   return (
-    <div className="orders-page">
-      <h2 style={{ marginBottom: 8 }}>Products</h2>
+    <>
+      <h1>Products</h1>
 
-      {/* Search + filters bar (reuse orders styles) */}
-      <div className="orders-toolbar">
-        <div className="orders-search-box">
-          <span className="search-icon">🔍</span>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search products by name or ID"
-          />
-        </div>
+      {loading && <p>Loading products...</p>}
+      {!loading && error && <p style={{ color: "red" }}>{error}</p>}
 
-        <select
-          className="orders-filter"
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-        >
-          <option value="all">All categories</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Products table */}
-      <div className="orders-card">
-        <table className="orders-table">
+      {!loading && !error && (
+        <table className="admin-table">
           <thead>
             <tr>
               <th>ID</th>
-              <th>Product</th>
-              <th>Category</th>
-              <th>Price (₹)</th>
-              <th />
+              <th>Name</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Inventory</th>
             </tr>
           </thead>
           <tbody>
-            {filteredProducts.map((p, index) => (
-              <tr key={`${p.id}-${index}`}>
-                <td>{p.id}</td>
-                <td>{p.title}</td>
-                <td>{p.category}</td>
-                <td>{p.price}</td>
-                <td className="orders-actions">
-                  <a
-                    href={`/product/${p.id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="link-btn"
-                  >
-                    View
-                  </a>
-                </td>
-              </tr>
-            ))}
-
-            {filteredProducts.length === 0 && (
+            {products.length === 0 ? (
               <tr>
-                <td colSpan={5} className="no-results">
-                  No products match your filters.
-                </td>
+                <td colSpan="5">No products found</td>
               </tr>
+            ) : (
+              products.map((p) => (
+                <tr key={p.id}>
+                  <td>{p.id}</td>
+                  <td>{p.name}</td>
+                  <td>₹{p.price}</td>
+                  <td>{p.status}</td>
+                  <td>{p.inventory}</td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
-      </div>
-    </div>
+      )}
+
+      <h2>Add Product</h2>
+
+      <form onSubmit={handleSubmit}>
+        <input
+          placeholder="Name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          required
+        />
+
+        <input
+          type="number"
+          placeholder="Price"
+          value={form.price}
+          onChange={(e) => setForm({ ...form, price: e.target.value })}
+          required
+        />
+
+        <input
+          type="number"
+          placeholder="Inventory"
+          value={form.inventory}
+          onChange={(e) =>
+            setForm({ ...form, inventory: e.target.value })
+          }
+          required
+        />
+
+        <select
+          value={form.status}
+          onChange={(e) => setForm({ ...form, status: e.target.value })}
+        >
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+        </select>
+
+        <button type="submit">Save</button>
+      </form>
+    </>
   );
 }

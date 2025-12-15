@@ -1,79 +1,87 @@
-// src/admin/useAdminApi.js
-import { useNavigate } from "react-router-dom";
-import { useAuth } from '../context/AuthProvider';
+// src/admin/hooks/useAdminApi.js
+import axios from "axios";
 
-const API_BASE = "http://localhost:5000/api";
+const API = axios.create({
+  baseURL: "http://127.0.0.1:5000/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
-export default function useAdminApi() {
-  const { token, logout } = useAuth();
-  const navigate = useNavigate();
+/* 🔐 attach token automatically (SAFE) */
+API.interceptors.request.use(
+  (req) => {
+    const token = localStorage.getItem("token");
 
-  return async function api(path, options = {}) {
-    const { method = "GET", body = null, headers = {}, skipAuthRedirect = false, signal = undefined } = options;
-
-    // require token for protected endpoints
-    if (!token) {
-      if (!skipAuthRedirect) {
-        try { logout(); } catch (e) {}
-        navigate("/login");
-      }
-      throw new Error("Not authenticated");
+    // prevent "null"/"undefined" token bugs
+    if (token && token !== "null" && token !== "undefined") {
+      req.headers.authorization = `Bearer ${token}`; // ✅ lowercase
+    } else {
+      delete req.headers.authorization;
     }
 
-    // build headers; if body is FormData, don't set JSON content-type
-    const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
-    const mergedHeaders = {
-      ...(isFormData ? {} : { "Content-Type": "application/json" }),
-      Authorization: `Bearer ${token}`,
-      ...headers,
+    return req;
+  },
+  (error) => Promise.reject(error)
+);
+
+/* ---------- PRODUCTS ---------- */
+
+/**
+ * Get admin products (SAFE)
+ * Always returns a predictable object
+ */
+export const getProducts = async ({ page = 1, limit = 10 } = {}) => {
+  try {
+    const res = await API.get("/products/admin/list", {
+      params: { page, limit },
+    });
+
+    if (res.data?.ok) {
+      return {
+        products: res.data.products || [],
+        total: res.data.total || 0,
+        page: res.data.page || page,
+        limit: res.data.limit || limit,
+      };
+    }
+
+    // backend responded but not ok
+    return {
+      products: [],
+      total: 0,
+      page,
+      limit,
     };
+  } catch (err) {
+    console.error("❌ getProducts failed:", err?.response || err);
 
-    let res;
-    try {
-      res = await fetch(`${API_BASE}${path}`, {
-        method,
-        headers: mergedHeaders,
-        body: isFormData ? body : body ? JSON.stringify(body) : undefined,
-        signal,
-      });
-    } catch (err) {
-      // network-level error (DNS, offline, aborted, CORS, etc.)
-      const msg = err && err.name === "AbortError" ? "Request aborted" : "Network error";
-      throw new Error(msg);
-    }
+    // ✅ NEVER crash React
+    return {
+      products: [],
+      total: 0,
+      page,
+      limit,
+      error: true,
+    };
+  }
+};
 
-    // handle unauthorized / forbidden
-    if (res.status === 401 || res.status === 403) {
-      // allow caller to handle auth errors if requested
-      if (!skipAuthRedirect) {
-        try { logout(); } catch (e) {}
-        navigate("/login");
-      }
-      // attempt to read message, but still throw
-      let payload = {};
-      try { payload = await res.json().catch(() => ({})); } catch (e) {}
-      throw new Error(payload.message || "Unauthorized");
-    }
+/**
+ * Create product (SAFE)
+ */
+export const createProduct = async (data) => {
+  try {
+    const res = await API.post("/products/admin", data);
+    return res.data;
+  } catch (err) {
+    console.error("❌ createProduct failed:", err?.response || err);
 
-    // no content
-    if (res.status === 204) return {};
-
-    // parse JSON safely
-    let data;
-    try {
-      data = await res.json().catch(() => ({}));
-    } catch (err) {
-      // parsing error
-      throw new Error("Failed to parse response");
-    }
-
-    if (!res.ok) {
-      throw new Error(data.message || "Request failed");
-    }
-
-    return data;
-  };
-}
-
-
-
+    return {
+      ok: false,
+      message:
+        err?.response?.data?.message ||
+        "Failed to create product",
+    };
+  }
+};

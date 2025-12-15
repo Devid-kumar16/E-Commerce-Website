@@ -1,20 +1,9 @@
 ﻿import express from "express";
-import {
-  listCustomers,
-  getCustomer,
-  createCustomer,
-  updateCustomer
-} from "../controllers/customerController.js";
-
-import { verifyToken, isAdmin } from "../middleware/auth.js";
+import { authRequired, isAdmin } from "../middleware/authMiddleware.js";
+import { listCustomersAdmin } from "../controllers/customerController.js";
 
 const router = express.Router();
 
-router.use(verifyToken, isAdmin);
-
-router.get("/", listCustomers);
-router.get("/:id", getCustomer);
-router.post("/", createCustomer);
-router.put("/:id", updateCustomer);
+router.get("/admin", authRequired, isAdmin, listCustomersAdmin);
 
 export default router;

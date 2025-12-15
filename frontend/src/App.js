@@ -10,9 +10,15 @@ import {
   Navigate
 } from "react-router-dom";
 import './styles.css';
-import AdminApp from "./admin/AdminApp";
 import { PRODUCTS } from "./data/products";
 import { API_BASE } from "./config";
+// ===== ADMIN IMPORTS =====
+import AdminLayout from "./admin/AdminLayout";
+import Dashboard from "./admin/Dashboard";
+import ProductsPage from "./admin/ProductsPage";
+import CategoriesPage from "./admin/CategoriesPage";
+import OrdersPage from "./admin/OrdersPage";
+import CustomersPage from "./admin/CustomersPage";
 
 /* IMPORTANT: import the shared AuthProvider and hook from your context file */
 import { AuthProvider, useAuth } from "./context/AuthProvider";
@@ -244,7 +250,7 @@ function Header({ onSearch, cart }) {
                       onClick={() => { goAdmin(); setOpenAccount(false); }}
                       className="account-menu-item"
                     >
-                      Admin panel
+                      {/* Admin panel */}
                     </button>
 
                     <button onClick={() => { navigate("/profile"); setOpenAccount(false); }} className="account-menu-item">Profile</button>
@@ -419,7 +425,7 @@ function ProductDetail({ onAddToCart }) {
 }
 
 /* ProductsPage */
-function ProductsPage({ products, onAddToCart }) {
+function StoreProductsPage({ products, onAddToCart }) {
   const groups = products.reduce((acc, p) => {
     const k = p.category || "Uncategorized";
     acc[k] = acc[k] || [];
@@ -901,20 +907,6 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-function AdminRoute({ children }) {
-  const { user, token, loading } = useAuth();
-
-  if (loading) return <div style={{ padding: 20 }}>Checking admin access…</div>;
-  if (!token || !user) {
-    return <Navigate to="/login" replace state={{ from: "/admin" }} />;
-  }
-  const role = (user.role || "").toString().toLowerCase();
-  if (role !== "admin") {
-    return <Navigate to="/" replace />;
-  }
-  return children;
-}
-
 /* ------------------ Conditional header/footer (hide on admin/login pages) ------------------ */
 function ConditionalHeader({ onSearch, cart, wishlist }) {
   const location = useLocation();
@@ -1039,6 +1031,26 @@ function CartPage({ cart, setCart }) {
 }
 
 
+function AdminGuard({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div style={{ padding: 20 }}>Checking admin access…</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if ((user.role || "").toLowerCase() !== "admin") {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
+
+
 /* ------------------ App (root) ------------------ */
 export default function App() {
   const [products] = useState(PRODUCTS);
@@ -1098,44 +1110,126 @@ export default function App() {
       )}
 
       <Routes>
-        {/* ADMIN PANEL */}
-        <Route path="/admin/*" element={<AdminRoute><AdminApp /></AdminRoute>} />
 
-        {/* MAIN SITE */}
-        <Route path="/" element={<Home products={products} onAddToCart={onAddToCart} searchQuery={searchQuery} />} />
-        <Route path="/products" element={<ProductsPage products={products} onAddToCart={onAddToCart} />} />
-        <Route path="/search" element={<SearchResults products={products} onAddToCart={onAddToCart} />} />
-        <Route path="/product/:id" element={<ProductDetail onAddToCart={onAddToCart} />} />
-        <Route path="/category/:name" element={<CategoryPage onAddToCart={onAddToCart} />} />
-        <Route path="/cart" element={<CartPage cart={cart} setCart={setCart} />} />
-        <Route path="/wishlist" element={<WishlistPage wishlist={wishlist} setWishlist={setWishlist} onAddToCart={onAddToCart} />} />
-        <Route path="/vendor/:id" element={<VendorPage />} />
-        <Route path="/brand/:name" element={<BrandPage />} />
-        <Route path="/account/settings" element={<AccountSettings />} />
+  {/* ================= ADMIN PANEL (PROTECTED) ================= */}
+  <Route
+    path="/admin"
+    element={
+      <AdminGuard>
+        <AdminLayout />
+      </AdminGuard>
+    }
+  >
+    <Route index element={<Dashboard />} />
+    <Route path="products" element={<ProductsPage />} />
+    <Route path="categories" element={<CategoriesPage />} />
+    <Route path="orders" element={<OrdersPage />} />
+    <Route path="customers" element={<CustomersPage />} />
+  </Route>
 
-        {/* PROTECTED CUSTOMER PAGES */}
-        <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+  {/* ================= MAIN SITE ================= */}
+  <Route
+    path="/"
+    element={
+      <Home
+        products={products}
+        onAddToCart={onAddToCart}
+        searchQuery={searchQuery}
+      />
+    }
+  />
 
-        {/* AUTH */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+  <Route
+    path="/products"
+    element={<StoreProductsPage products={products} onAddToCart={onAddToCart} />}
+  />
 
-        {/* STATIC PAGES */}
-        <Route path="/faq" element={<FAQ />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/support" element={<Support />} />
-        <Route path="/blog" element={<BlogList />} />
-        <Route path="/blog/:id" element={<BlogPost />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/careers" element={<Careers />} />
+  <Route
+    path="/search"
+    element={<SearchResults products={products} onAddToCart={onAddToCart} />}
+  />
 
-        {/* 404 */}
-        <Route path="*" element={<div className="p-12">Not found — <Link to="/">Home</Link></div>} />
-      </Routes>
+  <Route
+    path="/product/:id"
+    element={<ProductDetail onAddToCart={onAddToCart} />}
+  />
+
+  <Route
+    path="/category/:name"
+    element={<CategoryPage onAddToCart={onAddToCart} />}
+  />
+
+  <Route path="/cart" element={<CartPage cart={cart} setCart={setCart} />} />
+
+  <Route
+    path="/wishlist"
+    element={
+      <WishlistPage
+        wishlist={wishlist}
+        setWishlist={setWishlist}
+        onAddToCart={onAddToCart}
+      />
+    }
+  />
+
+  <Route path="/vendor/:id" element={<VendorPage />} />
+  <Route path="/brand/:name" element={<BrandPage />} />
+  <Route path="/account/settings" element={<AccountSettings />} />
+
+  {/* ================= PROTECTED CUSTOMER PAGES ================= */}
+  <Route
+    path="/checkout"
+    element={
+      <ProtectedRoute>
+        <Checkout />
+      </ProtectedRoute>
+    }
+  />
+
+  <Route
+    path="/profile"
+    element={
+      <ProtectedRoute>
+        <Profile />
+      </ProtectedRoute>
+    }
+  />
+
+  <Route
+    path="/orders"
+    element={
+      <ProtectedRoute>
+        <Orders />
+      </ProtectedRoute>
+    }
+  />
+
+  {/* ================= AUTH ================= */}
+  <Route path="/login" element={<Login />} />
+  <Route path="/signup" element={<Signup />} />
+
+  {/* ================= STATIC PAGES ================= */}
+  <Route path="/faq" element={<FAQ />} />
+  <Route path="/terms" element={<Terms />} />
+  <Route path="/privacy" element={<Privacy />} />
+  <Route path="/support" element={<Support />} />
+  <Route path="/blog" element={<BlogList />} />
+  <Route path="/blog/:id" element={<BlogPost />} />
+  <Route path="/about" element={<About />} />
+  <Route path="/contact" element={<Contact />} />
+  <Route path="/careers" element={<Careers />} />
+
+  {/* ================= 404 ================= */}
+  <Route
+    path="*"
+    element={
+      <div className="p-12">
+        Not found — <Link to="/">Home</Link>
+      </div>
+    }
+  />
+
+</Routes>
 
       <ConditionalFooter />
     </AuthProvider>

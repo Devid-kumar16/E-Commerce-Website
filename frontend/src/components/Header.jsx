@@ -1,7 +1,6 @@
-// src/components/Header.jsx
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from '../context/AuthProvider'; // keep same import pattern as your Login.jsx
+import { useAuth } from "../context/AuthProvider";
 
 export default function Header({
   onSearch = () => {},
@@ -14,9 +13,10 @@ export default function Header({
 
   const [query, setQuery] = useState("");
 
-  // Hide header when already in admin area
-  const isAdminRoute = location.pathname.startsWith("/admin");
-  if (isAdminRoute) return null;
+  // Hide header inside admin panel
+  if (location.pathname.startsWith("/admin")) {
+    return null;
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -26,22 +26,8 @@ export default function Header({
   const cartCount = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
   const wishlistCount = wishlist.length;
 
-  // Robust admin check: supports user.role or user.roles[]
-  const isAdmin =
-    user &&
-    (String(user.role || "")
-      .toLowerCase() === "admin" ||
-      (Array.isArray(user.roles) &&
-        user.roles.map((r) => String(r).toLowerCase()).includes("admin")));
-
-  const handleLogout = () => {
-    try {
-      logout();
-    } catch (e) {
-      // ignore
-    }
-    navigate("/login");
-  };
+  // ✅ STRICT admin check (ONLY role === "admin")
+  const isAdmin = user?.role === "admin";
 
   return (
     <header className="estore-header">
@@ -51,7 +37,7 @@ export default function Header({
           <span className="estore-logo-text">E-Store</span>
         </Link>
 
-        {/* LEFT NAV – All Categories */}
+        {/* Categories */}
         <nav className="estore-nav-left">
           <button
             type="button"
@@ -78,7 +64,7 @@ export default function Header({
 
         {/* Right actions */}
         <div className="estore-nav-right">
-          {/* Admin Panel link (visible only for admins) */}
+          {/* ✅ ADMIN PANEL (ADMIN ONLY) */}
           {isAdmin && (
             <Link to="/admin" className="estore-chip" style={{ marginRight: 8 }}>
               Admin Panel
@@ -86,27 +72,27 @@ export default function Header({
           )}
 
           <Link to="/wishlist" className="estore-chip">
-            Wishlist{" "}
+            Wishlist
             {wishlistCount > 0 && (
               <span className="estore-chip-badge">{wishlistCount}</span>
             )}
           </Link>
 
           <Link to="/cart" className="estore-chip">
-            Cart{" "}
+            Cart
             {cartCount > 0 && (
               <span className="estore-chip-badge">{cartCount}</span>
             )}
           </Link>
 
-          {/* My Account / Login / Logout */}
+          {/* Account */}
           {user ? (
             <>
               <Link to="/profile" className="estore-chip">
-                {user.name || user.email || "My Account"} ▾
+                {user.name || user.email}
               </Link>
               <button
-                onClick={handleLogout}
+                onClick={logout} // ✅ logout only (no extra navigate)
                 className="estore-chip"
                 style={{ marginLeft: 8 }}
               >
@@ -118,7 +104,11 @@ export default function Header({
               <Link to="/login" className="estore-chip">
                 Login
               </Link>
-              <Link to="/register" className="estore-chip" style={{ marginLeft: 8 }}>
+              <Link
+                to="/register"
+                className="estore-chip"
+                style={{ marginLeft: 8 }}
+              >
                 Register
               </Link>
             </>
@@ -128,4 +118,3 @@ export default function Header({
     </header>
   );
 }
-
