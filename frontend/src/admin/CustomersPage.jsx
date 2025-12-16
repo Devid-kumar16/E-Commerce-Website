@@ -11,7 +11,7 @@ export default function CustomersPage() {
 
   const PAGE_SIZE = 10;
 
-  /* ---------- LOAD CUSTOMERS ---------- */
+  /* LOAD CUSTOMERS */
   const load = useCallback(
     async (pageToLoad = 1) => {
       try {
@@ -26,15 +26,14 @@ export default function CustomersPage() {
           },
         });
 
-        // ✅ CORRECT RESPONSE MAPPING
         const customers = res.data?.data || [];
         const meta = res.data?.meta || {};
 
         setItems(customers);
         setPage(meta.page || pageToLoad);
-        setTotalPages(
-          Math.max(1, Math.ceil((meta.total || 0) / PAGE_SIZE))
-        );
+
+        const total = meta.total ?? customers.length;
+        setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
       } catch (err) {
         setError(
           err.response?.data?.message ||
@@ -48,16 +47,23 @@ export default function CustomersPage() {
     [search]
   );
 
-  /* Reload when search changes */
   useEffect(() => {
     load(1);
   }, [load]);
 
   return (
-    <div className="admin-main-content">
-      <h2 className="admin-page-title">Customers</h2>
+    <div className="admin-page">
+      {/* ===== HEADER ===== */}
+      <div className="page-header">
+        <div>
+          <h2 className="page-title">Customers</h2>
+          <p className="page-subtitle">
+            View and manage registered customers
+          </p>
+        </div>
+      </div>
 
-      {/* Search */}
+      {/* ===== SEARCH ===== */}
       <div className="admin-filters-row">
         <input
           type="text"
@@ -70,59 +76,61 @@ export default function CustomersPage() {
       {error && <div className="admin-error">{error}</div>}
       {loading && <div className="admin-loading">Loading...</div>}
 
-      {/* Table */}
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Orders</th>
-            <th>Joined</th>
-          </tr>
-        </thead>
-        <tbody>
-          {!loading && items.length === 0 && (
+      {/* ===== TABLE CARD ===== */}
+      <div className="admin-card">
+        <table className="admin-table">
+          <thead>
             <tr>
-              <td colSpan="5" style={{ textAlign: "center" }}>
-                No customers found
-              </td>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Orders</th>
+              <th>Joined</th>
             </tr>
-          )}
+          </thead>
+          <tbody>
+            {!loading && items.length === 0 && (
+              <tr>
+                <td colSpan="5" style={{ textAlign: "center" }}>
+                  No customers found
+                </td>
+              </tr>
+            )}
 
-          {items.map((c) => (
-            <tr key={c.id}>
-              <td>{c.id}</td>
-              <td>{c.name}</td>
-              <td>{c.email}</td>
-              <td>{c.orders}</td>
-              <td>{String(c.created_at).slice(0, 10)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            {items.map((c) => (
+              <tr key={c.id}>
+                <td>{c.id}</td>
+                <td>{c.name}</td>
+                <td>{c.email}</td>
+                <td>{c.orders}</td>
+                <td>{String(c.created_at).slice(0, 10)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-      {/* Pagination */}
-      <div className="admin-pagination">
-        <button
-          disabled={page <= 1}
-          onClick={() => load(page - 1)}
-          type="button"
-        >
-          Prev
-        </button>
+        {/* ===== PROFESSIONAL PAGINATION ===== */}
+        <div className="pagination-bar">
+          <button
+            className="pagination-btn"
+            disabled={page <= 1}
+            onClick={() => load(page - 1)}
+          >
+            Prev
+          </button>
 
-        <span>
-          Page {page} of {totalPages}
-        </span>
+          <span className="pagination-info">
+            Page <strong>{page}</strong> of {totalPages}
+          </span>
 
-        <button
-          disabled={page >= totalPages}
-          onClick={() => load(page + 1)}
-          type="button"
-        >
-          Next
-        </button>
+          <button
+            className="pagination-btn"
+            disabled={page >= totalPages}
+            onClick={() => load(page + 1)}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );

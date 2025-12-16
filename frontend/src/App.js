@@ -1,5 +1,8 @@
 // src/App.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
+import AddProduct from "./admin/AddProduct";
+import EditProduct from "./admin/EditProduct";
+
 import {
   Routes,
   Route,
@@ -11,7 +14,6 @@ import {
 } from "react-router-dom";
 import './styles.css';
 import { PRODUCTS } from "./data/products";
-import { API_BASE } from "./config";
 // ===== ADMIN IMPORTS =====
 import AdminLayout from "./admin/AdminLayout";
 import Dashboard from "./admin/Dashboard";
@@ -19,6 +21,12 @@ import ProductsPage from "./admin/ProductsPage";
 import CategoriesPage from "./admin/CategoriesPage";
 import OrdersPage from "./admin/OrdersPage";
 import CustomersPage from "./admin/CustomersPage";
+import CreateOrder from "./admin/CreateOrder";
+import CreateCategory from "./admin/CreateCategory";
+import CMSDashboard from "./admin/CMSDashboard";
+import CMSPages from "./admin/CMSPages";
+import EditCMSPage from "./admin/EditCMSPage";
+
 
 /* IMPORTANT: import the shared AuthProvider and hook from your context file */
 import { AuthProvider, useAuth } from "./context/AuthProvider";
@@ -1122,9 +1130,18 @@ export default function App() {
   >
     <Route index element={<Dashboard />} />
     <Route path="products" element={<ProductsPage />} />
+    <Route path="products/new" element={<AddProduct />} />
+    <Route path="products/:id/edit" element={<EditProduct />} />
     <Route path="categories" element={<CategoriesPage />} />
+    <Route path="categories/new" element={<CreateCategory />} />
     <Route path="orders" element={<OrdersPage />} />
+    <Route path="orders/new" element={<CreateOrder />} />
     <Route path="customers" element={<CustomersPage />} />
+    <Route path="cms" element={<CMSDashboard />} />
+    <Route path="cms/pages" element={<CMSPages />} />
+    <Route path="cms/pages/:id/edit" element={<EditCMSPage />} />
+    <Route path="cms/pages/:id" element={<EditCMSPage />} />
+
   </Route>
 
   {/* ================= MAIN SITE ================= */}

@@ -13,9 +13,11 @@ export function AuthProvider({ children }) {
     }
   });
 
-  /**
-   * LOGIN
-   */
+  const [token, setToken] = useState(() => {
+    return localStorage.getItem("token");
+  });
+
+  /* ===================== LOGIN ===================== */
   const login = async ({ email, password }) => {
     try {
       const res = await api.post("/auth/login", {
@@ -29,33 +31,55 @@ export function AuthProvider({ children }) {
         throw new Error("Invalid login response");
       }
 
-      // ✅ STORE AUTH DATA
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
+      setToken(token);
       setUser(user);
 
-      // ✅ THIS IS THE FIX
       return { token, user };
     } catch (err) {
-      console.error("LOGIN ERROR:", err);
       throw new Error(
         err?.response?.data?.message || "Login failed"
       );
     }
   };
 
-  /**
-   * LOGOUT
-   */
+  /* ===================== SIGNUP (FIX) ===================== */
+  const signup = async ({ name, email, password }) => {
+    try {
+      const res = await api.post("/auth/register", {
+        name,
+        email,
+        password,
+      });
+
+      return res.data;
+    } catch (err) {
+      throw new Error(
+        err?.response?.data?.message || "Signup failed"
+      );
+    }
+  };
+
+  /* ===================== LOGOUT ===================== */
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
+    setToken(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        login,
+        signup,   // ✅ VERY IMPORTANT
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

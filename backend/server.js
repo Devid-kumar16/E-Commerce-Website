@@ -8,7 +8,7 @@ import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
-
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 dotenv.config();
 
@@ -17,7 +17,9 @@ const app = express();
 /* ---------- MIDDLEWARE ORDER IS IMPORTANT ---------- */
 
 // ✅ CORS FIRST
+
 app.use(
+  
   cors({
     origin: "http://localhost:3000",
     credentials: true,
@@ -34,6 +36,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 /* ---------- ROUTES ---------- */
+
+app.use("/api", dashboardRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 

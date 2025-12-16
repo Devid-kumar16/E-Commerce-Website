@@ -89,17 +89,41 @@ export async function listAdminProducts(req, res) {
 }
 
 /* ---------- SINGLE PRODUCT ---------- */
-export async function getProduct(req, res, next) {
+export async function getProduct(req, res) {
   try {
-    const product = await ProductModel.findById(req.params.id);
-    if (!product) {
+    const { id } = req.params;
+
+    const [rows] = await pool.query(
+      `
+      SELECT 
+        p.id,
+        p.name,
+        p.price,
+        p.status,
+        p.stock,
+        p.image_url AS image,
+        p.description,
+        c.name AS category
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE p.id = ?
+      `,
+      [id]
+    );
+
+    if (!rows.length) {
       return res.status(404).json({ message: "Product not found" });
     }
-    res.json(product);
+
+    res.json({ product: rows[0] });
   } catch (err) {
-    next(err);
+    console.error("GET PRODUCT ERROR:", err);
+    res.status(500).json({ message: "Failed to load product" });
   }
 }
+
+
+
 
 /* ---------- CREATE PRODUCT ---------- */
 export async function createProduct(req, res) {
@@ -162,14 +186,75 @@ export async function createProduct(req, res) {
 }
 
 /* ---------- UPDATE PRODUCT ---------- */
-export async function updateProduct(req, res, next) {
+
+export async function updateProduct(req, res) {
   try {
-    const product = await ProductModel.update(req.params.id, req.body);
-    res.json(product);
+    const { id } = req.params;
+
+    const {
+      name,
+      price,
+      category,      // ← category NAME from frontend
+      status,
+      stock,
+      image,
+      description,
+    } = req.body;
+
+    if (!name || price == null) {
+      return res.status(400).json({ message: "Name and price required" });
+    }
+
+    let categoryId = null;
+
+    // 🔥 Convert category NAME → category_id
+    if (category) {
+      const [rows] = await pool.query(
+        "SELECT id FROM categories WHERE name = ? LIMIT 1",
+        [category]
+      );
+
+      if (!rows.length) {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+
+      categoryId = rows[0].id;
+    }
+
+    await pool.query(
+      `
+      UPDATE products SET
+        name = ?,
+        price = ?,
+        category_id = ?,
+        status = ?,
+        stock = ?,
+        image_url = ?,
+        description = ?
+      WHERE id = ?
+      `,
+      [
+        name,
+        price,
+        categoryId,
+        status || "draft",
+        stock ?? 0,
+        image || null,
+        description || null,
+        id,
+      ]
+    );
+
+    res.json({ ok: true });
   } catch (err) {
-    next(err);
+    console.error("UPDATE PRODUCT ERROR:", err);
+    res.status(500).json({ message: "Failed to update product" });
   }
 }
+
+
+
+
 
 /* ---------- DELETE PRODUCT ---------- */
 export async function deleteProduct(req, res, next) {

@@ -2,105 +2,37 @@ import React, { useEffect, useState } from "react";
 import api from "../api/axios";
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({
-    products: 0,
-    categories: 0,
-    orders: 0,
-    customers: 0,
-    revenue: 0,
-  });
-
+  const [stats, setStats] = useState({});
   const [recentOrders, setRecentOrders] = useState([]);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadDashboard();
+    api.get("/admin/dashboard").then((res) => {
+      setStats(res.data.stats);
+      setRecentOrders(res.data.recentOrders);
+      setLoading(false);
+    });
   }, []);
 
-  const loadDashboard = async () => {
-    try {
-      setError("");
-      setLoading(true);
-
-      /* ---------- PRODUCTS COUNT ---------- */
-      const productsRes = await api.get("/products/admin/list", {
-        params: { page: 1, limit: 1 },
-      });
-
-      /* ---------- CATEGORIES COUNT ---------- */
-      const categoriesRes = await api.get("/categories");
-
-      /* ---------- ORDERS (for count + recent) ---------- */
-      const ordersRes = await api.get("/orders/admin", {
-        params: { page: 1, limit: 5 },
-      });
-
-      /* ---------- CUSTOMERS COUNT ---------- */
-      const customersRes = await api.get("/customers/admin", {
-        params: { page: 1, limit: 1 },
-      });
-
-      const orders = ordersRes.data?.data || [];
-
-      /* ---------- REVENUE ---------- */
-      const revenue = orders.reduce(
-        (sum, o) => sum + Number(o.total_amount || 0),
-        0
-      );
-
-      setStats({
-        products: productsRes.data?.meta?.total ?? productsRes.data?.products?.length ?? 0,
-        categories: categoriesRes.data?.categories?.length ?? 0,
-        orders: ordersRes.data?.meta?.total ?? 0,
-        customers: customersRes.data?.meta?.total ?? 0,
-        revenue,
-      });
-
-      setRecentOrders(orders);
-    } catch (err) {
-      console.error("Dashboard error:", err);
-      setError("Failed to load dashboard data");
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (loading) return <div className="admin-loading">Loading dashboard…</div>;
 
   return (
-    <div className="admin-main-content">
-      <h2 className="admin-page-title">Admin Dashboard</h2>
-      <p className="admin-subtitle">Overview of store performance</p>
+    <div className="admin-dashboard">
+      <h1 className="dashboard-title">Admin Dashboard</h1>
+      <p className="dashboard-subtitle">Store performance overview</p>
 
-      {error && <div className="admin-error">{error}</div>}
-      {loading && <div className="admin-loading">Loading dashboard...</div>}
-
-      {/* ---------- STATS CARDS ---------- */}
-      <div className="dashboard-cards">
-        <div className="dashboard-card">
-          <h4>Products</h4>
-          <p>{stats.products}</p>
-        </div>
-        <div className="dashboard-card">
-          <h4>Categories</h4>
-          <p>{stats.categories}</p>
-        </div>
-        <div className="dashboard-card">
-          <h4>Orders</h4>
-          <p>{stats.orders}</p>
-        </div>
-        <div className="dashboard-card">
-          <h4>Customers</h4>
-          <p>{stats.customers}</p>
-        </div>
-        <div className="dashboard-card">
-          <h4>Revenue</h4>
-          <p>₹{stats.revenue}</p>
-        </div>
+      {/* ===== STATS ===== */}
+      <div className="stats-grid">
+        <StatCard title="Products" value={stats.products} />
+        <StatCard title="Categories" value={stats.categories} />
+        <StatCard title="Orders" value={stats.orders} />
+        <StatCard title="Customers" value={stats.customers} />
+        <StatCard title="Revenue" value={`₹${stats.revenue}`} highlight />
       </div>
 
-      {/* ---------- RECENT ORDERS ---------- */}
-      <div className="dashboard-section">
-        <h3>Recent Orders</h3>
+      {/* ===== RECENT ORDERS ===== */}
+      <div className="card">
+        <h3 className="card-title">Recent Orders</h3>
 
         <table className="admin-table">
           <thead>
@@ -116,23 +48,29 @@ export default function Dashboard() {
             {recentOrders.map((o) => (
               <tr key={o.id}>
                 <td>{o.id}</td>
-                <td>{o.customer_name || "-"}</td>
+                <td>{o.customer}</td>
                 <td>₹{o.total_amount}</td>
-                <td>{o.status}</td>
-                <td>{String(o.created_at).slice(0, 10)}</td>
+                <td>
+                  <span className={`status ${o.status.toLowerCase()}`}>
+                    {o.status}
+                  </span>
+                </td>
+                <td>{o.created_at.slice(0, 10)}</td>
               </tr>
             ))}
-
-            {!recentOrders.length && !loading && (
-              <tr>
-                <td colSpan="5" style={{ textAlign: "center" }}>
-                  No orders found
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+/* ===== Small component ===== */
+function StatCard({ title, value, highlight }) {
+  return (
+    <div className={`stat-card ${highlight ? "highlight" : ""}`}>
+      <span>{title}</span>
+      <strong>{value}</strong>
     </div>
   );
 }

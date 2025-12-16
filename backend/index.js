@@ -11,14 +11,15 @@ import productRoutes from "./routes/productRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
-
+import dashboardRoutes from "./routes/dashboardRoutes.js"; // ✅ ADD THIS
 
 /* ---------- DEBUG ---------- */
+console.log("🔥 INDEX SERVER FILE LOADED");
 console.log("✅ BACKEND DB NAME:", process.env.DB_NAME);
 
 const app = express();
 
-/* ---------- GLOBAL MIDDLEWARE (ORDER MATTERS) ---------- */
+/* ---------- GLOBAL MIDDLEWARE ---------- */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -39,7 +40,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/customers", customerRoutes);
-
+app.use("/api", dashboardRoutes); // ✅ THIS IS THE KEY FIX
 
 /* ---------- HEALTH CHECK ---------- */
 app.get("/api/health", (req, res) => {

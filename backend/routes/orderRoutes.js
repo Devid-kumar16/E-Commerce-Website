@@ -7,8 +7,13 @@ import { authRequired, isAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// ADMIN
-router.get("/admin", authRequired, isAdmin, listOrdersAdmin);
-router.post("/admin", authRequired, isAdmin, createOrderAdmin);
+/* ================= ADMIN ORDERS ================= */
+
+// GET all orders (Admin)
+router.get("/admin/orders", authRequired, isAdmin, listOrdersAdmin);
+
+// CREATE order (Admin)
+router.post("/admin/orders", authRequired, isAdmin, createOrderAdmin);
 
 export default router;
+

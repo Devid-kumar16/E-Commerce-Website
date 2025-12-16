@@ -1,23 +1,17 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../api/axios";
 
-/* ---------- slug helper ---------- */
-const makeSlug = (text) =>
-  text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-");
+/* ===== PAGINATION CONFIG ===== */
+const ITEMS_PER_PAGE = 10;
 
 export default function CategoriesPage() {
   const [items, setItems] = useState([]);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const [form, setForm] = useState({
-    name: "",
-    status: "active",
-  });
+  /* pagination state */
+  const [page, setPage] = useState(1);
 
   /* ================= LOAD CATEGORIES ================= */
   const loadCategories = async () => {
@@ -25,10 +19,8 @@ export default function CategoriesPage() {
       setLoading(true);
       setError("");
 
-      // 🔥 MUST MATCH BACKEND: /api/categories
       const res = await api.get("/categories");
-
-      setItems(res.data?.categories ?? []);
+      setItems(res.data?.categories || []);
     } catch (err) {
       console.error("Load categories error:", err);
       setError("Failed to load categories");
@@ -41,93 +33,94 @@ export default function CategoriesPage() {
     loadCategories();
   }, []);
 
-  /* ================= SAVE CATEGORY ================= */
-  const saveCategory = async (e) => {
-    e.preventDefault();
-    setError("");
+  /* ================= PAGINATION LOGIC ================= */
+  const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
 
-    const name = form.name.trim();
-    if (!name) {
-      setError("Category name is required");
-      return;
-    }
-
-    try {
-      await api.post("/categories", {
-        name,
-        slug: makeSlug(name),                 // ✅ safe slug
-        status: form.status,                  // enum('active','inactive')
-        active: form.status === "active",     // tinyint(1)
-      });
-
-      setForm({ name: "", status: "active" });
-      loadCategories();
-    } catch (err) {
-      console.error("Save category error:", err);
-      setError(err.response?.data?.message || "Save failed");
-    }
-  };
+  const paginatedItems = items.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
 
   /* ================= UI ================= */
   return (
     <div className="admin-page">
-      <h2>Categories</h2>
+      {/* ---------- HEADER ---------- */}
+      <div className="page-header">
+        <h2>Categories</h2>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {loading && <p>Loading...</p>}
+        <Link to="/admin/categories/new" className="btn btn-primary">
+          Add Category
+        </Link>
+      </div>
 
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Status</th>
-          </tr>
-        </thead>
+      {error && <p className="admin-error">{error}</p>}
+      {loading && <p className="admin-loading">Loading...</p>}
 
-        <tbody>
-          {items.map((c, i) => (
-            <tr key={c.id}>
-              <td>{i + 1}</td>
-              <td>{c.name}</td>
-              <td>{c.status || (c.active ? "active" : "inactive")}</td>
-            </tr>
-          ))}
-
-          {!items.length && !loading && (
+      {/* ---------- TABLE ---------- */}
+      <div className="admin-card">
+        <table className="admin-table">
+          <thead>
             <tr>
-              <td colSpan="3" style={{ textAlign: "center" }}>
-                No categories found
-              </td>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Status</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
 
-      <h3>Add Category</h3>
+          <tbody>
+            {paginatedItems.map((c, index) => (
+              <tr key={c.id}>
+                {/* sequential ID across pages */}
+                <td>{(page - 1) * ITEMS_PER_PAGE + index + 1}</td>
+                <td>{c.name}</td>
+                <td>
+                  <span
+                    className={`badge ${c.status === "active" || c.active
+                        ? "badge-active"
+                        : "badge-inactive"
+                      }`}
+                  >
+                    {c.status || (c.active ? "Active" : "Inactive")}
+                  </span>
+                </td>
+              </tr>
+            ))}
 
-      <form onSubmit={saveCategory}>
-        <input
-          placeholder="Category name"
-          value={form.name}
-          onChange={(e) =>
-            setForm({ ...form, name: e.target.value })
-          }
-          required
-        />
+            {!loading && paginatedItems.length === 0 && (
+              <tr>
+                <td colSpan="3" style={{ textAlign: "center" }}>
+                  No categories found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
 
-        <select
-          value={form.status}
-          onChange={(e) =>
-            setForm({ ...form, status: e.target.value })
-          }
-        >
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
+        {/* ---------- PAGINATION ---------- */}
+        {/* ---------- PAGINATION ---------- */}
+        <div className="admin-pagination">
+          <button
+            className="btn btn-secondary"
+            disabled={page === 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Prev
+          </button>
 
-        <button type="submit">Save</button>
-      </form>
+          <span className="pagination-info">
+            Page <strong>{page}</strong> of {totalPages}
+          </span>
+
+          <button
+            className="btn btn-secondary"
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
+            Next
+          </button>
+        </div>
+
+      </div>
     </div>
   );
 }

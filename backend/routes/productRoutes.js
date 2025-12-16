@@ -16,22 +16,25 @@ const router = express.Router();
 
 /* ---------------- ADMIN (FIRST!) ---------------- */
 
-// GET /api/products/admin/list
+// ✅ LIST products (admin)
 router.get("/admin/list", authRequired, isAdmin, listAdminProducts);
 
-// POST /api/products/admin
+// ✅ GET single product (admin) 🔥 ADD THIS
+router.get("/admin/:id", authRequired, isAdmin, getProduct);
+
+// ✅ CREATE product
 router.post("/admin", authRequired, isAdmin, createProduct);
 
-// PUT /api/products/admin/:id
+// ✅ UPDATE product
 router.put("/admin/:id", authRequired, isAdmin, updateProduct);
 
-// DELETE /api/products/admin/:id
+// ✅ DELETE product
 router.delete("/admin/:id", authRequired, isAdmin, deleteProduct);
 
-// PATCH /api/products/admin/:id/publish
+// ✅ PUBLISH toggle
 router.patch("/admin/:id/publish", authRequired, isAdmin, publishToggle);
 
-// PATCH /api/products/admin/:id/inventory
+// ✅ INVENTORY update
 router.patch("/admin/:id/inventory", authRequired, isAdmin, updateInventory);
 
 /* ---------------- PUBLIC ---------------- */
