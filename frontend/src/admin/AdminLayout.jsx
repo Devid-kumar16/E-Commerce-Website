@@ -55,9 +55,9 @@ export default function AdminLayout() {
         </button>
       </aside>
 
-      {/* ---------- MAIN CONTENT ---------- */}
+      {/* MAIN CONTENT */}
       <main className="admin-main">
-        {/* 👇 THIS IS WHAT ALLOWS products/new, edit, etc. */}
+      
         <Outlet />
       </main>
     </div>

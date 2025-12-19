@@ -1,77 +1,45 @@
-// src/pages/Home.jsx
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import PRODUCTS, { ALL_CATEGORIES } from "../data/products";
+import React, { useEffect, useState } from "react";
+import api from "../api/axios";
 import ProductCard from "../components/ProductCard";
+import "./Home.css";
 
-export default function Home({
-  products = PRODUCTS,
-  onAddToCart = () => {},
-  searchQuery = "",
-}) {
-  const navigate = useNavigate();
+export default function Home({ onAddToCart = () => {} }) {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // categories ke liye representative image (us category ka first product)
-  const categoriesWithImage = ALL_CATEGORIES.map((cat) => {
-    const prod = PRODUCTS.find((p) => p.category === cat);
-    return {
-      name: cat,
-      image: prod?.image || "/images/placeholder.png",
-    };
-  });
+  /* LOAD PUBLISHED + ACTIVE PRODUCTS */
+  useEffect(() => {
+    loadProducts();
+  }, []);
 
-  // search apply karke top deals (pehle 8)
-  const filtered = products.filter((p) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      p.title.toLowerCase().includes(q) ||
-      p.category.toLowerCase().includes(q)
-    );
-  });
+  const loadProducts = async () => {
+    try {
+      const res = await api.get("/products"); 
+      // this should return ONLY published + active products
+      setProducts(res.data.products || []);
+    } catch (err) {
+      console.error("Home products error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const topDeals = filtered.slice(0, 8);
+  const topDeals = products.slice(0, 100);
 
   return (
     <div className="home-page">
-      {/* CATEGORY STRIP WITH IMAGES */}
-      <section className="home-category-strip">
-        {categoriesWithImage.map((cat) => (
-          <button
-            key={cat.name}
-            type="button"
-            className="home-category-item"
-            onClick={() =>
-              navigate(`/category/${encodeURIComponent(cat.name)}`)
-            }
-          >
-            <div className="home-category-img-wrap">
-              <img src={cat.image} alt={cat.name} />
-            </div>
-            <span className="home-category-label">{cat.name}</span>
-          </button>
-        ))}
-      </section>
-
       {/* HERO BANNER */}
       <section className="home-hero">
-        <img
-          src="/images/hero.jpg"
-          alt="Big sale banner"
-          className="home-hero-img"
-        />
-        {/* right side small offer card optional */}
-        {/* <div className="home-hero-side-card">Hot offers...</div> */}
+        <img src="/images/hero.jpg" alt="Sale Banner" />
       </section>
 
-      {/* TOP DEALS GRID */}
+      {/* TOP DEALS */}
       <section className="home-top-deals">
-        <div className="home-section-header">
-          <h2>Top Deals</h2>
-          {/* <button className="link-button">See all</button> */}
-        </div>
+        <h2>Top Deals</h2>
 
-        {topDeals.length === 0 ? (
+        {loading ? (
+          <p>Loading...</p>
+        ) : topDeals.length === 0 ? (
           <p>No products found.</p>
         ) : (
           <div className="product-grid">

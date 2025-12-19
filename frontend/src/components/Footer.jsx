@@ -1,17 +1,26 @@
-// src/componentss/Footer.jsx
 import React from "react";
-import { useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 export default function Footer() {
-  const location = useLocation();
-  const isAdmin = location.pathname.startsWith("/admin");
-
-  if (isAdmin) {
-    return null;
-  }
-
   return (
-    <footer>
+    <footer style={{ padding: "40px", background: "#f9fafb" }}>
+      <h3>E-Store</h3>
+      <p>Fast delivery & easy returns.</p>
+
+      <h4>Company</h4>
+      <ul>
+        <li><Link to="/page/about">About</Link></li>
+        <li><Link to="/page/terms">Terms</Link></li>
+        <li><Link to="/page/privacy">Privacy</Link></li>
+      </ul>
+
+      <h4>Help</h4>
+      <ul>
+        <li><Link to="/faq">FAQ</Link></li>
+        <li><Link to="/support">Support</Link></li>
+      </ul>
+
+      <p>© {new Date().getFullYear()} E-Store</p>
     </footer>
   );
 }

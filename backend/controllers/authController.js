@@ -7,9 +7,9 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
-const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY; // ✅ use ONE variable
+const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY; 
 
-/* ---------------- TOKEN HELPER ---------------- */
+/* TOKEN HELPER  */
 function createToken(user) {
   return jwt.sign(
     { id: user.id, email: user.email, role: user.role },
@@ -18,11 +18,11 @@ function createToken(user) {
   );
 }
 
-/* ======================================================
+/* 
    REGISTER
    - Default: customer
    - Admin: requires admin_key
-====================================================== */
+ */
 export async function register(req, res) {
   try {
     const { name, email, password, role, admin_key } = req.body;
@@ -66,9 +66,7 @@ export async function register(req, res) {
   }
 }
 
-/* ======================================================
-   LOGIN
-====================================================== */
+/*  LOGIN */
 export async function login(req, res) {
   try {
     const { email, password } = req.body;

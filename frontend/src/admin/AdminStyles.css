@@ -966,3 +966,128 @@ input:focus, select:focus, textarea:focus {
 .view-link:hover {
   text-decoration: underline;
 }
+
+
+
+.cms-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 24px;
+  transition: box-shadow 0.2s ease;
+}
+
+.cms-card:hover {
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+}
+
+
+/* ===== ACTION COLUMN ===== */
+.action-cell {
+  text-align: right;          /* 🔥 moves button to right side */
+  padding-right: 16px;
+  white-space: nowrap;
+}
+
+/* ===== EDIT BUTTON ===== */
+.edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+
+  color: #2563eb;
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.edit-btn:hover {
+  background-color: #dbeafe;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+/* Optional: focus for accessibility */
+.edit-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+}
+
+/* ===== ACTION COLUMN ===== */
+.actions-cell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ===== EDIT BUTTON (SAME AS CATEGORIES) ===== */
+.btn-edit {
+  background-color: #6366f1;   /* purple */
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-edit:hover {
+  background-color: #4f46e5;
+  transform: translateY(-1px);
+}
+
+
+
+/* ===== ACTION COLUMN ===== */
+.actions-cell {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* ===== EDIT BUTTON ===== */
+.btn-edit {
+  background-color: #6366f1;
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-edit:hover {
+  background-color: #4f46e5;
+  transform: translateY(-1px);
+}
+
+/* ===== DELETE BUTTON ===== */
+.btn-delete {
+  background-color: #ef4444; /* red */
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-delete:hover {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+}

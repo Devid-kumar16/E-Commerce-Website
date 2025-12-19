@@ -9,10 +9,10 @@ export default function EditProduct() {
   const [form, setForm] = useState({
     name: "",
     price: "",
-    category: "",
+    category_id: "",
     status: "draft",
     stock: 0,
-    image: "",
+    image_url: "",
     description: "",
   });
 
@@ -20,7 +20,7 @@ export default function EditProduct() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  /* ================= LOAD DATA ================= */
+  /* ================= LOAD PRODUCT ================= */
   useEffect(() => {
     loadProduct();
     loadCategories();
@@ -29,16 +29,16 @@ export default function EditProduct() {
   const loadProduct = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/products/${id}`); // ✅ PUBLIC GET
+      const res = await api.get(`/products/${id}`); // public get
       const p = res.data.product;
 
       setForm({
         name: p.name || "",
         price: p.price || "",
-        category: p.category || "",
+        category_id: p.category_id || "",
         status: p.status || "draft",
         stock: p.stock || 0,
-        image: p.image || "",
+        image_url: p.image_url || "",
         description: p.description || "",
       });
     } catch (err) {
@@ -50,11 +50,15 @@ export default function EditProduct() {
   };
 
   const loadCategories = async () => {
-    const res = await api.get("/categories");
-    setCategories(res.data.categories || []);
+    try {
+      const res = await api.get("/categories");
+      setCategories(res.data.categories || []);
+    } catch (err) {
+      console.error("Failed to load categories");
+    }
   };
 
-  /* ================= UPDATE ================= */
+  /* ================= UPDATE PRODUCT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -63,10 +67,10 @@ export default function EditProduct() {
       await api.put(`/products/admin/${id}`, {
         name: form.name,
         price: Number(form.price),
-        category: form.category, // ✅ CATEGORY NAME
+        category_id: Number(form.category_id),
         status: form.status,
         stock: Number(form.stock),
-        image: form.image,
+        image_url: form.image_url,
         description: form.description,
       });
 
@@ -82,7 +86,7 @@ export default function EditProduct() {
     <div className="admin-page">
       <h2>Edit Product</h2>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="admin-error">{error}</p>}
       {loading && <p>Loading...</p>}
 
       {!loading && (
@@ -104,14 +108,15 @@ export default function EditProduct() {
 
           <label>Category</label>
           <select
-            value={form.category}
+            value={form.category_id}
             onChange={(e) =>
-              setForm({ ...form, category: e.target.value })
+              setForm({ ...form, category_id: e.target.value })
             }
+            required
           >
             <option value="">Select category</option>
             {categories.map((c) => (
-              <option key={c.id} value={c.name}>
+              <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
@@ -135,9 +140,22 @@ export default function EditProduct() {
 
           <label>Image URL</label>
           <input
-            value={form.image}
-            onChange={(e) => setForm({ ...form, image: e.target.value })}
+            type="text"
+            value={form.image_url}
+            onChange={(e) =>
+              setForm({ ...form, image_url: e.target.value })
+            }
+            placeholder="https://example.com/image.jpg"
           />
+
+          {/* Image Preview */}
+          {form.image_url && (
+            <img
+              src={form.image_url}
+              alt="preview"
+              style={{ width: 120, marginTop: 10, borderRadius: 6 }}
+            />
+          )}
 
           <label>Description</label>
           <textarea

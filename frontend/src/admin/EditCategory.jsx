@@ -1,48 +1,66 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/axios";
 
-export default function CreateCategory() {
+export default function EditCategory() {
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
-  const [status, setStatus] = useState("active");
   const [imageUrl, setImageUrl] = useState("");
+  const [status, setStatus] = useState("active");
+  const [loading, setLoading] = useState(true);
 
+  /* LOAD CATEGORY */
+  useEffect(() => {
+    const loadCategory = async () => {
+      try {
+        const res = await api.get(`/categories/${id}`);
+        setName(res.data.name);
+        setImageUrl(res.data.image_url || "");
+        setStatus(res.data.status);
+      } catch (err) {
+        alert("Failed to load category");
+        navigate("/admin/categories");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCategory();
+  }, [id, navigate]);
+
+  /* UPDATE CATEGORY */
   const submit = async (e) => {
     e.preventDefault();
 
     try {
-      await api.post("/categories", {
+      await api.put(`/categories/${id}`, {
         name,
+        image_url: imageUrl,
         status,
-        image_url: imageUrl || null,
       });
 
       navigate("/admin/categories");
     } catch (err) {
-      alert(
-        err.response?.data?.message ||
-          "Failed to create category"
-      );
+      alert("Failed to update category");
     }
   };
 
+  if (loading) return <p>Loading...</p>;
+
   return (
     <div className="form-page">
-      <h1>Add Category</h1>
+      <h1>Edit Category</h1>
 
       <form onSubmit={submit} className="form-card">
-        {/* Category Name */}
         <label>Category Name</label>
         <input
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Enter category name"
         />
 
-        {/* Image URL */}
         <label>Image URL</label>
         <input
           value={imageUrl}
@@ -50,26 +68,18 @@ export default function CreateCategory() {
           placeholder="https://example.com/image.jpg"
         />
 
-        {/* Status */}
         <label>Status</label>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
 
-        {/* Actions */}
         <div className="actions">
-          <button type="submit" className="btn btn-primary">
-            Save
-          </button>
-
+          <button className="btn btn-primary">Update</button>
           <button
             type="button"
             className="btn btn-light"
-            onClick={() => navigate("/admin/categories")}
+            onClick={() => navigate(-1)}
           >
             Cancel
           </button>

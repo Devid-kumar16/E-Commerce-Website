@@ -21,7 +21,6 @@ export default function Dashboard() {
       <h1 className="dashboard-title">Admin Dashboard</h1>
       <p className="dashboard-subtitle">Store performance overview</p>
 
-      {/* ===== STATS ===== */}
       <div className="stats-grid">
         <StatCard title="Products" value={stats.products} />
         <StatCard title="Categories" value={stats.categories} />
@@ -30,7 +29,7 @@ export default function Dashboard() {
         <StatCard title="Revenue" value={`₹${stats.revenue}`} highlight />
       </div>
 
-      {/* ===== RECENT ORDERS ===== */}
+      {/*  RECENT ORDERS  */}
       <div className="card">
         <h3 className="card-title">Recent Orders</h3>
 
@@ -65,7 +64,7 @@ export default function Dashboard() {
   );
 }
 
-/* ===== Small component ===== */
+/*  Small component */
 function StatCard({ title, value, highlight }) {
   return (
     <div className={`stat-card ${highlight ? "highlight" : ""}`}>

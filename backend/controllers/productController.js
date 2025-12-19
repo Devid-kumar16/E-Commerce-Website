@@ -27,66 +27,55 @@ async function generateUniqueSlug(baseSlug) {
 }
 
 /* ---------- PUBLIC PRODUCTS ---------- */
-export async function listPublicProducts(req, res, next) {
+export async function listPublicProducts(req, res) {
   try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 12;
-    const q = req.query.q || "";
-    const categoryId = req.query.categoryId || undefined;
+    const [rows] = await pool.query(`
+      SELECT 
+        id,
+        name,
+        slug,
+        price,
+        image_url,
+        category_id
+      FROM products
+      WHERE status = 'published'
+        AND active = 1
+      ORDER BY id DESC
+      LIMIT 20
+    `);
 
-    const products = await ProductModel.list({
-      page,
-      limit,
-      q,
-      categoryId,
-      published: true,
-      active: true,
-    });
-
-    const total = await ProductModel.count({
-      q,
-      categoryId,
-      published: true,
-      active: true,
-    });
-
-    res.json({ page, limit, total, products });
+    res.json({ products: rows });
   } catch (err) {
-    next(err);
+    console.error("listPublicProducts error:", err);
+    res.status(500).json({ message: "Failed to load products" });
   }
 }
 
 /* ---------- ADMIN PRODUCTS ---------- */
 export async function listAdminProducts(req, res) {
   try {
-    const page = Math.max(parseInt(req.query.page) || 1, 1);
-    const limit = Math.max(parseInt(req.query.limit) || 10, 1);
-    const offset = (page - 1) * limit;
+    const [rows] = await pool.query(`
+      SELECT 
+        p.id,
+        p.name,
+        p.image_url,
+        p.price,
+        p.status,
+        p.active,
+        c.name AS category_name
+      FROM products p
+      LEFT JOIN categories c ON c.id = p.category_id
+      ORDER BY p.id DESC
+    `);
 
-    const [products] = await pool.query(
-      "SELECT * FROM products ORDER BY id DESC LIMIT ? OFFSET ?",
-      [limit, offset]
-    );
-
-    const [[count]] = await pool.query(
-      "SELECT COUNT(*) AS total FROM products"
-    );
-
-    res.json({
-      ok: true,
-      products,
-      total: count.total,
-      page,
-      limit,
-    });
+    res.json({ products: rows });
   } catch (err) {
-    console.error("listAdminProducts error:", err);
-    res.status(500).json({
-      ok: false,
-      message: "Failed to load admin products",
-    });
+    console.error(err);
+    res.status(500).json({ message: "Failed to load products" });
   }
 }
+
+
 
 /* ---------- SINGLE PRODUCT ---------- */
 export async function getProduct(req, res) {
@@ -128,131 +117,48 @@ export async function getProduct(req, res) {
 /* ---------- CREATE PRODUCT ---------- */
 export async function createProduct(req, res) {
   try {
-    console.log("CREATE PRODUCT BODY:", req.body);
-    console.log("USER FROM TOKEN:", req.user);
-
     const {
       name,
-      description,
       price,
-      inventory,
-      stock,
-      category_id,
       status,
-    } = req.body || {};
+      category_id,
+      image_url
+    } = req.body;
 
-    if (!name || price == null) {
-      return res.status(400).json({
-        message: "Product name and price are required",
-      });
-    }
+    await pool.query(
+      `INSERT INTO products (name, price, status, category_id, image_url)
+       VALUES (?, ?, ?, ?, ?)`,
+      [name, price, status, category_id, image_url || null]
+    );
 
-    const baseSlug = makeSlug(name);
-    const slug = await generateUniqueSlug(baseSlug); // ✅ FIX
-
-    const data = {
-      name: String(name).trim(),
-      slug,
-      description: description || null,
-      price: Number(price),
-      inventory: Number(inventory) || 0,
-      stock: Number(stock) || 0,
-      category_id: category_id ? Number(category_id) : null,
-      status: status || "draft",
-      active: 1,
-      admin_id: req.user.id,
-    };
-
-    const product = await ProductModel.create(data);
-
-    res.status(201).json({
-      ok: true,
-      message: "Product created successfully",
-      product,
-    });
+    res.json({ message: "Product created" });
   } catch (err) {
-    console.error("CREATE PRODUCT ERROR:", err);
-
-    if (err.code === "ER_DUP_ENTRY") {
-      return res.status(400).json({
-        message: "Product with same name already exists",
-      });
-    }
-
-    res.status(500).json({
-      message: "Failed to create product",
-    });
+    console.error(err);
+    res.status(500).json({ message: "Failed to create product" });
   }
 }
+
 
 /* ---------- UPDATE PRODUCT ---------- */
 
 export async function updateProduct(req, res) {
   try {
     const { id } = req.params;
-
-    const {
-      name,
-      price,
-      category,      // ← category NAME from frontend
-      status,
-      stock,
-      image,
-      description,
-    } = req.body;
-
-    if (!name || price == null) {
-      return res.status(400).json({ message: "Name and price required" });
-    }
-
-    let categoryId = null;
-
-    // 🔥 Convert category NAME → category_id
-    if (category) {
-      const [rows] = await pool.query(
-        "SELECT id FROM categories WHERE name = ? LIMIT 1",
-        [category]
-      );
-
-      if (!rows.length) {
-        return res.status(400).json({ message: "Invalid category" });
-      }
-
-      categoryId = rows[0].id;
-    }
+    const { name, price, status, category_id, image_url } = req.body;
 
     await pool.query(
-      `
-      UPDATE products SET
-        name = ?,
-        price = ?,
-        category_id = ?,
-        status = ?,
-        stock = ?,
-        image_url = ?,
-        description = ?
-      WHERE id = ?
-      `,
-      [
-        name,
-        price,
-        categoryId,
-        status || "draft",
-        stock ?? 0,
-        image || null,
-        description || null,
-        id,
-      ]
+      `UPDATE products
+       SET name=?, price=?, status=?, category_id=?, image_url=?
+       WHERE id=?`,
+      [name, price, status, category_id, image_url || null, id]
     );
 
-    res.json({ ok: true });
+    res.json({ message: "Product updated" });
   } catch (err) {
-    console.error("UPDATE PRODUCT ERROR:", err);
+    console.error(err);
     res.status(500).json({ message: "Failed to update product" });
   }
 }
-
-
 
 
 

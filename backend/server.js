@@ -35,7 +35,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-/* ---------- ROUTES ---------- */
+/*  ROUTES*/
 
 app.use("/api", dashboardRoutes);
 app.use("/api/auth", authRoutes);

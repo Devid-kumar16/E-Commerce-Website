@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import api from "../api/axios";
 
 export default function CustomersPage() {
@@ -11,7 +12,7 @@ export default function CustomersPage() {
 
   const PAGE_SIZE = 10;
 
-  /* LOAD CUSTOMERS */
+  /* ================= LOAD CUSTOMERS ================= */
   const load = useCallback(
     async (pageToLoad = 1) => {
       try {
@@ -47,13 +48,19 @@ export default function CustomersPage() {
     [search]
   );
 
+  /* initial load */
   useEffect(() => {
     load(1);
   }, [load]);
 
+  /* reload when search changes */
+  useEffect(() => {
+    load(1);
+  }, [search, load]);
+
   return (
     <div className="admin-page">
-      {/* ===== HEADER ===== */}
+      {/* ================= HEADER ================= */}
       <div className="page-header">
         <div>
           <h2 className="page-title">Customers</h2>
@@ -61,9 +68,14 @@ export default function CustomersPage() {
             View and manage registered customers
           </p>
         </div>
+
+        {/* ✅ OPEN ADD CUSTOMER ON NEW PAGE */}
+        <Link to="/admin/customers/new" className="btn-primary">
+          + Add Customer
+        </Link>
       </div>
 
-      {/* ===== SEARCH ===== */}
+      {/* ================= FILTER ================= */}
       <div className="admin-filters-row">
         <input
           type="text"
@@ -76,7 +88,7 @@ export default function CustomersPage() {
       {error && <div className="admin-error">{error}</div>}
       {loading && <div className="admin-loading">Loading...</div>}
 
-      {/* ===== TABLE CARD ===== */}
+      {/* ================= TABLE ================= */}
       <div className="admin-card">
         <table className="admin-table">
           <thead>
@@ -102,14 +114,14 @@ export default function CustomersPage() {
                 <td>{c.id}</td>
                 <td>{c.name}</td>
                 <td>{c.email}</td>
-                <td>{c.orders}</td>
+                <td>{c.orders ?? 0}</td>
                 <td>{String(c.created_at).slice(0, 10)}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* ===== PROFESSIONAL PAGINATION ===== */}
+        {/* ================= PAGINATION ================= */}
         <div className="pagination-bar">
           <button
             className="pagination-btn"

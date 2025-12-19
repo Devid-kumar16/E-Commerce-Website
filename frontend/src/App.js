@@ -23,9 +23,19 @@ import OrdersPage from "./admin/OrdersPage";
 import CustomersPage from "./admin/CustomersPage";
 import CreateOrder from "./admin/CreateOrder";
 import CreateCategory from "./admin/CreateCategory";
-import CMSDashboard from "./admin/CMSDashboard";
-import CMSPages from "./admin/CMSPages";
-import EditCMSPage from "./admin/EditCMSPage";
+import CMSDashboard from "./admin/cms/CMSDashboard";
+import CMSPages from "./admin/cms/CMSPages";
+import CMSEO from "./admin/cms/CMSEO";
+import CMSBanners from "./admin/cms/CMSBanners";
+import EditCMSPage from "./admin/cms/EditCMSPage";
+import PageBySlug from "./pages/PageBySlug";
+import AddCustomerPage from "./admin/AddCustomerPage";
+import EditCategory from "./admin/EditCategory";
+import Home from "./pages/Home";
+import CartPage from "./pages/CartPage";
+import WishlistPage from "./pages/WishlistPage";
+import ProductDetail from "./components/ProductDetail";
+import EditOrderPage from "./pages/EditOrdersPage";
 
 
 /* IMPORTANT: import the shared AuthProvider and hook from your context file */
@@ -60,13 +70,13 @@ const saveAuth = (a) => localStorage.setItem(AUTH_KEY, JSON.stringify(a || null)
 const CATEGORY_IMAGES = {
   electronics: "electronics.jpg",
   fashion: "fashion3.jpg",
-  home: ["kitchen1.jpg","kitchen2.jpg","home1.jpg","home2.jpg","home4.jpg","home.jpg"],
+  home: ["kitchen1.jpg", "kitchen2.jpg", "home1.jpg", "home2.jpg", "home4.jpg", "home.jpg"],
   beauty: "beauty.jpg",
   toys: "toys.jpg",
-  sports: ["sports1.jpg","sports2.jpg","sports3.jpg","sports4.jpg","sports.jpg"],
+  sports: ["sports1.jpg", "sports2.jpg", "sports3.jpg", "sports4.jpg", "sports.jpg"],
   laptops: "laptops.webp",
-  grocery: ["grocery1.jpg","grocery2.jpg","grocery3.jpg","grocery4.jpg","Grocery.jpg"],
-  "tvs & appliances": ["tv1.jpg","tv2.jpg","tv3.jpg","appliance1.jpg","appliance2.jpg","TVs & Appliances.jpg"],
+  grocery: ["grocery1.jpg", "grocery2.jpg", "grocery3.jpg", "grocery4.jpg", "Grocery.jpg"],
+  "tvs & appliances": ["tv1.jpg", "tv2.jpg", "tv3.jpg", "appliance1.jpg", "appliance2.jpg", "TVs & Appliances.jpg"],
   "mobile & tablets": "Mobiles & Tablets.jpg",
   "mobiles & tablets": "Mobiles & Tablets.jpg"
 };
@@ -309,128 +319,150 @@ function Header({ onSearch, cart }) {
 /* ------------------ MAIN SITE COMPONENTS (Home / ProductCard / ProductDetail / etc.) ------------------ */
 
 /* Home */
-function Home({ products, onAddToCart, searchQuery }) {
-  const [filtered, setFiltered] = useState(products);
-  useEffect(() => {
-    if (!searchQuery) setFiltered(products);
-    else {
-      const q = searchQuery.toLowerCase();
-      setFiltered(products.filter((p) => p.title.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)));
-    }
-  }, [searchQuery, products]);
+// function Home({ products, onAddToCart, searchQuery }) {
+//   const [filtered, setFiltered] = useState(products);
+//   useEffect(() => {
+//     if (!searchQuery) setFiltered(products);
+//     else {
+//       const q = searchQuery.toLowerCase();
+//       setFiltered(products.filter((p) => p.title.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)));
+//     }
+//   }, [searchQuery, products]);
 
-  return (
-    <main className="max-w-7xl mx-auto px-4 py-6">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-9">
-          <div className="rounded overflow-hidden shadow">
-            <img src="/images/hero.jpg" alt="hero" className="w-full h-96 object-cover rounded" loading="eager" />
-          </div>
-        </div>
+//   return (
+//     <main className="max-w-7xl mx-auto px-4 py-6">
+//       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+//         <div className="lg:col-span-9">
+//           <div className="rounded overflow-hidden shadow">
+//             <img src="/images/hero.jpg" alt="hero" className="w-full h-96 object-cover rounded" loading="eager" />
+//           </div>
+//         </div>
 
-        <aside className="lg:col-span-3 space-y-4">
-          <div className="rounded overflow-hidden shadow">
-            <img src="/images/vendor-1.jpg" alt="promo" className="w-full h-48 object-cover" />
-          </div>
-          <div className="bg-white rounded shadow p-4">
-            <h4 className="font-semibold">Hot Offers</h4>
-            <p className="text-sm text-gray-600 mt-1">Use code SAVE20 on checkout</p>
-          </div>
-        </aside>
-      </div>
+//         <aside className="lg:col-span-3 space-y-4">
+//           <div className="rounded overflow-hidden shadow">
+//             <img src="/images/vendor-1.jpg" alt="promo" className="w-full h-48 object-cover" />
+//           </div>
+//           <div className="bg-white rounded shadow p-4">
+//             <h4 className="font-semibold">Hot Offers</h4>
+//             <p className="text-sm text-gray-600 mt-1">Use code SAVE20 on checkout</p>
+//           </div>
+//         </aside>
+//       </div>
 
-      <section id="deals" className="mt-10">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-2xl font-semibold">Top Deals</h3>
-          <Link to="/products" className="text-sm text-blue-600">See all</Link>
-        </div>
+//       <section id="deals" className="mt-10">
+//         <div className="flex items-center justify-between mb-4">
+//           <h3 className="text-2xl font-semibold">Top Deals</h3>
+//           <Link to="/products" className="text-sm text-blue-600">See all</Link>
+//         </div>
 
-        {filtered.length === 0 ? (
-          <div className="home-no-results">No products found for "<strong>{searchQuery}</strong>"</div>
-        ) : (
-          <div className="product-grid">{filtered.map((p) => <ProductCard key={p.id} product={p} onAddToCart={onAddToCart} />)}</div>
-        )}
-      </section>
-    </main>
-  );
-}
+//         {filtered.length === 0 ? (
+//           <div className="home-no-results">No products found for "<strong>{searchQuery}</strong>"</div>
+//         ) : (
+//           <div className="product-grid">{filtered.map((p) => <ProductCard key={p.id} product={p} onAddToCart={onAddToCart} />)}</div>
+//         )}
+//       </section>
+//     </main>
+//   );
+// }
 
 /* ProductCard */
-function ProductCard({ product, onAddToCart }) {
+function ProductCard({ product, onAddToCart, wishlist = [] }) {
+  const isWishlisted = wishlist.some((w) => w.id === product.id);
+
   return (
     <div className="product-card">
       <Link to={`/product/${product.id}`} className="product-card-link">
-        <div className="product-card-img-wrap">
-          <SafeImage candidates={[product.image, "/images/category-1.jpg"]} alt={product.title} className="product-card-img" />
+        <div className="product-image-container">
+          <SafeImage
+            candidates={[product.image, "/images/category-1.jpg"]}
+            alt={product.title}
+            className="product-image"
+          />
+
+          {/* Wishlist bottom icon */}
           <button
             type="button"
+            className={`wishlist-bottom ${
+              isWishlisted ? "active" : ""
+            }`}
+            aria-label="Add to wishlist"
             onClick={(e) => {
               e.preventDefault();
-              window.dispatchEvent(new CustomEvent("toggle-wishlist", { detail: product }));
+              e.stopPropagation();
+
+              window.dispatchEvent(
+                new CustomEvent("toggle-wishlist", {
+                  detail: product,
+                })
+              );
             }}
-            className="product-card-heart"
-            aria-label="Add to wishlist"
           >
             ♥
           </button>
         </div>
 
         <div className="product-card-body">
-          <h3 className="product-card-title">{product.title}</h3>
-          <p className="product-card-category">{product.category}</p>
-          <p className="product-card-price">₹{product.price}</p>
+          <h3 className="product-title">{product.title}</h3>
+          <p className="product-category">{product.category}</p>
+          <p className="product-price">₹{product.price}</p>
         </div>
       </Link>
 
-      <button className="btn-primary btn-block" onClick={() => onAddToCart(product)}>Add to cart</button>
+      <button
+        className="btn-add-cart"
+        onClick={() => onAddToCart(product)}
+      >
+        Add to cart
+      </button>
     </div>
   );
 }
+
 
 /* ProductDetail */
-function ProductDetail({ onAddToCart }) {
-  const { id } = useParams();
-  const pid = Number(id);
-  const product = PRODUCTS.find((p) => p.id === pid);
-  if (!product) return <div className="max-w-3xl mx-auto p-6">Product not found</div>;
-  const similar = PRODUCTS.filter((p) => p.category === product.category && p.id !== pid).slice(0, 4);
+// function ProductDetail({ onAddToCart }) {
+//   const { id } = useParams();
+//   const pid = Number(id);
+//   const product = PRODUCTS.find((p) => p.id === pid);
+//   if (!product) return <div className="max-w-3xl mx-auto p-6">Product not found</div>;
+//   const similar = PRODUCTS.filter((p) => p.category === product.category && p.id !== pid).slice(0, 4);
 
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 bg-white rounded shadow p-4">
-          <SafeImage candidates={[product.image, "/images/category-1.jpg"]} alt={product.title} width="600" height="480" className="w-full h-96 object-contain" />
-          <h2 className="text-2xl font-semibold mt-4">{product.title}</h2>
-          <div className="text-lg font-bold mt-2">₹{product.price}</div>
-          <p className="mt-4 text-gray-700">Category: <strong>{product.category}</strong></p>
-          <div className="mt-6 flex gap-3 items-center flex-wrap">
-            <button type="button" onClick={() => onAddToCart(product)} className="bg-yellow-400 px-5 py-2 rounded font-semibold">Add to cart</button>
-            <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("toggle-wishlist", { detail: product }))} className="w-9 h-9 flex items-center justify-center rounded-full border hover:bg-pink-50 hover:border-pink-400 transition" aria-label="Toggle wishlist">
-              <span className="text-base">♡</span>
-            </button>
-            <button type="button" className="px-5 py-2 border rounded">Buy now</button>
-          </div>
-        </div>
+//   return (
+//     <div className="max-w-6xl mx-auto px-4 py-8">
+//       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+//         <div className="md:col-span-2 bg-white rounded shadow p-4">
+//           <SafeImage candidates={[product.image, "/images/category-1.jpg"]} alt={product.title} width="600" height="480" className="w-full h-96 object-contain" />
+//           <h2 className="text-2xl font-semibold mt-4">{product.title}</h2>
+//           <div className="text-lg font-bold mt-2">₹{product.price}</div>
+//           <p className="mt-4 text-gray-700">Category: <strong>{product.category}</strong></p>
+//           <div className="mt-6 flex gap-3 items-center flex-wrap">
+//             <button type="button" onClick={() => onAddToCart(product)} className="bg-yellow-400 px-5 py-2 rounded font-semibold">Add to cart</button>
+//             <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("toggle-wishlist", { detail: product }))} className="w-9 h-9 flex items-center justify-center rounded-full border hover:bg-pink-50 hover:border-pink-400 transition" aria-label="Toggle wishlist">
+//               <span className="text-base">♡</span>
+//             </button>
+//             <button type="button" className="px-5 py-2 border rounded">Buy now</button>
+//           </div>
+//         </div>
 
-        <aside className="bg-white rounded shadow p-4">
-          <h4 className="font-semibold">Similar products</h4>
-          <div className="mt-3 space-y-3">
-            {similar.length === 0 ? <div className="text-sm text-gray-500">No similar products</div> : similar.map((s) => (
-              <div key={s.id} className="flex items-center gap-3">
-                <SafeImage candidates={[s.image, "/images/category-1.jpg"]} alt={s.title} width="64" height="64" className="w-16 h-16 object-contain bg-gray-100 p-2 rounded" />
-                <div>
-                  <div className="text-sm font-medium">{s.title}</div>
-                  <div className="text-xs text-gray-500">₹{s.price}</div>
-                </div>
-                <Link to={`/product/${s.id}`} className="ml-auto text-xs text-blue-600">View</Link>
-              </div>
-            ))}
-          </div>
-        </aside>
-      </div>
-    </div>
-  );
-}
+//         <aside className="bg-white rounded shadow p-4">
+//           <h4 className="font-semibold">Similar products</h4>
+//           <div className="mt-3 space-y-3">
+//             {similar.length === 0 ? <div className="text-sm text-gray-500">No similar products</div> : similar.map((s) => (
+//               <div key={s.id} className="flex items-center gap-3">
+//                 <SafeImage candidates={[s.image, "/images/category-1.jpg"]} alt={s.title} width="64" height="64" className="w-16 h-16 object-contain bg-gray-100 p-2 rounded" />
+//                 <div>
+//                   <div className="text-sm font-medium">{s.title}</div>
+//                   <div className="text-xs text-gray-500">₹{s.price}</div>
+//                 </div>
+//                 <Link to={`/product/${s.id}`} className="ml-auto text-xs text-blue-600">View</Link>
+//               </div>
+//             ))}
+//           </div>
+//         </aside>
+//       </div>
+//     </div>
+//   );
+// }
 
 /* ProductsPage */
 function StoreProductsPage({ products, onAddToCart }) {
@@ -507,34 +539,34 @@ function SearchResults({ products, onAddToCart }) {
 }
 
 /* WishlistPage */
-function WishlistPage({ wishlist, setWishlist, onAddToCart }) {
-  const remove = (id) => setWishlist((prev) => {
-    const next = prev.filter((p) => p.id !== id);
-    saveWishlist(next);
-    return next;
-  });
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h2 className="text-2xl font-semibold mb-4">Wishlist</h2>
-      {!wishlist || wishlist.length === 0 ? <div className="p-6 bg-white rounded shadow">Your wishlist is empty</div> : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {wishlist.map((p) => (
-            <div key={p.id} className="bg-white rounded shadow p-4">
-              <SafeImage candidates={[p.image, "/images/category-1.jpg"]} alt={p.title} className="w-full h-40 object-contain mb-3" />
-              <div className="font-medium">{p.title}</div>
-              <div className="text-sm text-gray-500">₹{p.price}</div>
-              <div className="mt-3 flex gap-2">
-                <button type="button" onClick={() => onAddToCart(p)} className="px-3 py-1 bg-yellow-300/80 border rounded text-xs">Add to cart</button>
-                <button type="button" onClick={() => remove(p.id)} className="px-3 py-1 border rounded text-xs">Remove</button>
-                <Link to={`/product/${p.id}`} className="px-3 py-1 border rounded text-blue-600 text-xs">View</Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+// function WishlistPage({ wishlist, setWishlist, onAddToCart }) {
+//   const remove = (id) => setWishlist((prev) => {
+//     const next = prev.filter((p) => p.id !== id);
+//     saveWishlist(next);
+//     return next;
+//   });
+//   return (
+//     <div className="max-w-7xl mx-auto px-4 py-8">
+//       <h2 className="text-2xl font-semibold mb-4">Wishlist</h2>
+//       {!wishlist || wishlist.length === 0 ? <div className="p-6 bg-white rounded shadow">Your wishlist is empty</div> : (
+//         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+//           {wishlist.map((p) => (
+//             <div key={p.id} className="bg-white rounded shadow p-4">
+//               <SafeImage candidates={[p.image, "/images/category-1.jpg"]} alt={p.title} className="w-full h-40 object-contain mb-3" />
+//               <div className="font-medium">{p.title}</div>
+//               <div className="text-sm text-gray-500">₹{p.price}</div>
+//               <div className="mt-3 flex gap-2">
+//                 <button type="button" onClick={() => onAddToCart(p)} className="px-3 py-1 bg-yellow-300/80 border rounded text-xs">Add to cart</button>
+//                 <button type="button" onClick={() => remove(p.id)} className="px-3 py-1 border rounded text-xs">Remove</button>
+//                 <Link to={`/product/${p.id}`} className="px-3 py-1 border rounded text-blue-600 text-xs">View</Link>
+//               </div>
+//             </div>
+//           ))}
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
 
 /* VendorPage, BrandPage, AccountSettings */
 function VendorPage() {
@@ -961,82 +993,84 @@ function ConditionalFooter() {
 }
 
 
-/* ------------------ CartPage (paste this above export default App) ------------------ */
-function CartPage({ cart, setCart }) {
-  // update qty and remove helpers
-  const updateQty = (id, qty) => {
-    setCart((prev) => {
-      const next = prev.map((it) => (it.id === id ? { ...it, qty } : it)).filter((it) => it.qty > 0);
-      saveCart(next);
-      return next;
-    });
-  };
 
-  const remove = (id) => {
-    setCart((prev) => {
-      const next = prev.filter((c) => c.id !== id);
-      saveCart(next);
-      return next;
-    });
-  };
 
-  const total = (cart || []).reduce((s, c) => s + (c.price || 0) * (c.qty || 0), 0);
+// /* ------------------ CartPage (paste this above export default App) ------------------ */
+// function CartPage({ cart, setCart }) {
+//   // update qty and remove helpers
+//   const updateQty = (id, qty) => {
+//     setCart((prev) => {
+//       const next = prev.map((it) => (it.id === id ? { ...it, qty } : it)).filter((it) => it.qty > 0);
+//       saveCart(next);
+//       return next;
+//     });
+//   };
 
-  return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <h2 className="text-2xl font-semibold mb-4">Your cart</h2>
+//   const remove = (id) => {
+//     setCart((prev) => {
+//       const next = prev.filter((c) => c.id !== id);
+//       saveCart(next);
+//       return next;
+//     });
+//   };
 
-      {!cart || cart.length === 0 ? (
-        <div className="p-8 bg-white rounded shadow text-center">Your cart is empty</div>
-      ) : (
-        <div className="grid md:grid-cols-[2fr_1fr] gap-6">
-          <div className="bg-white rounded shadow p-4 space-y-4">
-            {cart.map((item) => (
-              <div key={item.id} className="flex items-center gap-4 border-b last:border-b-0 pb-4 last:pb-0">
-                <SafeImage
-                  candidates={[item.image, "/images/category-1.jpg"]}
-                  alt={item.title}
-                  width="80"
-                  height="80"
-                  className="w-20 h-20 object-contain bg-gray-100 p-2 rounded"
-                />
-                <div className="flex-1">
-                  <div className="font-medium">{item.title}</div>
-                  <div className="text-sm text-gray-500">₹{item.price}</div>
-                  <div className="mt-2 flex items-center gap-3">
-                    <span className="text-xs text-gray-500">Qty:</span>
-                    <input
-                      type="number"
-                      min="1"
-                      value={item.qty}
-                      onChange={(e) => updateQty(item.id, Math.max(1, Number(e.target.value)))}
-                      className="w-20 border rounded p-1 text-sm"
-                    />
-                    <button type="button" onClick={() => remove(item.id)} className="text-xs text-red-600 hover:underline">Remove</button>
-                  </div>
-                </div>
-                <div className="w-28 text-right font-semibold">₹{(item.qty || 0) * (item.price || 0)}</div>
-              </div>
-            ))}
-          </div>
+//   const total = (cart || []).reduce((s, c) => s + (c.price || 0) * (c.qty || 0), 0);
 
-          <div className="bg-white rounded shadow p-4 h-fit">
-            <h3 className="text-lg font-semibold mb-3">Order summary</h3>
-            <div className="flex justify-between text-sm mb-2">
-              <span>Items ({cart.length})</span>
-              <span>₹{total}</span>
-            </div>
-            <div className="flex justify-between text-base font-semibold border-t pt-3 mt-2">
-              <span>Total</span>
-              <span>₹{total}</span>
-            </div>
-            <Link to="/checkout" className="mt-4 block text-center bg-blue-600 text-white px-4 py-2 rounded font-semibold">Proceed to checkout</Link>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+//   return (
+//     <div className="max-w-5xl mx-auto px-4 py-8">
+//       <h2 className="text-2xl font-semibold mb-4">Your cart</h2>
+
+//       {!cart || cart.length === 0 ? (
+//         <div className="p-8 bg-white rounded shadow text-center">Your cart is empty</div>
+//       ) : (
+//         <div className="grid md:grid-cols-[2fr_1fr] gap-6">
+//           <div className="bg-white rounded shadow p-4 space-y-4">
+//             {cart.map((item) => (
+//               <div key={item.id} className="flex items-center gap-4 border-b last:border-b-0 pb-4 last:pb-0">
+//                 <SafeImage
+//                   candidates={[item.image, "/images/category-1.jpg"]}
+//                   alt={item.title}
+//                   width="80"
+//                   height="80"
+//                   className="w-20 h-20 object-contain bg-gray-100 p-2 rounded"
+//                 />
+//                 <div className="flex-1">
+//                   <div className="font-medium">{item.title}</div>
+//                   <div className="text-sm text-gray-500">₹{item.price}</div>
+//                   <div className="mt-2 flex items-center gap-3">
+//                     <span className="text-xs text-gray-500">Qty:</span>
+//                     <input
+//                       type="number"
+//                       min="1"
+//                       value={item.qty}
+//                       onChange={(e) => updateQty(item.id, Math.max(1, Number(e.target.value)))}
+//                       className="w-20 border rounded p-1 text-sm"
+//                     />
+//                     <button type="button" onClick={() => remove(item.id)} className="text-xs text-red-600 hover:underline">Remove</button>
+//                   </div>
+//                 </div>
+//                 <div className="w-28 text-right font-semibold">₹{(item.qty || 0) * (item.price || 0)}</div>
+//               </div>
+//             ))}
+//           </div>
+
+//           <div className="bg-white rounded shadow p-4 h-fit">
+//             <h3 className="text-lg font-semibold mb-3">Order summary</h3>
+//             <div className="flex justify-between text-sm mb-2">
+//               <span>Items ({cart.length})</span>
+//               <span>₹{total}</span>
+//             </div>
+//             <div className="flex justify-between text-base font-semibold border-t pt-3 mt-2">
+//               <span>Total</span>
+//               <span>₹{total}</span>
+//             </div>
+//             <Link to="/checkout" className="mt-4 block text-center bg-blue-600 text-white px-4 py-2 rounded font-semibold">Proceed to checkout</Link>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
 
 
 function AdminGuard({ children }) {
@@ -1067,15 +1101,41 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState(null);
 
-  useEffect(() => saveCart(cart), [cart]);
+  /* ---------------- CART HELPERS (✅ FIXED LOCATION) ---------------- */
+
+  const updateQty = (id, qty) => {
+    if (qty < 1) return;
+
+    setCart((prev) => {
+      const next = prev.map((item) =>
+        item.id === id ? { ...item, qty } : item
+      );
+      saveCart(next);
+      return next;
+    });
+  };
+
+  const removeFromCart = (id) => {
+    setCart((prev) => {
+      const next = prev.filter((item) => item.id !== id);
+      saveCart(next);
+      return next;
+    });
+  };
+
+  /* ---------------- EFFECTS ---------------- */
+
+  useEffect(() => {
+    saveCart(cart);
+  }, [cart]);
 
   useEffect(() => {
     window.showEstoreToast = (msg) => {
       setToast(msg);
-      window.setTimeout(() => setToast(null), 1800);
+      setTimeout(() => setToast(null), 1800);
     };
     return () => {
-      try { delete window.showEstoreToast; } catch { }
+      delete window.showEstoreToast;
     };
   }, []);
 
@@ -1084,9 +1144,10 @@ export default function App() {
       const p = e.detail;
       setWishlist((prev) => {
         const exists = prev.find((i) => i.id === p.id);
-        const next = exists ? prev.filter((i) => i.id !== p.id) : [...prev, p];
+        const next = exists
+          ? prev.filter((i) => i.id !== p.id)
+          : [...prev, p];
         saveWishlist(next);
-        if (window.showEstoreToast) window.showEstoreToast(exists ? "Removed from wishlist" : "Added to wishlist");
         return next;
       });
     };
@@ -1109,145 +1170,180 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <ConditionalHeader onSearch={(q) => setSearchQuery(q)} cart={cart} wishlist={wishlist} />
+      <ConditionalHeader
+        onSearch={(q) => setSearchQuery(q)}
+        cart={cart}
+        wishlist={wishlist}
+      />
 
       {toast && (
         <div className="fixed right-4 top-4 z-50">
-          <div className="bg-black text-white px-4 py-2 rounded shadow">{toast}</div>
+          <div className="bg-black text-white px-4 py-2 rounded shadow">
+            {toast}
+          </div>
         </div>
       )}
 
       <Routes>
+        {/* ================= ADMIN PANEL (PROTECTED) ================= */}
+        <Route
+          path="/admin"
+          element={
+            <AdminGuard>
+              <AdminLayout />
+            </AdminGuard>
+          }
+        >
+          <Route index element={<Dashboard />} />
 
-  {/* ================= ADMIN PANEL (PROTECTED) ================= */}
-  <Route
-    path="/admin"
-    element={
-      <AdminGuard>
-        <AdminLayout />
-      </AdminGuard>
-    }
-  >
-    <Route index element={<Dashboard />} />
-    <Route path="products" element={<ProductsPage />} />
-    <Route path="products/new" element={<AddProduct />} />
-    <Route path="products/:id/edit" element={<EditProduct />} />
-    <Route path="categories" element={<CategoriesPage />} />
-    <Route path="categories/new" element={<CreateCategory />} />
-    <Route path="orders" element={<OrdersPage />} />
-    <Route path="orders/new" element={<CreateOrder />} />
-    <Route path="customers" element={<CustomersPage />} />
-    <Route path="cms" element={<CMSDashboard />} />
-    <Route path="cms/pages" element={<CMSPages />} />
-    <Route path="cms/pages/:id/edit" element={<EditCMSPage />} />
-    <Route path="cms/pages/:id" element={<EditCMSPage />} />
+          <Route path="products" element={<ProductsPage />} />
+          <Route path="products/new" element={<AddProduct />} />
+          <Route path="products/:id/edit" element={<EditProduct />} />
 
-  </Route>
 
-  {/* ================= MAIN SITE ================= */}
-  <Route
-    path="/"
-    element={
-      <Home
-        products={products}
-        onAddToCart={onAddToCart}
-        searchQuery={searchQuery}
-      />
-    }
-  />
+          <Route path="categories" element={<CategoriesPage />} />
+          <Route path="categories/new" element={<CreateCategory />} />
+          <Route path="/admin/categories/:id/edit" element={<EditCategory />} />
 
-  <Route
-    path="/products"
-    element={<StoreProductsPage products={products} onAddToCart={onAddToCart} />}
-  />
+          <Route path="orders" element={<OrdersPage />} />
+          <Route path="orders/new" element={<CreateOrder />} />
+          <Route path="/admin/orders/:id/edit" element={<EditOrderPage />} />
 
-  <Route
-    path="/search"
-    element={<SearchResults products={products} onAddToCart={onAddToCart} />}
-  />
 
-  <Route
-    path="/product/:id"
-    element={<ProductDetail onAddToCart={onAddToCart} />}
-  />
+          <Route path="customers" element={<CustomersPage />} />
+          <Route path="/admin/customers/new" element={<AddCustomerPage />} />
+          {/* CMS */}
+          <Route path="cms" element={<CMSDashboard />} />
+          <Route path="cms/pages" element={<CMSPages />} />
+          <Route path="cms/pages/:id/edit" element={<EditCMSPage />} />
+          <Route path="cms/seo" element={<CMSEO />} />
+          <Route path="cms/banners" element={<CMSBanners />} />
+        </Route>
 
-  <Route
-    path="/category/:name"
-    element={<CategoryPage onAddToCart={onAddToCart} />}
-  />
+        {/* ================= PUBLIC CMS ================= */}
+        <Route path="/page/:slug" element={<PageBySlug />} />
 
-  <Route path="/cart" element={<CartPage cart={cart} setCart={setCart} />} />
+        {/* ================= MAIN SITE ================= */}
+        <Route
+          path="/"
+          element={
+            <Home
+              products={products}
+              onAddToCart={onAddToCart}
+              searchQuery={searchQuery}
+            />
+          }
+        />
 
-  <Route
-    path="/wishlist"
-    element={
-      <WishlistPage
-        wishlist={wishlist}
-        setWishlist={setWishlist}
-        onAddToCart={onAddToCart}
-      />
-    }
-  />
 
-  <Route path="/vendor/:id" element={<VendorPage />} />
-  <Route path="/brand/:name" element={<BrandPage />} />
-  <Route path="/account/settings" element={<AccountSettings />} />
 
-  {/* ================= PROTECTED CUSTOMER PAGES ================= */}
-  <Route
-    path="/checkout"
-    element={
-      <ProtectedRoute>
-        <Checkout />
-      </ProtectedRoute>
-    }
-  />
+        <Route
+          path="/products"
+          element={
+            <StoreProductsPage
+              products={products}
+              onAddToCart={onAddToCart}
+            />
+          }
+        />
 
-  <Route
-    path="/profile"
-    element={
-      <ProtectedRoute>
-        <Profile />
-      </ProtectedRoute>
-    }
-  />
+        <Route
+          path="/search"
+          element={
+            <SearchResults
+              products={products}
+              onAddToCart={onAddToCart}
+            />
+          }
+        />
 
-  <Route
-    path="/orders"
-    element={
-      <ProtectedRoute>
-        <Orders />
-      </ProtectedRoute>
-    }
-  />
+        <Route
+          path="/product/:id"
+          element={<ProductDetail onAddToCart={onAddToCart} />}
+        />
 
-  {/* ================= AUTH ================= */}
-  <Route path="/login" element={<Login />} />
-  <Route path="/signup" element={<Signup />} />
+        <Route
+          path="/category/:name"
+          element={<CategoryPage onAddToCart={onAddToCart} />}
+        />
 
-  {/* ================= STATIC PAGES ================= */}
-  <Route path="/faq" element={<FAQ />} />
-  <Route path="/terms" element={<Terms />} />
-  <Route path="/privacy" element={<Privacy />} />
-  <Route path="/support" element={<Support />} />
-  <Route path="/blog" element={<BlogList />} />
-  <Route path="/blog/:id" element={<BlogPost />} />
-  <Route path="/about" element={<About />} />
-  <Route path="/contact" element={<Contact />} />
-  <Route path="/careers" element={<Careers />} />
+        <Route
+          path="/cart"
+          element={
+            <CartPage
+              cart={cart}
+              updateQty={updateQty}
+              removeFromCart={removeFromCart}
+            />
+          }
+        />
 
-  {/* ================= 404 ================= */}
-  <Route
-    path="*"
-    element={
-      <div className="p-12">
-        Not found — <Link to="/">Home</Link>
-      </div>
-    }
-  />
 
-</Routes>
 
+        <Route
+          path="/wishlist"
+          element={
+            <WishlistPage
+              wishlist={wishlist}
+              setWishlist={setWishlist}
+              onAddToCart={onAddToCart}
+            />
+          }
+        />
+
+        <Route path="/vendor/:id" element={<VendorPage />} />
+        <Route path="/brand/:name" element={<BrandPage />} />
+        <Route path="/account/settings" element={<AccountSettings />} />
+
+        {/* ================= PROTECTED CUSTOMER ================= */}
+        <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute>
+              <Checkout />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/orders"
+          element={
+            <ProtectedRoute>
+              <Orders />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= AUTH ================= */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+
+        {/* ================= STATIC ================= */}
+
+        <Route path="/blog" element={<BlogList />} />
+        <Route path="/blog/:id" element={<BlogPost />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/careers" element={<Careers />} />
+
+        {/* ================= 404 ================= */}
+        <Route
+          path="*"
+          element={
+            <div className="p-12">
+              Not found — <Link to="/">Home</Link>
+            </div>
+          }
+        />
+      </Routes>
       <ConditionalFooter />
     </AuthProvider>
   );

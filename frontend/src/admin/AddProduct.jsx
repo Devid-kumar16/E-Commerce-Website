@@ -33,7 +33,7 @@ export default function CreateProduct() {
 
   return (
     <div className="admin-page">
-      {/* ===== HEADER ===== */}
+      {/*  HEADER */}
       <div className="page-header">
         <div>
           <h2 className="page-title">Add Product</h2>
@@ -43,7 +43,7 @@ export default function CreateProduct() {
         </div>
       </div>
 
-      {/* ===== FORM CARD ===== */}
+      {/*  FORM CARD */}
       <div className="admin-card form-card">
         <form onSubmit={submit} className="form-grid">
           {/* NAME */}

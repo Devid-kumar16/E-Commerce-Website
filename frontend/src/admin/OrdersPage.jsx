@@ -17,23 +17,17 @@ export default function OrdersPage() {
       setLoading(true);
       setError("");
 
-      const res = await api.get("/orders/admin/orders", {
-        params: {
-          page: pageToLoad,
-          limit: PAGE_SIZE,
-        },
+      const res = await api.get("/orders/admin", {
+        params: { page: pageToLoad, limit: PAGE_SIZE },
       });
 
-      const data = res.data?.orders || [];
-      const meta = res.data?.meta || {};
+      setOrders(res.data.orders || []);
+      setPage(res.data.meta?.page || pageToLoad);
 
-      setOrders(data);
-      setPage(meta.page || pageToLoad);
-
-      const total = meta.total ?? data.length;
+      const total = res.data.meta?.total || 0;
       setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
     } catch (err) {
-      console.error("Load orders error:", err);
+      console.error(err);
       setError("Failed to load orders");
     } finally {
       setLoading(false);
@@ -44,13 +38,25 @@ export default function OrdersPage() {
     loadOrders(1);
   }, []);
 
+  /* ================= DELETE ORDER ================= */
+  const handleDelete = async (id) => {
+    const ok = window.confirm("Are you sure you want to delete this order?");
+    if (!ok) return;
+
+    try {
+      await api.delete(`/orders/admin/${id}`);
+      loadOrders(page); // reload current page
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete order");
+    }
+  };
+
   /* ================= UI ================= */
   return (
     <div className="admin-page">
-      {/* ===== HEADER ===== */}
       <div className="page-header">
-        <h2 className="page-title">Orders</h2>
-
+        <h2>Orders</h2>
         <Link to="/admin/orders/new" className="btn btn-primary">
           Create Order
         </Link>
@@ -59,7 +65,6 @@ export default function OrdersPage() {
       {error && <div className="admin-error">{error}</div>}
       {loading && <div className="admin-loading">Loading...</div>}
 
-      {/* ===== TABLE CARD ===== */}
       <div className="admin-card">
         <table className="admin-table">
           <thead>
@@ -71,65 +76,64 @@ export default function OrdersPage() {
               <th>Total (₹)</th>
               <th>Status</th>
               <th>Created</th>
+              <th>Actions</th>
             </tr>
           </thead>
 
           <tbody>
             {!loading && orders.length === 0 && (
               <tr>
-                <td colSpan="7" style={{ textAlign: "center" }}>
+                <td colSpan="8" style={{ textAlign: "center" }}>
                   No orders found
                 </td>
               </tr>
             )}
 
-            {orders.map((o, index) => (
-              <tr key={o.id || index}>
-                {/* Order ID */}
-                <td>{o.id ?? (page - 1) * PAGE_SIZE + index + 1}</td>
-
-                {/* Customer */}
-                <td>{o.customer_name || "—"}</td>
-
-                {/* Area */}
+            {orders.map((o) => (
+              <tr key={o.id}>
+                <td>{o.id}</td>
+                <td>{o.customer_name}</td>
                 <td>{o.area || "—"}</td>
-
-                {/* Address */}
                 <td>{o.address || "—"}</td>
-
-                {/* Total */}
                 <td>{o.total_amount}</td>
-
-                {/* Status */}
-                <td>
-                  <span className={`badge badge-${o.status?.toLowerCase()}`}>
-                    {o.status}
-                  </span>
-                </td>
-
-                {/* Created */}
+                <td>{o.status}</td>
                 <td>{o.created_at?.slice(0, 10)}</td>
+
+                {/* ✅ ACTION COLUMN (RIGHT SIDE) */}
+                <td className="actions-cell">
+                  <Link
+                    to={`/admin/orders/${o.id}/edit`}
+                    className="btn-edit"
+                  >
+                    Edit
+                  </Link>
+
+                  <button
+                    className="btn-delete"
+                    onClick={() => handleDelete(o.id)}
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* ===== PAGINATION ===== */}
+        {/* PAGINATION */}
         <div className="pagination-bar">
           <button
-            className="pagination-btn"
             disabled={page <= 1}
             onClick={() => loadOrders(page - 1)}
           >
             Prev
           </button>
 
-          <span className="pagination-info">
-            Page <strong>{page}</strong> of {totalPages}
+          <span>
+            Page {page} of {totalPages}
           </span>
 
           <button
-            className="pagination-btn"
             disabled={page >= totalPages}
             onClick={() => loadOrders(page + 1)}
           >

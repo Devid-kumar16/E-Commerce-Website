@@ -1,9 +1,6 @@
-﻿// backend/controllers/orderController.js
-import { pool } from "../config/db.js";
+﻿import { pool } from "../config/db.js";
 
-/* =====================================================
-   USER: CREATE ORDER (CHECKOUT)
-===================================================== */
+/* ================= USER: CREATE ORDER ================= */
 export async function createOrder(req, res) {
   try {
     const userId = req.user?.id;
@@ -14,20 +11,31 @@ export async function createOrder(req, res) {
     const {
       area,
       address,
+      phone,
+      payment_method,
       total_amount,
       status = "Pending",
     } = req.body;
 
-    if (!area || !address || !total_amount) {
-      return res.status(400).json({
-        message: "area, address and total_amount are required",
-      });
+    if (!total_amount) {
+      return res.status(400).json({ message: "total_amount required" });
     }
 
     const [result] = await pool.query(
-      `INSERT INTO orders (user_id, area, address, total_amount, status)
-       VALUES (?, ?, ?, ?, ?)`,
-      [userId, area, address, total_amount, status]
+      `
+      INSERT INTO orders
+      (user_id, area, address, phone, payment_method, total_amount, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        userId,
+        area || null,
+        address || null,
+        phone || null,
+        payment_method || null,
+        total_amount,
+        status,
+      ]
     );
 
     res.status(201).json({
@@ -40,9 +48,7 @@ export async function createOrder(req, res) {
   }
 }
 
-/* =====================================================
-   USER: LIST OWN ORDERS
-===================================================== */
+/* ================= USER: MY ORDERS ================= */
 export async function listOrdersForUser(req, res) {
   try {
     const userId = req.user?.id;
@@ -51,39 +57,38 @@ export async function listOrdersForUser(req, res) {
     }
 
     const [rows] = await pool.query(
-      `SELECT *
-       FROM orders
-       WHERE user_id = ?
-       ORDER BY created_at DESC`,
+      `
+      SELECT *
+      FROM orders
+      WHERE user_id = ?
+      ORDER BY created_at DESC
+      `,
       [userId]
     );
 
     res.json({ orders: rows });
   } catch (err) {
-    console.error("listOrdersForUser error:", err);
-    res.status(500).json({ message: "Failed to list user orders" });
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch orders" });
   }
 }
 
-/* =====================================================
-   ADMIN: LIST ALL ORDERS
-===================================================== */
+/* ================= ADMIN: LIST ALL ORDERS ================= */
 export async function listOrdersAdmin(req, res) {
   try {
-    if (req.user?.role !== "admin") {
-      return res.status(403).json({ message: "Admin required" });
-    }
-
     const page = Number(req.query.page || 1);
     const limit = Number(req.query.limit || 10);
     const offset = (page - 1) * limit;
 
-    const [rows] = await pool.query(
+    const [orders] = await pool.query(
       `
       SELECT
         o.id,
+        o.user_id,
         o.area,
         o.address,
+        o.phone,
+        o.payment_method,
         o.total_amount,
         o.status,
         o.created_at,
@@ -97,59 +102,53 @@ export async function listOrdersAdmin(req, res) {
     );
 
     const [[{ total }]] = await pool.query(
-      "SELECT COUNT(*) AS total FROM orders"
+      `SELECT COUNT(*) AS total FROM orders`
     );
 
     res.json({
-      orders: rows,
+      orders,
       meta: { page, total },
     });
   } catch (err) {
-    console.error("listOrdersAdmin error:", err);
-    res.status(500).json({ message: "Failed to fetch orders" });
+    console.error(err);
+    res.status(500).json({ message: "Failed to load orders" });
   }
 }
 
-
-/* =====================================================
-   ADMIN: CREATE ORDER (MANUAL)
-===================================================== */
+/* ================= ADMIN: CREATE ORDER ================= */
 export async function createOrderAdmin(req, res) {
   try {
-    if (req.user?.role !== "admin") {
-      return res.status(403).json({ message: "Admin required" });
-    }
-
-    let {
+    const {
       user_id,
       area,
       address,
+      phone,
+      payment_method,
       total_amount,
       status = "Pending",
     } = req.body;
 
-    if (!user_id || !area || !address || !total_amount) {
+    if (!user_id || !total_amount) {
       return res.status(400).json({
-        message: "user_id, area, address, total_amount are required",
+        message: "user_id and total_amount required",
       });
     }
 
-    // ENUM SAFE STATUS
-    const STATUS_MAP = {
-      pending: "Pending",
-      paid: "Paid",
-      shipped: "Shipped",
-      delivered: "Delivered",
-      cancelled: "Cancelled",
-    };
-
-    status =
-      STATUS_MAP[String(status).toLowerCase()] || "Pending";
-
     const [result] = await pool.query(
-      `INSERT INTO orders (user_id, area, address, total_amount, status)
-       VALUES (?, ?, ?, ?, ?)`,
-      [user_id, area, address, total_amount, status]
+      `
+      INSERT INTO orders
+      (user_id, area, address, phone, payment_method, total_amount, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        user_id,
+        area || null,
+        address || null,
+        phone || null,
+        payment_method || null,
+        total_amount,
+        status,
+      ]
     );
 
     res.status(201).json({
@@ -157,38 +156,73 @@ export async function createOrderAdmin(req, res) {
       order_id: result.insertId,
     });
   } catch (err) {
-    console.error("createOrderAdmin error:", err.sqlMessage || err);
-    res.status(500).json({
-      message: "Failed to create admin order",
-      error: err.sqlMessage,
-    });
+    console.error("createOrderAdmin error:", err);
+    res.status(500).json({ message: "Admin order create failed" });
   }
 }
 
-/* =====================================================
-   ADMIN: UPDATE ORDER STATUS
-===================================================== */
-export async function updateOrderStatus(req, res) {
+
+export async function getOrderAdmin(req, res) {
+  const { id } = req.params;
+
+  const [[order]] = await pool.query(
+    `SELECT * FROM orders WHERE id = ?`,
+    [id]
+  );
+
+  res.json({ order });
+}
+
+
+export async function updateOrderAdmin(req, res) {
+  const { id } = req.params;
+  const {
+    area,
+    address,
+    phone,
+    payment_method,
+    total_amount,
+    status,
+  } = req.body;
+
+  await pool.query(
+    `
+    UPDATE orders SET
+      area = ?,
+      address = ?,
+      phone = ?,
+      payment_method = ?,
+      total_amount = ?,
+      status = ?
+    WHERE id = ?
+    `,
+    [
+      area,
+      address,
+      phone,
+      payment_method,
+      total_amount,
+      status,
+      id,
+    ]
+  );
+
+  res.json({ ok: true });
+}
+
+
+export async function deleteOrderAdmin(req, res) {
   try {
-    if (req.user?.role !== "admin") {
-      return res.status(403).json({ message: "Admin required" });
-    }
-
-    const { status } = req.body;
-    const orderId = req.params.id;
-
-    if (!status) {
-      return res.status(400).json({ message: "status required" });
-    }
+    const { id } = req.params;
 
     await pool.query(
-      `UPDATE orders SET status = ? WHERE id = ?`,
-      [status, orderId]
+      `DELETE FROM orders WHERE id = ?`,
+      [id]
     );
 
     res.json({ ok: true });
   } catch (err) {
-    console.error("updateOrderStatus error:", err);
-    res.status(500).json({ message: "Failed to update status" });
+    console.error("deleteOrderAdmin error:", err);
+    res.status(500).json({ message: "Failed to delete order" });
   }
 }

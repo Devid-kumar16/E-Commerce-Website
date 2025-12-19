@@ -6,33 +6,27 @@ const ITEMS_PER_PAGE = 8;
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  /* ================= LOAD ================= */
+  /* ================= LOAD PRODUCTS ================= */
   useEffect(() => {
     loadProducts();
-    loadCategories();
   }, []);
 
   const loadProducts = async () => {
-    setLoading(true);
-    const res = await api.get("/products/admin/list");
-    setProducts(res.data.products || []);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const res = await api.get("/products/admin/list");
+      setProducts(res.data.products || []);
+    } catch (err) {
+      console.error("Failed to load products", err);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const loadCategories = async () => {
-    const res = await api.get("/categories");
-    setCategories(res.data.categories || []);
-  };
-
-  /* ================= HELPERS ================= */
-  const getCategoryName = (id) =>
-    categories.find((c) => c.id === id)?.name || "-";
 
   /* ================= PAGINATION ================= */
   const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
@@ -78,19 +72,20 @@ export default function ProductsPage() {
 
               <td>
                 {p.image_url ? (
-                  <a
-                    href={p.image_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="view-link"
-                  >
-                    View
-                  </a>
+                  <img
+                    src={p.image_url}
+                    alt={p.name}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      objectFit: "cover",
+                      borderRadius: 6,
+                    }}
+                  />
                 ) : (
-                  "-"
+                  <span className="text-muted">No Image</span>
                 )}
               </td>
-
 
               <td>₹{p.price}</td>
 
@@ -106,10 +101,9 @@ export default function ProductsPage() {
                 </span>
               </td>
 
-              {/* ✅ CATEGORY COLUMN (THIS WAS MISSING) */}
-              <td>{getCategoryName(p.category_id)}</td>
+              {/* ✅ FIXED CATEGORY COLUMN */}
+              <td>{p.category_name || "-"}</td>
 
-              {/* ✅ EDIT COLUMN */}
               <td>
                 <button
                   className="btn btn-primary"
@@ -136,10 +130,7 @@ export default function ProductsPage() {
       {/* ================= PAGINATION ================= */}
       {totalPages > 1 && (
         <div className="admin-pagination">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-          >
+          <button disabled={page === 1} onClick={() => setPage(page - 1)}>
             Prev
           </button>
 

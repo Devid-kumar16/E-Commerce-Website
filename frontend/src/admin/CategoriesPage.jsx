@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 /* ===== PAGINATION CONFIG ===== */
@@ -9,9 +9,9 @@ export default function CategoriesPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  /* pagination state */
   const [page, setPage] = useState(1);
+
+  const navigate = useNavigate();
 
   /* ================= LOAD CATEGORIES ================= */
   const loadCategories = async () => {
@@ -33,7 +33,7 @@ export default function CategoriesPage() {
     loadCategories();
   }, []);
 
-  /* ================= PAGINATION LOGIC ================= */
+  /* ================= PAGINATION ================= */
   const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
 
   const paginatedItems = items.slice(
@@ -44,7 +44,7 @@ export default function CategoriesPage() {
   /* ================= UI ================= */
   return (
     <div className="admin-page">
-      {/* ---------- HEADER ---------- */}
+      {/* HEADER */}
       <div className="page-header">
         <h2>Categories</h2>
 
@@ -56,7 +56,7 @@ export default function CategoriesPage() {
       {error && <p className="admin-error">{error}</p>}
       {loading && <p className="admin-loading">Loading...</p>}
 
-      {/* ---------- TABLE ---------- */}
+      {/* TABLE */}
       <div className="admin-card">
         <table className="admin-table">
           <thead>
@@ -64,31 +64,66 @@ export default function CategoriesPage() {
               <th>ID</th>
               <th>Name</th>
               <th>Status</th>
+              <th>Image</th>
+              <th>Actions</th>
             </tr>
           </thead>
 
           <tbody>
             {paginatedItems.map((c, index) => (
               <tr key={c.id}>
-                {/* sequential ID across pages */}
+                {/* Sequential ID */}
                 <td>{(page - 1) * ITEMS_PER_PAGE + index + 1}</td>
+
                 <td>{c.name}</td>
+
                 <td>
                   <span
-                    className={`badge ${c.status === "active" || c.active
+                    className={`badge ${
+                      c.status === "active"
                         ? "badge-active"
                         : "badge-inactive"
-                      }`}
+                    }`}
                   >
-                    {c.status || (c.active ? "Active" : "Inactive")}
+                    {c.status}
                   </span>
+                </td>
+
+                {/* IMAGE */}
+                <td>
+                  {c.image_url ? (
+                    <img
+                      src={c.image_url}
+                      alt={c.name}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        objectFit: "cover",
+                        borderRadius: 4,
+                      }}
+                    />
+                  ) : (
+                    <span className="text-muted">No Image</span>
+                  )}
+                </td>
+
+                {/* ✅ ACTIONS */}
+                <td>
+                  <button
+                    className="btn btn-sm btn-primary"
+                    onClick={() =>
+                      navigate(`/admin/categories/${c.id}/edit`)
+                    }
+                  >
+                    Edit
+                  </button>
                 </td>
               </tr>
             ))}
 
             {!loading && paginatedItems.length === 0 && (
               <tr>
-                <td colSpan="3" style={{ textAlign: "center" }}>
+                <td colSpan="5" style={{ textAlign: "center" }}>
                   No categories found
                 </td>
               </tr>
@@ -96,8 +131,7 @@ export default function CategoriesPage() {
           </tbody>
         </table>
 
-        {/* ---------- PAGINATION ---------- */}
-        {/* ---------- PAGINATION ---------- */}
+        {/* PAGINATION */}
         <div className="admin-pagination">
           <button
             className="btn btn-secondary"
@@ -119,7 +153,6 @@ export default function CategoriesPage() {
             Next
           </button>
         </div>
-
       </div>
     </div>
   );
