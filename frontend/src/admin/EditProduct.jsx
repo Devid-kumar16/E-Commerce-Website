@@ -17,51 +17,71 @@ export default function EditProduct() {
   });
 
   const [categories, setCategories] = useState([]);
+  const [productCategoryName, setProductCategoryName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   /* ================= LOAD PRODUCT ================= */
   useEffect(() => {
+    const loadProduct = async () => {
+      try {
+        const res = await api.get(`/products/admin/${id}`);
+        const p = res.data.product;
+
+        setForm({
+          name: p.name ?? "",
+          price: p.price ?? "",
+          category_id: "", // set later
+          status: p.status ?? "draft",
+          stock: p.stock ?? 0,
+          image_url: p.image ?? "",
+          description: p.description ?? "",
+        });
+
+        // 🔑 save category NAME temporarily
+        setProductCategoryName(p.category);
+      } catch (err) {
+        setError("Failed to load product");
+      }
+    };
+
     loadProduct();
-    loadCategories();
   }, [id]);
 
-  const loadProduct = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get(`/products/${id}`); // public get
-      const p = res.data.product;
+  /* ================= LOAD CATEGORIES ================= */
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const res = await api.get("/categories/active");
+        setCategories(res.data.categories || []);
+      } catch (err) {
+        console.error("Failed to load categories", err);
+      }
+    };
 
-      setForm({
-        name: p.name || "",
-        price: p.price || "",
-        category_id: p.category_id || "",
-        status: p.status || "draft",
-        stock: p.stock || 0,
-        image_url: p.image_url || "",
-        description: p.description || "",
-      });
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load product");
-    } finally {
+    loadCategories();
+  }, []);
+
+  /* ================= MAP CATEGORY NAME → ID ================= */
+  useEffect(() => {
+    if (categories.length && productCategoryName) {
+      const matched = categories.find(
+        (c) => c.name === productCategoryName
+      );
+
+      if (matched) {
+        setForm((prev) => ({
+          ...prev,
+          category_id: matched.id,
+        }));
+      }
       setLoading(false);
     }
-  };
-
-  const loadCategories = async () => {
-    try {
-      const res = await api.get("/categories");
-      setCategories(res.data.categories || []);
-    } catch (err) {
-      console.error("Failed to load categories");
-    }
-  };
+  }, [categories, productCategoryName]);
 
   /* ================= UPDATE PRODUCT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
 
     try {
       await api.put(`/products/admin/${id}`, {
@@ -76,98 +96,125 @@ export default function EditProduct() {
 
       navigate("/admin/products");
     } catch (err) {
-      console.error(err?.response?.data || err);
       setError("Failed to update product");
     }
   };
 
-  /* ================= UI ================= */
+  if (loading) return <p>Loading...</p>;
+
   return (
     <div className="admin-page">
-      <h2>Edit Product</h2>
+      <div className="page-header">
+        <h2>Edit Product</h2>
+        <p className="page-subtitle">
+          Update product details and manage inventory
+        </p>
+      </div>
 
-      {error && <p className="admin-error">{error}</p>}
-      {loading && <p>Loading...</p>}
+      {error && <div className="alert-error">{error}</div>}
 
-      {!loading && (
-        <form className="admin-form" onSubmit={handleSubmit}>
-          <label>Product Name</label>
-          <input
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            required
-          />
+      <form className="product-card" onSubmit={handleSubmit}>
+        <div className="form-grid">
 
-          <label>Price</label>
-          <input
-            type="number"
-            value={form.price}
-            onChange={(e) => setForm({ ...form, price: e.target.value })}
-            required
-          />
-
-          <label>Category</label>
-          <select
-            value={form.category_id}
-            onChange={(e) =>
-              setForm({ ...form, category_id: e.target.value })
-            }
-            required
-          >
-            <option value="">Select category</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-
-          <label>Status</label>
-          <select
-            value={form.status}
-            onChange={(e) => setForm({ ...form, status: e.target.value })}
-          >
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-          </select>
-
-          <label>Stock</label>
-          <input
-            type="number"
-            value={form.stock}
-            onChange={(e) => setForm({ ...form, stock: e.target.value })}
-          />
-
-          <label>Image URL</label>
-          <input
-            type="text"
-            value={form.image_url}
-            onChange={(e) =>
-              setForm({ ...form, image_url: e.target.value })
-            }
-            placeholder="https://example.com/image.jpg"
-          />
-
-          {/* Image Preview */}
-          {form.image_url && (
-            <img
-              src={form.image_url}
-              alt="preview"
-              style={{ width: 120, marginTop: 10, borderRadius: 6 }}
+          {/* LEFT COLUMN */}
+          <div className="form-section">
+            <label>Product Name</label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="Enter product name"
+              required
             />
-          )}
 
-          <label>Description</label>
-          <textarea
-            value={form.description}
-            onChange={(e) =>
-              setForm({ ...form, description: e.target.value })
-            }
-          />
+            <label>Price (₹)</label>
+            <input
+              type="number"
+              value={form.price}
+              onChange={(e) => setForm({ ...form, price: e.target.value })}
+              required
+            />
 
-          <button className="btn btn-primary">Update Product</button>
-        </form>
-      )}
+            <label>Category</label>
+            <select
+              value={form.category_id}
+              onChange={(e) =>
+                setForm({ ...form, category_id: e.target.value })
+              }
+              required
+            >
+              <option value="">Select category</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+
+            <label>Status</label>
+            <select
+              value={form.status}
+              onChange={(e) =>
+                setForm({ ...form, status: e.target.value })
+              }
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+            </select>
+
+            <label>Stock Quantity</label>
+            <input
+              type="number"
+              value={form.stock}
+              onChange={(e) =>
+                setForm({ ...form, stock: e.target.value })
+              }
+            />
+          </div>
+
+          {/* RIGHT COLUMN */}
+          <div className="form-section">
+            <label>Image URL</label>
+            <input
+              type="text"
+              value={form.image_url}
+              onChange={(e) =>
+                setForm({ ...form, image_url: e.target.value })
+              }
+              placeholder="https://example.com/image.jpg"
+            />
+
+            {form.image_url && (
+              <div className="image-preview">
+                <img src={form.image_url} alt="Preview" />
+              </div>
+            )}
+
+            <label>Description</label>
+            <textarea
+              rows="6"
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+              placeholder="Write a short product description..."
+            />
+          </div>
+        </div>
+
+        {/* ACTIONS */}
+        <div className="form-actions">
+          <button type="submit" className="btn-primary">
+            Update Product
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => navigate("/admin/products")}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

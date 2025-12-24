@@ -1,21 +1,24 @@
 import React, { useEffect, useState } from "react";
 import api from "../api/axios";
 import ProductCard from "../components/ProductCard";
+import { useCart } from "../context/CartContext";
 import "./Home.css";
 
-export default function Home({ onAddToCart = () => {} }) {
+export default function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /* LOAD PUBLISHED + ACTIVE PRODUCTS */
+  // ✅ GLOBAL cart & wishlist
+  const { wishlist, toggleWishlist, addToCart } = useCart();
+
+  /* ================= LOAD PRODUCTS ================= */
   useEffect(() => {
     loadProducts();
   }, []);
 
   const loadProducts = async () => {
     try {
-      const res = await api.get("/products"); 
-      // this should return ONLY published + active products
+      const res = await api.get("/products");
       setProducts(res.data.products || []);
     } catch (err) {
       console.error("Home products error:", err);
@@ -24,11 +27,11 @@ export default function Home({ onAddToCart = () => {} }) {
     }
   };
 
-  const topDeals = products.slice(0, 100);
+  const topDeals = products.slice(0, 20);
 
   return (
     <div className="home-page">
-      {/* HERO BANNER */}
+      {/* HERO */}
       <section className="home-hero">
         <img src="/images/hero.jpg" alt="Sale Banner" />
       </section>
@@ -47,7 +50,9 @@ export default function Home({ onAddToCart = () => {} }) {
               <ProductCard
                 key={p.id}
                 product={p}
-                onAddToCart={onAddToCart}
+                onAddToCart={addToCart}
+                isWishlisted={wishlist.some((item) => item.id === p.id)}
+                onToggleWishlist={toggleWishlist}
               />
             ))}
           </div>

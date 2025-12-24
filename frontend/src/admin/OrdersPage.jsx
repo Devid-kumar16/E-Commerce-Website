@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../api/axios";
+import useAdminApi from "./useAdminApi";
+import "./OrdersAdmin.css";
 
 export default function OrdersPage() {
+  const api = useAdminApi();
+
   const [orders, setOrders] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -12,31 +15,45 @@ export default function OrdersPage() {
   const PAGE_SIZE = 10;
 
   /* ================= LOAD ORDERS ================= */
-  const loadOrders = async (pageToLoad = 1) => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const res = await api.get("/orders/admin", {
-        params: { page: pageToLoad, limit: PAGE_SIZE },
-      });
-
-      setOrders(res.data.orders || []);
-      setPage(res.data.meta?.page || pageToLoad);
-
-      const total = res.data.meta?.total || 0;
-      setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load orders");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadOrders(1);
-  }, []);
+    let isMounted = true;
+
+    const loadOrders = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        // ✅ CORRECT AXIOS CALL
+        const res = await api.get("/orders/admin", {
+          params: { page, limit: PAGE_SIZE },
+        });
+
+        if (!isMounted) return;
+
+        const data = res.data;
+
+        // ✅ BACKEND RESPONSE HANDLING
+        setOrders(data.orders || []);
+
+        const total = data.meta?.total || 0;
+        setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
+      } catch (err) {
+        if (!isMounted) return;
+        console.error("Load orders error:", err);
+        setError(
+          err?.response?.data?.message || "Failed to load orders"
+        );
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadOrders();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [page, api]);
 
   /* ================= DELETE ORDER ================= */
   const handleDelete = async (id) => {
@@ -45,9 +62,11 @@ export default function OrdersPage() {
 
     try {
       await api.delete(`/orders/admin/${id}`);
-      loadOrders(page); // reload current page
+
+      // ✅ Optimistic UI update
+      setOrders((prev) => prev.filter((o) => o.id !== id));
     } catch (err) {
-      console.error(err);
+      console.error("Delete order error:", err);
       alert("Failed to delete order");
     }
   };
@@ -55,6 +74,7 @@ export default function OrdersPage() {
   /* ================= UI ================= */
   return (
     <div className="admin-page">
+      {/* HEADER */}
       <div className="page-header">
         <h2>Orders</h2>
         <Link to="/admin/orders/new" className="btn btn-primary">
@@ -63,68 +83,83 @@ export default function OrdersPage() {
       </div>
 
       {error && <div className="admin-error">{error}</div>}
-      {loading && <div className="admin-loading">Loading...</div>}
 
       <div className="admin-card">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Order ID</th>
-              <th>Customer</th>
-              <th>Area</th>
-              <th>Address</th>
-              <th>Total (₹)</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {!loading && orders.length === 0 && (
+        {loading ? (
+          <div className="admin-loading">Loading orders...</div>
+        ) : (
+          <table className="admin-table">
+            <thead>
               <tr>
-                <td colSpan="8" style={{ textAlign: "center" }}>
-                  No orders found
-                </td>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Area</th>
+                <th>Total (₹)</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
               </tr>
-            )}
+            </thead>
 
-            {orders.map((o) => (
-              <tr key={o.id}>
-                <td>{o.id}</td>
-                <td>{o.customer_name}</td>
-                <td>{o.area || "—"}</td>
-                <td>{o.address || "—"}</td>
-                <td>{o.total_amount}</td>
-                <td>{o.status}</td>
-                <td>{o.created_at?.slice(0, 10)}</td>
+            <tbody>
+              {!loading && orders.length === 0 && (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: "center" }}>
+                    No orders found
+                  </td>
+                </tr>
+              )}
 
-                {/* ✅ ACTION COLUMN (RIGHT SIDE) */}
-                <td className="actions-cell">
-                  <Link
-                    to={`/admin/orders/${o.id}/edit`}
-                    className="btn-edit"
-                  >
-                    Edit
-                  </Link>
+              {orders.map((order, index) => (
+                <tr key={order.id}>
+                  {/* ✅ SEQUENTIAL NUMBER */}
+                  <td>{(page - 1) * PAGE_SIZE + index + 1}</td>
 
-                  <button
-                    className="btn-delete"
-                    onClick={() => handleDelete(o.id)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  <td>{order.customer_name || "—"}</td>
+                  <td>{order.area || "—"}</td>
+
+                  <td>₹{Number(order.total_amount || 0).toFixed(2)}</td>
+
+                  <td>
+                    <span
+                      className={`status-badge status-${order.status?.toLowerCase()}`}
+                    >
+                      {order.status}
+                    </span>
+                  </td>
+
+                  <td>
+                    {order.created_at
+                      ? new Date(order.created_at).toLocaleDateString()
+                      : "—"}
+                  </td>
+
+                  <td className="actions-cell">
+                    <Link
+                      to={`/admin/orders/${order.id}`}
+                      className="btn-view"
+                    >
+                      View
+                    </Link>
+
+                    <button
+                      className="btn-delete"
+                      onClick={() => handleDelete(order.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
         {/* PAGINATION */}
         <div className="pagination-bar">
           <button
             disabled={page <= 1}
-            onClick={() => loadOrders(page - 1)}
+            onClick={() => setPage((p) => p - 1)}
           >
             Prev
           </button>
@@ -135,7 +170,7 @@ export default function OrdersPage() {
 
           <button
             disabled={page >= totalPages}
-            onClick={() => loadOrders(page + 1)}
+            onClick={() => setPage((p) => p + 1)}
           >
             Next
           </button>

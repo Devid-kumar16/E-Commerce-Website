@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import AddProduct from "./admin/AddProduct";
 import EditProduct from "./admin/EditProduct";
-
+import { CartProvider, useCart } from "./context/CartContext";
 import {
   Routes,
   Route,
@@ -25,19 +25,23 @@ import CreateOrder from "./admin/CreateOrder";
 import CreateCategory from "./admin/CreateCategory";
 import CMSDashboard from "./admin/cms/CMSDashboard";
 import CMSPages from "./admin/cms/CMSPages";
-import CMSEO from "./admin/cms/CMSEO";
+import CMSSEO from "./admin/cms/CMSEO";
 import CMSBanners from "./admin/cms/CMSBanners";
 import EditCMSPage from "./admin/cms/EditCMSPage";
 import PageBySlug from "./pages/PageBySlug";
 import AddCustomerPage from "./admin/AddCustomerPage";
 import EditCategory from "./admin/EditCategory";
 import Home from "./pages/Home";
+import OrderDetailsPage from "./admin/OrderDetailsPage";
+
 import CartPage from "./pages/CartPage";
 import WishlistPage from "./pages/WishlistPage";
 import ProductDetail from "./components/ProductDetail";
 import EditOrderPage from "./pages/EditOrdersPage";
-
-
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import CheckoutPage from "./pages/CheckoutPage";
+import OrderSuccess from "./pages/OrderSuccess";
 /* IMPORTANT: import the shared AuthProvider and hook from your context file */
 import { AuthProvider, useAuth } from "./context/AuthProvider";
 
@@ -170,6 +174,7 @@ function SafeImage({ candidates = [], alt = "", className = "", width, height, .
     />
   );
 }
+
 
 /* ------------------ Header ------------------ */
 function Header({ onSearch, cart }) {
@@ -315,55 +320,6 @@ function Header({ onSearch, cart }) {
     </header>
   );
 }
-
-/* ------------------ MAIN SITE COMPONENTS (Home / ProductCard / ProductDetail / etc.) ------------------ */
-
-/* Home */
-// function Home({ products, onAddToCart, searchQuery }) {
-//   const [filtered, setFiltered] = useState(products);
-//   useEffect(() => {
-//     if (!searchQuery) setFiltered(products);
-//     else {
-//       const q = searchQuery.toLowerCase();
-//       setFiltered(products.filter((p) => p.title.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)));
-//     }
-//   }, [searchQuery, products]);
-
-//   return (
-//     <main className="max-w-7xl mx-auto px-4 py-6">
-//       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-//         <div className="lg:col-span-9">
-//           <div className="rounded overflow-hidden shadow">
-//             <img src="/images/hero.jpg" alt="hero" className="w-full h-96 object-cover rounded" loading="eager" />
-//           </div>
-//         </div>
-
-//         <aside className="lg:col-span-3 space-y-4">
-//           <div className="rounded overflow-hidden shadow">
-//             <img src="/images/vendor-1.jpg" alt="promo" className="w-full h-48 object-cover" />
-//           </div>
-//           <div className="bg-white rounded shadow p-4">
-//             <h4 className="font-semibold">Hot Offers</h4>
-//             <p className="text-sm text-gray-600 mt-1">Use code SAVE20 on checkout</p>
-//           </div>
-//         </aside>
-//       </div>
-
-//       <section id="deals" className="mt-10">
-//         <div className="flex items-center justify-between mb-4">
-//           <h3 className="text-2xl font-semibold">Top Deals</h3>
-//           <Link to="/products" className="text-sm text-blue-600">See all</Link>
-//         </div>
-
-//         {filtered.length === 0 ? (
-//           <div className="home-no-results">No products found for "<strong>{searchQuery}</strong>"</div>
-//         ) : (
-//           <div className="product-grid">{filtered.map((p) => <ProductCard key={p.id} product={p} onAddToCart={onAddToCart} />)}</div>
-//         )}
-//       </section>
-//     </main>
-//   );
-// }
 
 /* ProductCard */
 function ProductCard({ product, onAddToCart, wishlist = [] }) {
@@ -537,36 +493,6 @@ function SearchResults({ products, onAddToCart }) {
     </div>
   );
 }
-
-/* WishlistPage */
-// function WishlistPage({ wishlist, setWishlist, onAddToCart }) {
-//   const remove = (id) => setWishlist((prev) => {
-//     const next = prev.filter((p) => p.id !== id);
-//     saveWishlist(next);
-//     return next;
-//   });
-//   return (
-//     <div className="max-w-7xl mx-auto px-4 py-8">
-//       <h2 className="text-2xl font-semibold mb-4">Wishlist</h2>
-//       {!wishlist || wishlist.length === 0 ? <div className="p-6 bg-white rounded shadow">Your wishlist is empty</div> : (
-//         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-//           {wishlist.map((p) => (
-//             <div key={p.id} className="bg-white rounded shadow p-4">
-//               <SafeImage candidates={[p.image, "/images/category-1.jpg"]} alt={p.title} className="w-full h-40 object-contain mb-3" />
-//               <div className="font-medium">{p.title}</div>
-//               <div className="text-sm text-gray-500">₹{p.price}</div>
-//               <div className="mt-3 flex gap-2">
-//                 <button type="button" onClick={() => onAddToCart(p)} className="px-3 py-1 bg-yellow-300/80 border rounded text-xs">Add to cart</button>
-//                 <button type="button" onClick={() => remove(p.id)} className="px-3 py-1 border rounded text-xs">Remove</button>
-//                 <Link to={`/product/${p.id}`} className="px-3 py-1 border rounded text-blue-600 text-xs">View</Link>
-//               </div>
-//             </div>
-//           ))}
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
 
 /* VendorPage, BrandPage, AccountSettings */
 function VendorPage() {
@@ -792,151 +718,6 @@ function Careers() {
   );
 }
 
-/* ------------------ AUTH (Login & Signup) ------------------ */
-/* Login & Signup use the shared useAuth imported from ./context/AuthProvider */
-
-function Login() {
-  const { login, user, loading } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const rawFrom = location?.state?.from;
-  const fromPath = typeof rawFrom === "string" ? rawFrom : "/admin";
-
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (!loading && user) {
-      const role = (user.role || "").toString().toLowerCase();
-      const target = role === "admin" ? fromPath : "/";
-      try {
-        navigate(target, { replace: true });
-      } catch {
-        window.location.href = target;
-      }
-    }
-  }, [user, loading, navigate, fromPath]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErr("");
-    setBusy(true);
-    try {
-      await login({ email: form.email, password: form.password });
-
-      let u = null;
-      try {
-        u = JSON.parse(localStorage.getItem(AUTH_KEY) || "null");
-      } catch { u = null; }
-      const role = (u?.role || (window?.__ESTORE_USER__?.role) || "").toString().toLowerCase();
-      const target = role === "admin" ? fromPath : "/";
-      try {
-        navigate(target, { replace: true });
-      } catch {
-        window.location.href = target;
-      }
-    } catch (ex) {
-      setErr(ex?.message || "Login failed");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="account-page">
-      <div className="account-card">
-        <h1 className="account-title">Sign in to E-Store</h1>
-        <p className="account-subtitle">Access your orders, wishlist and account settings.</p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Email</label>
-            <input
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "8px", border: "1px solid #d1d5db" }}
-              type="email"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Password</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "8px", border: "1px solid #d1d5db" }}
-              required
-            />
-          </div>
-
-          {err && <div style={{ color: "#b91c1c", fontSize: "0.85rem" }}>{err}</div>}
-
-          <div className="account-actions">
-            <button type="submit" className="btn-primary" style={{ padding: "8px 24px" }} disabled={busy}>
-              {busy ? "Logging in..." : "Login"}
-            </button>
-            <Link to="/signup" className="btn-outline">Create account</Link>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-function Signup() {
-  const { signup } = useAuth();
-  const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
-  const [err, setErr] = useState("");
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setErr("");
-    try {
-      const newUser = await signup(form);
-      if (newUser && (newUser.role || "").toLowerCase() === "admin") navigate("/admin");
-      else navigate("/");
-    } catch (ex) {
-      setErr(ex.message);
-    }
-  };
-
-  return (
-    <div className="account-page">
-      <div className="account-card">
-        <h1 className="account-title">Create your E-Store account</h1>
-        <p className="account-subtitle">Shop faster, track orders and manage returns easily.</p>
-
-        <form onSubmit={submit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Full name</label>
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "8px", border: "1px solid #d1d5db" }} required />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Email</label>
-            <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "8px", border: "1px solid #d1d5db" }} type="email" required />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Password</label>
-            <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "8px", border: "1px solid #d1d5db" }} required />
-          </div>
-
-          {err && <div style={{ color: "#b91c1c", fontSize: "0.85rem" }}>{err}</div>}
-
-          <div className="account-actions">
-            <button type="submit" className="btn-primary" style={{ padding: "8px 24px" }}>Signup</button>
-            <Link to="/login" className="btn-outline">Already have an account?</Link>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 /* ------------------ ProtectedRoute and AdminRoute ------------------ */
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -993,86 +774,6 @@ function ConditionalFooter() {
 }
 
 
-
-
-// /* ------------------ CartPage (paste this above export default App) ------------------ */
-// function CartPage({ cart, setCart }) {
-//   // update qty and remove helpers
-//   const updateQty = (id, qty) => {
-//     setCart((prev) => {
-//       const next = prev.map((it) => (it.id === id ? { ...it, qty } : it)).filter((it) => it.qty > 0);
-//       saveCart(next);
-//       return next;
-//     });
-//   };
-
-//   const remove = (id) => {
-//     setCart((prev) => {
-//       const next = prev.filter((c) => c.id !== id);
-//       saveCart(next);
-//       return next;
-//     });
-//   };
-
-//   const total = (cart || []).reduce((s, c) => s + (c.price || 0) * (c.qty || 0), 0);
-
-//   return (
-//     <div className="max-w-5xl mx-auto px-4 py-8">
-//       <h2 className="text-2xl font-semibold mb-4">Your cart</h2>
-
-//       {!cart || cart.length === 0 ? (
-//         <div className="p-8 bg-white rounded shadow text-center">Your cart is empty</div>
-//       ) : (
-//         <div className="grid md:grid-cols-[2fr_1fr] gap-6">
-//           <div className="bg-white rounded shadow p-4 space-y-4">
-//             {cart.map((item) => (
-//               <div key={item.id} className="flex items-center gap-4 border-b last:border-b-0 pb-4 last:pb-0">
-//                 <SafeImage
-//                   candidates={[item.image, "/images/category-1.jpg"]}
-//                   alt={item.title}
-//                   width="80"
-//                   height="80"
-//                   className="w-20 h-20 object-contain bg-gray-100 p-2 rounded"
-//                 />
-//                 <div className="flex-1">
-//                   <div className="font-medium">{item.title}</div>
-//                   <div className="text-sm text-gray-500">₹{item.price}</div>
-//                   <div className="mt-2 flex items-center gap-3">
-//                     <span className="text-xs text-gray-500">Qty:</span>
-//                     <input
-//                       type="number"
-//                       min="1"
-//                       value={item.qty}
-//                       onChange={(e) => updateQty(item.id, Math.max(1, Number(e.target.value)))}
-//                       className="w-20 border rounded p-1 text-sm"
-//                     />
-//                     <button type="button" onClick={() => remove(item.id)} className="text-xs text-red-600 hover:underline">Remove</button>
-//                   </div>
-//                 </div>
-//                 <div className="w-28 text-right font-semibold">₹{(item.qty || 0) * (item.price || 0)}</div>
-//               </div>
-//             ))}
-//           </div>
-
-//           <div className="bg-white rounded shadow p-4 h-fit">
-//             <h3 className="text-lg font-semibold mb-3">Order summary</h3>
-//             <div className="flex justify-between text-sm mb-2">
-//               <span>Items ({cart.length})</span>
-//               <span>₹{total}</span>
-//             </div>
-//             <div className="flex justify-between text-base font-semibold border-t pt-3 mt-2">
-//               <span>Total</span>
-//               <span>₹{total}</span>
-//             </div>
-//             <Link to="/checkout" className="mt-4 block text-center bg-blue-600 text-white px-4 py-2 rounded font-semibold">Proceed to checkout</Link>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
-
-
 function AdminGuard({ children }) {
   const { user, loading } = useAuth();
 
@@ -1095,48 +796,33 @@ function AdminGuard({ children }) {
 
 /* ------------------ App (root) ------------------ */
 export default function App() {
+  return (
+    <AuthProvider>
+      <CartProvider>
+        <AppRoutes />
+      </CartProvider>
+    </AuthProvider>
+  );
+}
+
+/* ================= ROUTES ================= */
+
+function AppRoutes() {
   const [products] = useState(PRODUCTS);
-  const [cart, setCart] = useState(() => readCart());
   const [wishlist, setWishlist] = useState(() => readWishlist());
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState(null);
 
-  /* ---------------- CART HELPERS (✅ FIXED LOCATION) ---------------- */
+  const { cart, addToCart } = useCart(); // ✅ SAFE
 
-  const updateQty = (id, qty) => {
-    if (qty < 1) return;
-
-    setCart((prev) => {
-      const next = prev.map((item) =>
-        item.id === id ? { ...item, qty } : item
-      );
-      saveCart(next);
-      return next;
-    });
-  };
-
-  const removeFromCart = (id) => {
-    setCart((prev) => {
-      const next = prev.filter((item) => item.id !== id);
-      saveCart(next);
-      return next;
-    });
-  };
-
-  /* ---------------- EFFECTS ---------------- */
-
-  useEffect(() => {
-    saveCart(cart);
-  }, [cart]);
+  /* ---------- EFFECTS ---------- */
 
   useEffect(() => {
     window.showEstoreToast = (msg) => {
       setToast(msg);
       setTimeout(() => setToast(null), 1800);
     };
-    return () => {
-      delete window.showEstoreToast;
-    };
+    return () => delete window.showEstoreToast;
   }, []);
 
   useEffect(() => {
@@ -1156,195 +842,157 @@ export default function App() {
   }, []);
 
   const onAddToCart = (product) => {
-    setCart((prev) => {
-      const existing = prev.find((c) => c.id === product.id);
-      let next;
-      if (existing) next = prev.map((c) => (c.id === product.id ? { ...c, qty: c.qty + 1 } : c));
-      else next = [...prev, { ...product, qty: 1 }];
-      saveCart(next);
-      return next;
-    });
+    addToCart(product);
     setToast(`${product.title} added to cart`);
-    window.setTimeout(() => setToast(null), 1800);
+    setTimeout(() => setToast(null), 1800);
   };
 
   return (
-    <AuthProvider>
-      <ConditionalHeader
-        onSearch={(q) => setSearchQuery(q)}
-        cart={cart}
-        wishlist={wishlist}
+  <>
+    <ConditionalHeader
+      onSearch={setSearchQuery}
+      cart={cart}
+      wishlist={wishlist}
+    />
+
+    {toast && (
+      <div className="fixed right-4 top-4 z-50">
+        <div className="bg-black text-white px-4 py-2 rounded shadow">
+          {toast}
+        </div>
+      </div>
+    )}
+
+    <Routes>
+      {/* ================= ADMIN ================= */}
+      <Route
+        path="/admin"
+        element={
+          <AdminGuard>
+            <AdminLayout />
+          </AdminGuard>
+        }
+      >
+        <Route index element={<Dashboard />} />
+
+        {/* PRODUCTS */}
+        <Route path="products" element={<ProductsPage />} />
+        <Route path="products/new" element={<AddProduct />} />
+        <Route path="products/:id/edit" element={<EditProduct />} />
+
+        {/* CATEGORIES */}
+        <Route path="categories" element={<CategoriesPage />} />
+        <Route path="categories/new" element={<CreateCategory />} />
+        <Route path="categories/:id/edit" element={<EditCategory />} />
+
+        {/* ORDERS */}
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="orders/new" element={<CreateOrder />} />
+        <Route path="/admin/orders/:id" element={<OrderDetailsPage />} />
+        {/* CUSTOMERS */}
+        <Route path="customers" element={<CustomersPage />} />
+        <Route path="customers/new" element={<AddCustomerPage />} />
+        
+
+        {/* CMS */}
+        <Route path="cms">
+          <Route index element={<CMSDashboard />} />
+          <Route path="pages" element={<CMSPages />} />
+          <Route path="pages/edit/:id" element={<EditCMSPage />} />
+          <Route path="banners" element={<CMSBanners />} />
+          <Route path="seo" element={<CMSSEO />} />
+        </Route>
+      </Route>
+
+      {/* ================= MAIN SITE ================= */}
+      <Route
+        path="/"
+        element={
+          <Home
+            products={products}
+            onAddToCart={onAddToCart}
+            searchQuery={searchQuery}
+          />
+        }
       />
 
-      {toast && (
-        <div className="fixed right-4 top-4 z-50">
-          <div className="bg-black text-white px-4 py-2 rounded shadow">
-            {toast}
+      <Route
+        path="/products"
+        element={
+          <StoreProductsPage
+            products={products}
+            onAddToCart={onAddToCart}
+          />
+        }
+      />
+
+      <Route
+        path="/search"
+        element={
+          <SearchResults
+            products={products}
+            onAddToCart={onAddToCart}
+          />
+        }
+      />
+
+      <Route
+        path="/product/:id"
+        element={<ProductDetail onAddToCart={onAddToCart} />}
+      />
+
+      <Route
+        path="/category/:name"
+        element={<CategoryPage onAddToCart={onAddToCart} />}
+      />
+
+      {/* CART / CHECKOUT FLOW */}
+      <Route path="/cart" element={<CartPage />} />
+      <Route path="/order-success" element={<OrderSuccess />} />
+
+      {/* AUTH */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+
+      {/* WISHLIST */}
+      <Route
+        path="/wishlist"
+        element={
+          <WishlistPage
+            wishlist={wishlist}
+            onAddToCart={onAddToCart}
+          />
+        }
+      />
+
+      <Route
+  path="/checkout"
+  element={
+    <ProtectedRoute>
+      <CheckoutPage />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/orders/:id"
+  element={<OrderDetailsPage />}
+/>
+
+
+
+      {/* 404 */}
+      <Route
+        path="*"
+        element={
+          <div className="p-12">
+            Not found — <Link to="/">Home</Link>
           </div>
-        </div>
-      )}
+        }
+      />
+    </Routes>
 
-      <Routes>
-        {/* ================= ADMIN PANEL (PROTECTED) ================= */}
-        <Route
-          path="/admin"
-          element={
-            <AdminGuard>
-              <AdminLayout />
-            </AdminGuard>
-          }
-        >
-          <Route index element={<Dashboard />} />
-
-          <Route path="products" element={<ProductsPage />} />
-          <Route path="products/new" element={<AddProduct />} />
-          <Route path="products/:id/edit" element={<EditProduct />} />
-
-
-          <Route path="categories" element={<CategoriesPage />} />
-          <Route path="categories/new" element={<CreateCategory />} />
-          <Route path="/admin/categories/:id/edit" element={<EditCategory />} />
-
-          <Route path="orders" element={<OrdersPage />} />
-          <Route path="orders/new" element={<CreateOrder />} />
-          <Route path="/admin/orders/:id/edit" element={<EditOrderPage />} />
-
-
-          <Route path="customers" element={<CustomersPage />} />
-          <Route path="/admin/customers/new" element={<AddCustomerPage />} />
-          {/* CMS */}
-          <Route path="cms" element={<CMSDashboard />} />
-          <Route path="cms/pages" element={<CMSPages />} />
-          <Route path="cms/pages/:id/edit" element={<EditCMSPage />} />
-          <Route path="cms/seo" element={<CMSEO />} />
-          <Route path="cms/banners" element={<CMSBanners />} />
-        </Route>
-
-        {/* ================= PUBLIC CMS ================= */}
-        <Route path="/page/:slug" element={<PageBySlug />} />
-
-        {/* ================= MAIN SITE ================= */}
-        <Route
-          path="/"
-          element={
-            <Home
-              products={products}
-              onAddToCart={onAddToCart}
-              searchQuery={searchQuery}
-            />
-          }
-        />
-
-
-
-        <Route
-          path="/products"
-          element={
-            <StoreProductsPage
-              products={products}
-              onAddToCart={onAddToCart}
-            />
-          }
-        />
-
-        <Route
-          path="/search"
-          element={
-            <SearchResults
-              products={products}
-              onAddToCart={onAddToCart}
-            />
-          }
-        />
-
-        <Route
-          path="/product/:id"
-          element={<ProductDetail onAddToCart={onAddToCart} />}
-        />
-
-        <Route
-          path="/category/:name"
-          element={<CategoryPage onAddToCart={onAddToCart} />}
-        />
-
-        <Route
-          path="/cart"
-          element={
-            <CartPage
-              cart={cart}
-              updateQty={updateQty}
-              removeFromCart={removeFromCart}
-            />
-          }
-        />
-
-
-
-        <Route
-          path="/wishlist"
-          element={
-            <WishlistPage
-              wishlist={wishlist}
-              setWishlist={setWishlist}
-              onAddToCart={onAddToCart}
-            />
-          }
-        />
-
-        <Route path="/vendor/:id" element={<VendorPage />} />
-        <Route path="/brand/:name" element={<BrandPage />} />
-        <Route path="/account/settings" element={<AccountSettings />} />
-
-        {/* ================= PROTECTED CUSTOMER ================= */}
-        <Route
-          path="/checkout"
-          element={
-            <ProtectedRoute>
-              <Checkout />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/orders"
-          element={
-            <ProtectedRoute>
-              <Orders />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* ================= AUTH ================= */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-
-        {/* ================= STATIC ================= */}
-
-        <Route path="/blog" element={<BlogList />} />
-        <Route path="/blog/:id" element={<BlogPost />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/careers" element={<Careers />} />
-
-        {/* ================= 404 ================= */}
-        <Route
-          path="*"
-          element={
-            <div className="p-12">
-              Not found — <Link to="/">Home</Link>
-            </div>
-          }
-        />
-      </Routes>
-      <ConditionalFooter />
-    </AuthProvider>
-  );
+    <ConditionalFooter />
+  </>
+);
 }

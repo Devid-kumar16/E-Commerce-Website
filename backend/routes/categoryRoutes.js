@@ -1,6 +1,7 @@
 import express from "express";
 import {
   listCategories,
+  listActiveCategories,
   createCategory,
   getCategory,
   updateCategory,
@@ -9,10 +10,16 @@ import { authRequired, isAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", listCategories);
+/* ================= PUBLIC ================= */
+
+// 🔹 Used by Add/Edit Product page
+router.get("/active", listActiveCategories);
+
+/* ================= ADMIN ================= */
+
+router.get("/", authRequired, isAdmin, listCategories);
 router.post("/", authRequired, isAdmin, createCategory);
 router.get("/:id", authRequired, isAdmin, getCategory);
 router.put("/:id", authRequired, isAdmin, updateCategory);
 
 export default router;
-

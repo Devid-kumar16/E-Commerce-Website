@@ -21,7 +21,7 @@ export default function CreateProduct() {
   }, []);
 
   const loadCategories = async () => {
-    const res = await api.get("/categories");
+    const res = await api.get("/categories/active");
     setCategories(res.data.categories || []);
   };
 

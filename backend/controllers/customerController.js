@@ -17,6 +17,7 @@ export async function listCustomersAdmin(req, res) {
 
     const whereSql = `WHERE ${where.join(" AND ")}`;
 
+    /* ================= MAIN QUERY ================= */
     const [rows] = await pool.query(
       `
       SELECT 
@@ -29,14 +30,19 @@ export async function listCustomersAdmin(req, res) {
       LEFT JOIN orders o ON o.user_id = u.id
       ${whereSql}
       GROUP BY u.id
-      ORDER BY u.created_at ASC
+      ORDER BY u.created_at DESC   -- ✅ MOST RECENT FIRST
       LIMIT ? OFFSET ?
       `,
       [...params, limit, offset]
     );
 
+    /* ================= COUNT QUERY ================= */
     const [countRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM users u ${whereSql}`,
+      `
+      SELECT COUNT(*) AS total
+      FROM users u
+      ${whereSql}
+      `,
       params
     );
 
@@ -45,10 +51,37 @@ export async function listCustomersAdmin(req, res) {
       meta: {
         total: countRows[0].total,
         page,
+        limit,
       },
     });
   } catch (err) {
     console.error("listCustomersAdmin error:", err);
     res.status(500).json({ message: "Server error fetching customers" });
+  }
+}
+
+
+export async function searchCustomers(req, res) {
+  try {
+    const q = req.query.q;
+
+    if (!q || q.length < 3) {
+      return res.json({ customers: [] });
+    }
+
+    const [rows] = await pool.query(
+      `
+      SELECT id, phone, email
+      FROM users
+      WHERE phone LIKE ? OR email LIKE ?
+      LIMIT 10
+      `,
+      [`%${q}%`, `%${q}%`]
+    );
+
+    res.json({ customers: rows });
+  } catch (err) {
+    console.error("searchCustomers error:", err);
+    res.status(500).json({ message: "Customer search failed" });
   }
 }

@@ -1,46 +1,35 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import "../styles/Cart.css";
-
-/* ✅ Cart helpers */
-const CART_KEY = "estore_cart_v1";
-
-const getCart = () =>
-  JSON.parse(localStorage.getItem(CART_KEY) || "[]");
-
-const saveCart = (cart) =>
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+import { useNavigate } from "react-router-dom";
+import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthProvider";
 
 export default function CartPage() {
-  const [cart, setCart] = useState([]);
+  const { cart, updateQty, removeFromCart } = useCart();
+  const { user } = useAuth(); // ✅ logged-in user
+  const navigate = useNavigate();
 
-  /* 🔁 Load cart on page load */
-  useEffect(() => {
-    setCart(getCart());
-  }, []);
-
-  /* ➕➖ Update quantity */
-  const updateQty = (id, qty) => {
-    if (qty < 1) return;
-
-    const updated = cart.map((item) =>
-      item.id === id ? { ...item, qty } : item
-    );
-
-    setCart(updated);
-    saveCart(updated);
-  };
-
-  /* ❌ Remove item */
-  const removeFromCart = (id) => {
-    const updated = cart.filter((item) => item.id !== id);
-    setCart(updated);
-    saveCart(updated);
-  };
-
+  /* 🧮 Calculate total */
   const total = cart.reduce(
-    (sum, item) => sum + item.price * item.qty,
+    (sum, item) => sum + Number(item.price) * item.qty,
     0
   );
+
+  /* ✅ CHECKOUT HANDLER (INDUSTRY STANDARD) */
+  const handleCheckout = () => {
+    if (cart.length === 0) {
+      alert("Your cart is empty");
+      return;
+    }
+
+    if (!user) {
+      // redirect to login, then back to checkout
+      navigate("/login", { state: { from: "/checkout" } });
+      return;
+    }
+
+    navigate("/checkout");
+  };
 
   return (
     <div className="cart-page">
@@ -56,7 +45,7 @@ export default function CartPage() {
           {cart.map((item) => (
             <div className="cart-item" key={item.id}>
               <img
-                src={item.image}
+                src={item.image || item.image_url}
                 alt={item.name}
                 className="cart-image"
                 onError={(e) =>
@@ -72,11 +61,22 @@ export default function CartPage() {
                   <div className="qty-box">
                     Qty:
                     <div className="qty-control">
-                      <button onClick={() => updateQty(item.id, item.qty - 1)}>
+                      <button
+                        onClick={() =>
+                          updateQty(item.id, item.qty - 1)
+                        }
+                        disabled={item.qty <= 1}
+                      >
                         -
                       </button>
+
                       <span>{item.qty}</span>
-                      <button onClick={() => updateQty(item.id, item.qty + 1)}>
+
+                      <button
+                        onClick={() =>
+                          updateQty(item.id, item.qty + 1)
+                        }
+                      >
                         +
                       </button>
                     </div>
@@ -104,7 +104,9 @@ export default function CartPage() {
 
           <div className="summary-row">
             <span>Items</span>
-            <span>{cart.length}</span>
+            <span>
+              {cart.reduce((sum, item) => sum + item.qty, 0)}
+            </span>
           </div>
 
           <div className="summary-row total">
@@ -112,7 +114,12 @@ export default function CartPage() {
             <span>₹{total}</span>
           </div>
 
-          <button className="checkout-btn">
+          {/* ✅ FIXED BUTTON */}
+          <button
+            className="checkout-btn"
+            disabled={cart.length === 0}
+            onClick={handleCheckout}
+          >
             Proceed to Checkout
           </button>
         </div>

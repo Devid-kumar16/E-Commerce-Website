@@ -78,16 +78,11 @@ export default function CategoriesPage() {
                 <td>{c.name}</td>
 
                 <td>
-                  <span
-                    className={`badge ${
-                      c.status === "active"
-                        ? "badge-active"
-                        : "badge-inactive"
-                    }`}
-                  >
+                  <span className={`badge ${c.status === "active" ? "badge-success" : "badge-danger"}`}>
                     {c.status}
                   </span>
                 </td>
+
 
                 {/* IMAGE */}
                 <td>

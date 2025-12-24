@@ -1,75 +1,53 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import { useCart } from "../context/CartContext";
 import "../styles/Wishlist.css";
 
-export default function WishlistPage({ wishlist, setWishlist, onAddToCart }) {
-  const removeFromWishlist = (id) => {
-    setWishlist((prev) => {
-      const next = prev.filter((item) => item.id !== id);
-      localStorage.setItem("estore_wishlist_v1", JSON.stringify(next));
-      return next;
-    });
-  };
+function WishlistPage() {
+  const { wishlist, removeFromWishlist, addToCart } = useCart();
 
-  const moveToCart = (item) => {
-    onAddToCart(item);
-    removeFromWishlist(item.id);
-  };
+  if (wishlist.length === 0) {
+    return <h2 className="wishlist-empty">Your wishlist is empty</h2>;
+  }
 
   return (
     <div className="wishlist-page">
       <h2 className="wishlist-title">My Wishlist</h2>
 
-      {wishlist.length === 0 ? (
-        <div className="wishlist-empty">
-          <h3>Your wishlist is empty</h3>
-          <Link to="/" className="wishlist-btn">
-            Continue Shopping
-          </Link>
-        </div>
-      ) : (
-        <div className="wishlist-grid">
-          {wishlist.map((item) => (
-            <div className="wishlist-card" key={item.id}>
-              <Link to={`/product/${item.id}`}>
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="wishlist-image"
-                />
-              </Link>
+      <div className="wishlist-grid">
+        {wishlist.map((item) => (
+          <div key={item.id} className="wishlist-card">
+            <div className="wishlist-image">
+              <img
+                src={item.image_url || item.image}
+                alt={item.name}
+                onError={(e) => (e.target.src = "/placeholder.png")}
+              />
+            </div>
 
-              <div className="wishlist-info">
-                <h4>{item.name}</h4>
-                <p className="wishlist-price">₹{item.price}</p>
-              </div>
+            <div className="wishlist-info">
+              <h4>{item.name}</h4>
+              <p className="wishlist-price">₹{item.price}</p>
 
               <div className="wishlist-actions">
                 <button
-                  className="wishlist-cart-btn"
-                  onClick={() => moveToCart(item)}
+                  className="btn-cart"
+                  onClick={() => addToCart(item)}
                 >
                   Add to Cart
                 </button>
 
                 <button
-                  className="wishlist-remove-btn"
+                  className="btn-remove"
                   onClick={() => removeFromWishlist(item.id)}
                 >
                   Remove
                 </button>
-
-                <Link
-                  to={`/product/${item.id}`}
-                  className="wishlist-view-btn"
-                >
-                  View
-                </Link>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
+
+export default WishlistPage;

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
+import "../styles/Auth.css";
 
 export default function Login() {
   const { login } = useAuth();
@@ -14,63 +15,76 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
+
+    if (!email || !password) {
+      setError("Email and password are required");
+      return;
+    }
 
     try {
-      // ✅ login() should return { user }
-      const result = await login({ email, password });
+      setLoading(true);
 
-      const user = result?.user;
+      // ✅ CORRECT CALL
+      const user = await login({ email, password });
 
-      if (!user) {
-        throw new Error("Login failed");
-      }
-
-      // ✅ role-based redirect
+      // ✅ Redirect based on role
       if (user.role === "admin") {
-        navigate("/admin", { replace: true });
+        navigate("/admin");
       } else {
-        navigate("/", { replace: true });
+        navigate("/");
       }
     } catch (err) {
-      // ✅ show backend message if available
-      setError(
-        err?.response?.data?.message ||
-        err?.message ||
-        "Invalid email or password"
-      );
+      setError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-page">
-      <form onSubmit={handleSubmit}>
-        <h2>Login</h2>
+    <div className="auth-container">
+      <div className="auth-card">
+        <h2 className="auth-title">Welcome Back 👋</h2>
+        <p className="auth-subtitle">
+          Login to continue shopping on <strong>E-Store</strong>
+        </p>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <div className="auth-error">{error}</div>}
 
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          required
-        />
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              value={email}
+              placeholder="Enter your email"
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+              required
+            />
+          </div>
 
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          required
-        />
+          <div className="form-group">
+            <label>Password</label>
+            <input
+              type="password"
+              value={password}
+              placeholder="Enter your password"
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              required
+            />
+          </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
+          <button className="auth-btn" type="submit" disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+
+        <p className="auth-footer">
+          Don’t have an account?{" "}
+          <Link to="/signup">Create one</Link>
+        </p>
+      </div>
     </div>
   );
 }

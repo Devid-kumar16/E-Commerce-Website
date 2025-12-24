@@ -23,7 +23,7 @@ export default function CustomersPage() {
           params: {
             page: pageToLoad,
             limit: PAGE_SIZE,
-            q: search,
+            q: search || undefined,
           },
         });
 
@@ -48,15 +48,10 @@ export default function CustomersPage() {
     [search]
   );
 
-  /* initial load */
+  /* initial + search load */
   useEffect(() => {
     load(1);
   }, [load]);
-
-  /* reload when search changes */
-  useEffect(() => {
-    load(1);
-  }, [search, load]);
 
   return (
     <div className="admin-page">
@@ -69,7 +64,6 @@ export default function CustomersPage() {
           </p>
         </div>
 
-        {/* ✅ OPEN ADD CUSTOMER ON NEW PAGE */}
         <Link to="/admin/customers/new" className="btn-primary">
           + Add Customer
         </Link>
@@ -100,6 +94,7 @@ export default function CustomersPage() {
               <th>Joined</th>
             </tr>
           </thead>
+
           <tbody>
             {!loading && items.length === 0 && (
               <tr>
@@ -109,9 +104,11 @@ export default function CustomersPage() {
               </tr>
             )}
 
-            {items.map((c) => (
+            {items.map((c, index) => (
               <tr key={c.id}>
-                <td>{c.id}</td>
+                {/* ✅ SERIAL NUMBER (PAGINATION SAFE) */}
+                <td>{(page - 1) * PAGE_SIZE + index + 1}</td>
+
                 <td>{c.name}</td>
                 <td>{c.email}</td>
                 <td>{c.orders ?? 0}</td>

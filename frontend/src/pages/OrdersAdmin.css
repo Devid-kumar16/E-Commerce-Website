@@ -1,0 +1,39 @@
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 12px;
+  background: #f6f7fb;
+  font-weight: 600;
+}
+
+.admin-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.order-id {
+  font-weight: 600;
+}
+
+.status {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status.pending { background: #fff3cd; color: #856404; }
+.status.paid { background: #e0f0ff; color: #004085; }
+.status.shipped { background: #e7f1ff; color: #0c63e4; }
+.status.delivered { background: #e6fffa; color: #0f5132; }
+.status.cancelled { background: #fde2e2; color: #842029; }
+
+.actions .btn-view {
+  color: #4f46e5;
+  font-weight: 600;
+  text-decoration: none;
+}

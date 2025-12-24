@@ -5,14 +5,14 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// 🔐 AUTO ATTACH TOKEN
+// AUTO ATTACH TOKEN
 api.interceptors.request.use(
-  (config) => {
+  (req) => {
     const token = localStorage.getItem("token");
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      req.headers.Authorization = `Bearer ${token}`;
     }
-    return config;
+    return req;
   },
   (error) => Promise.reject(error)
 );

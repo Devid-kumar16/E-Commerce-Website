@@ -984,7 +984,7 @@ input:focus, select:focus, textarea:focus {
 
 /* ===== ACTION COLUMN ===== */
 .action-cell {
-  text-align: right;          /* 🔥 moves button to right side */
+  text-align: right;        
   padding-right: 16px;
   white-space: nowrap;
 }
@@ -1090,4 +1090,468 @@ input:focus, select:focus, textarea:focus {
 .btn-delete:hover {
   background-color: #dc2626;
   transform: translateY(-1px);
+}
+
+
+/* ===== Primary Admin Button ===== */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 12px 28px;
+  margin-top: 16px;
+
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #ffffff;
+
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+
+  border: none;
+  border-radius: 10px;
+
+  cursor: pointer;
+  transition: all 0.25s ease;
+
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.25);
+}
+
+/* Hover */
+.btn-primary:hover {
+  background: linear-gradient(135deg, #4338ca, #4f46e5);
+  box-shadow: 0 10px 22px rgba(79, 70, 229, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Active */
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+/* Disabled state */
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+
+.form-actions {
+  display: flex;
+  justify-content: flex-middle;
+  margin-top: 25px;
+}
+
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-success {
+  background: #e6f7ee;
+  color: #0f8f5f;
+}
+
+.badge-danger {
+  background: #fdecea;
+  color: #d93025;
+}
+
+
+/* PAGE HEADER */
+.page-header {
+  margin-bottom: 20px;
+}
+
+.page-header h2 {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.page-subtitle {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* CARD */
+.product-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+}
+
+/* GRID */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.form-section label {
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 12px;
+  display: block;
+}
+
+.form-section input,
+.form-section select,
+.form-section textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.form-section input:focus,
+.form-section select:focus,
+.form-section textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+/* IMAGE PREVIEW */
+.image-preview {
+  margin-top: 14px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  max-width: 240px;
+}
+
+.image-preview img {
+  width: 100%;
+  display: block;
+}
+
+/* ACTIONS */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-primary {
+  background: #6366f1;
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: #4f46e5;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #111827;
+  padding: 10px 22px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+/* ERROR */
+.alert-error {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+
+
+/* Page */
+.admin-page {
+  padding: 32px 48px;
+  background: #f5f7fb;
+  min-height: 100vh;
+}
+
+/* Heading */
+.page-header h2 {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #111827;
+}
+
+/* Card */
+.add-customer-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 720px;
+  margin: 0 auto;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+}
+
+/* Form group */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.form-group input {
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* ✅ BUTTON ROW – PROPER */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+/* Buttons */
+.btn {
+  height: 44px;
+  min-width: 120px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Save */
+.btn-primary {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+}
+
+/* Cancel */
+.btn-secondary {
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+
+/* BUTTON ROW FIX */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+/* BUTTON FIX */
+.form-actions .btn {
+  width: auto;        /* 🔴 IMPORTANT */
+  min-width: 120px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+
+
+
+/* ===============================
+   CREATE ORDER – INDUSTRY UI
+================================ */
+
+.admin-page {
+  padding: 32px 48px;
+  background: #f5f7fb;
+  min-height: 100vh;
+}
+
+/* Page header */
+.page-header h2 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 28px;
+}
+
+/* Main card */
+.add-order-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 36px;
+  max-width: 960px;
+  margin: 0 auto;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
+
+/* Form groups */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 22px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 6px;
+}
+
+/* Inputs / Select / Textarea */
+.form-group input,
+.form-group select,
+.form-group textarea {
+  height: 46px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  color: #0f172a;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.form-group textarea {
+  height: auto;
+  resize: vertical;
+}
+
+/* Focus */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Disabled */
+.form-group input:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Two column layout */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* Dropdown (customer search) */
+.dropdown {
+  position: absolute;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+}
+
+.dropdown-item {
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+.dropdown-item strong {
+  display: block;
+  font-size: 14px;
+}
+
+.dropdown-item span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 36px;
+}
+
+/* Buttons */
+.btn {
+  min-width: 130px;
+  height: 46px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Primary (Amazon-like blue) */
+.btn-primary {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  border: none;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Secondary */
+.btn-secondary {
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid #e5e7eb;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+/* Error */
+.admin-error {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
 }

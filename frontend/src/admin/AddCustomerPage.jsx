@@ -14,23 +14,37 @@ export default function AddCustomerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const submit = async () => {
-    try {
-      if (!form.name || !form.email || !form.password) {
-        setError("All fields are required");
-        return;
-      }
+  /* ---------- INPUT CHANGE ---------- */
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  };
 
+  /* ---------- SUBMIT ---------- */
+  const submit = async (e) => {
+    e.preventDefault();
+
+    if (!form.name || !form.email || !form.password) {
+      setError("All fields are required");
+      return;
+    }
+
+    try {
       setLoading(true);
       setError("");
 
-      await api.post("/admin/customers", form);
+      await api.post("/admin/customers", {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+      });
 
       navigate("/admin/customers");
     } catch (err) {
       setError(
-        err.response?.data?.message ||
-          "Failed to create customer"
+        err.response?.data?.message || "Failed to create customer"
       );
     } finally {
       setLoading(false);
@@ -45,49 +59,65 @@ export default function AddCustomerPage() {
 
       {error && <div className="admin-error">{error}</div>}
 
-      <div className="admin-card">
-        <input
-          placeholder="Name"
-          value={form.name}
-          onChange={(e) =>
-            setForm({ ...form, name: e.target.value })
-          }
-        />
+      <form
+        className="admin-card add-customer-card"
+        onSubmit={submit}
+      >
+        <div className="form-group">
+          <label>Name</label>
+          <input
+            name="name"
+            placeholder="Enter full name"
+            value={form.name}
+            onChange={handleChange}
+            disabled={loading}
+          />
+        </div>
 
-        <input
-          placeholder="Email"
-          value={form.email}
-          onChange={(e) =>
-            setForm({ ...form, email: e.target.value })
-          }
-        />
+        <div className="form-group">
+          <label>Email</label>
+          <input
+            name="email"
+            type="email"
+            placeholder="Enter email address"
+            value={form.email}
+            onChange={handleChange}
+            disabled={loading}
+          />
+        </div>
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={(e) =>
-            setForm({ ...form, password: e.target.value })
-          }
-        />
+        <div className="form-group">
+          <label>Password</label>
+          <input
+            name="password"
+            type="password"
+            placeholder="Enter password"
+            value={form.password}
+            onChange={handleChange}
+            disabled={loading}
+          />
+        </div>
 
+        {/* ✅ BUTTONS PROPER PLACE */}
         <div className="form-actions">
           <button
+            type="submit"
             className="btn btn-primary"
-            onClick={submit}
             disabled={loading}
           >
-            Save
+            {loading ? "Saving..." : "Save"}
           </button>
 
           <button
+            type="button"
             className="btn btn-secondary"
             onClick={() => navigate("/admin/customers")}
+            disabled={loading}
           >
             Cancel
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

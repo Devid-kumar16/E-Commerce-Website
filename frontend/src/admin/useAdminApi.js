@@ -1,9 +1,9 @@
-// src/admin/hooks/useAdminApi.js
+// src/admin/useAdminApi.js
 import axios from "axios";
 
 /* ================= AXIOS INSTANCE ================= */
 
-const API = axios.create({
+const adminApi = axios.create({
   baseURL: "http://127.0.0.1:5000/api",
   headers: {
     "Content-Type": "application/json",
@@ -11,60 +11,44 @@ const API = axios.create({
 });
 
 /* 🔐 Attach token automatically */
-API.interceptors.request.use(
-  (req) => {
+adminApi.interceptors.request.use(
+  (config) => {
     const token = localStorage.getItem("token");
 
     if (token && token !== "null" && token !== "undefined") {
-      req.headers.authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`; // ✅ IMPORTANT
     } else {
-      delete req.headers.authorization;
+      delete config.headers.Authorization;
     }
 
-    return req;
+    return config;
   },
   (error) => Promise.reject(error)
 );
 
-/* ================= GENERIC ADMIN API HOOK ================= */
-
+/* ================= ADMIN API HOOK ================= */
 /**
- * Generic admin API caller
- * Used like: api("/orders/admin?page=1")
+ * Usage:
+ * const api = useAdminApi();
+ * api.get("/orders/admin/35");
  */
 export default function useAdminApi() {
-  return async function api(path, options = {}) {
-    try {
-      const res = await API({
-        url: path,
-        method: options.method || "GET",
-        params: options.params,
-        data: options.body,
-      });
-
-      return res.data;
-    } catch (err) {
-      console.error("❌ Admin API error:", err?.response || err);
-      throw new Error(
-        err?.response?.data?.message || "Admin API request failed"
-      );
-    }
-  };
+  return adminApi;
 }
 
 /* ================= PRODUCTS ================= */
 
 export const getProducts = async ({ page = 1, limit = 10 } = {}) => {
   try {
-    const res = await API.get("/products/admin/list", {
+    const res = await adminApi.get("/products/admin/list", {
       params: { page, limit },
     });
 
     return {
       products: res.data.products || [],
       total: res.data.total || 0,
-      page: res.data.page || page,
-      limit: res.data.limit || limit,
+      page,
+      limit,
     };
   } catch (err) {
     console.error("❌ getProducts failed:", err?.response || err);
@@ -72,40 +56,26 @@ export const getProducts = async ({ page = 1, limit = 10 } = {}) => {
   }
 };
 
-export const createProduct = async (data) => {
-  try {
-    const res = await API.post("/products/admin", data);
-    return res.data;
-  } catch (err) {
-    console.error("❌ createProduct failed:", err?.response || err);
-    return {
-      ok: false,
-      message:
-        err?.response?.data?.message || "Failed to create product",
-    };
-  }
-};
-
-
 /* ================= ORDERS ================= */
 
 export const getOrders = async ({ page = 1, limit = 10 } = {}) => {
   try {
-    const res = await API.get("/orders/admin", {
+    const res = await adminApi.get("/orders/admin", {
       params: { page, limit },
     });
 
     if (res.data?.ok) {
       return {
         orders: res.data.orders || [],
-        total: res.data.total || 0,
-        pages: res.data.pages || 1,
+        total: res.data.meta?.total || 0,
+        page: res.data.meta?.page || page,
+        limit,
       };
     }
 
-    return { orders: [], total: 0, pages: 1 };
+    return { orders: [], total: 0, page, limit };
   } catch (err) {
     console.error("❌ getOrders failed:", err?.response || err);
-    return { orders: [], total: 0, pages: 1 };
+    return { orders: [], total: 0, page, limit };
   }
 };

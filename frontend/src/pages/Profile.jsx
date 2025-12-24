@@ -1,7 +1,7 @@
 // src/pages/Profile.jsx
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthProvider";
+import { useAuth } from "../context/AuthProvider";
 
 export default function Profile() {
   const { user, logout } = useAuth();

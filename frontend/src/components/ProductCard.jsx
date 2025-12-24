@@ -1,83 +1,54 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { addToCart } from "../utils/cart";
-import "../styles/ProductCard.css";
+import { FaHeart } from "react-icons/fa";
 
-export default function ProductCard({ product, wishlist = [] }) {
-  if (!product) return null;
-
-  // ✅ Image normalization
-  const image =
-    (product.image_url && product.image_url.trim()) ||
-    (product.image && product.image.trim()) ||
-    "/images/placeholder.png";
-
-  // ✅ Wishlist active check
-  const isWishlisted = wishlist.some((item) => item.id === product.id);
-
-  // ✅ Add to cart (localStorage)
-  const handleAddToCart = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image
-    });
-  };
-
-  // ✅ Wishlist toggle
-  const handleWishlist = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    window.dispatchEvent(
-      new CustomEvent("toggle-wishlist", {
-        detail: {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          image
-        }
-      })
-    );
-  };
+function ProductCard({
+  product,
+  isWishlisted,
+  onToggleWishlist,
+  onAddToCart, // ✅ ADD THIS
+}) {
+  // ✅ Safe image resolver
+  const imageSrc =
+    product.image_url ||
+    product.image ||
+    (Array.isArray(product.images) ? product.images[0] : null) ||
+    "/placeholder.png";
 
   return (
     <div className="product-card">
-      <Link to={`/product/${product.id}`} className="product-card-link">
-        <div className="product-image-wrapper">
-          <img
-            src={image}
-            alt={product.name}
-            className="product-image"
-            onError={(e) => {
-              e.currentTarget.src = "/images/placeholder.png";
-            }}
-          />
+      <div className="product-image-wrapper">
+        <img
+          src={imageSrc}
+          alt={product.name}
+          onError={(e) => {
+            e.target.src = "/placeholder.png";
+          }}
+        />
 
-          {/* ❤️ Wishlist (BOTTOM RIGHT like Myntra) */}
-          <button
-            type="button"
-            className={`wishlist-btn ${isWishlisted ? "active" : ""}`}
-            onClick={handleWishlist}
-            aria-label="Add to wishlist"
-          >
-            ♥
-          </button>
-        </div>
+        {/* ✅ Wishlist Button */}
+        <button
+          type="button"
+          className={`wishlist-btn ${isWishlisted ? "active" : ""}`}
+          onClick={() => onToggleWishlist(product)}
+        >
+          <FaHeart />
+        </button>
+      </div>
 
-        <div className="product-info">
-          <h3 className="product-title">{product.name}</h3>
-          <p className="product-price">₹{product.price}</p>
-        </div>
-      </Link>
+      <div className="product-info">
+        <h4>{product.name}</h4>
+        <p className="product-price">₹{product.price}</p>
 
-      <button className="add-to-cart-btn" onClick={handleAddToCart}>
-        Add to cart
-      </button>
+        {/* ✅ Add to Cart Button FIXED */}
+        <button
+          type="button"
+          className="btn-add-cart"
+          onClick={() => onAddToCart(product)}
+        >
+          Add to cart
+        </button>
+      </div>
     </div>
   );
 }
+
+export default ProductCard;
