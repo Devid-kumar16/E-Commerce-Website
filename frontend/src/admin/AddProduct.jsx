@@ -1,99 +1,106 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import api from "../api/axios";
 
-export default function CreateProduct() {
+export default function AddProduct() {
   const navigate = useNavigate();
-  const ITEMS_PER_PAGE = 10;
-  const [page, setPage] = useState(1);
 
-  const [categories, setCategories] = useState([]);
   const [form, setForm] = useState({
     name: "",
     price: "",
-    image_url: "",
     category_id: "",
     status: "draft",
+    stock: 0,
+    image_url: "",
+    description: "",
   });
 
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  /* ================= LOAD CATEGORIES ================= */
   useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const res = await api.get("/categories/active");
+        setCategories(res.data.categories || []);
+      } catch (err) {
+        toast.error("Failed to load categories");
+      }
+    };
+
     loadCategories();
   }, []);
 
-  const loadCategories = async () => {
-    const res = await api.get("/categories/active");
-    setCategories(res.data.categories || []);
-  };
-
-  const submit = async (e) => {
+  /* ================= ADD PRODUCT ================= */
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    await api.post("/products/admin", form);
-    navigate("/admin/products");
+
+    setLoading(true);
+
+    try {
+      await api.post("/products/admin", {
+        name: form.name,
+        price: Number(form.price),
+        category_id: Number(form.category_id),
+        status: form.status,
+        stock: Number(form.stock),
+        image_url: form.image_url,
+        description: form.description,
+      });
+
+      toast.success("Product added successfully");
+
+      setTimeout(() => {
+        navigate("/admin/products");
+      }, 1200);
+    } catch (err) {
+      toast.error("Failed to add product");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="admin-page">
-      {/*  HEADER */}
       <div className="page-header">
-        <div>
-          <h2 className="page-title">Add Product</h2>
-          <p className="page-subtitle">
-            Create a new product for your store
-          </p>
-        </div>
+        <h2>Add Product</h2>
+        <p className="page-subtitle">
+          Create a new product for your store
+        </p>
       </div>
 
-      {/*  FORM CARD */}
-      <div className="admin-card form-card">
-        <form onSubmit={submit} className="form-grid">
-          {/* NAME */}
-          <div className="form-group">
+      <form className="product-card" onSubmit={handleSubmit}>
+        <div className="form-grid">
+          {/* LEFT COLUMN */}
+          <div className="form-section">
             <label>Product Name</label>
             <input
-              required
               value={form.name}
               onChange={(e) =>
                 setForm({ ...form, name: e.target.value })
               }
+              required
             />
-          </div>
 
-          {/* PRICE */}
-          <div className="form-group">
             <label>Price (₹)</label>
             <input
               type="number"
-              required
               value={form.price}
               onChange={(e) =>
                 setForm({ ...form, price: e.target.value })
               }
+              required
             />
-          </div>
 
-          {/* IMAGE URL */}
-          <div className="form-group">
-            <label>Image URL</label>
-            <input
-              placeholder="https://image-url"
-              value={form.image_url}
-              onChange={(e) =>
-                setForm({ ...form, image_url: e.target.value })
-              }
-            />
-          </div>
-
-          {/* CATEGORY */}
-          <div className="form-group">
             <label>Category</label>
             <select
               value={form.category_id}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  category_id: Number(e.target.value),
-                })
+                setForm({ ...form, category_id: e.target.value })
               }
+              required
             >
               <option value="">Select category</option>
               {categories.map((c) => (
@@ -102,10 +109,7 @@ export default function CreateProduct() {
                 </option>
               ))}
             </select>
-          </div>
 
-          {/* STATUS */}
-          <div className="form-group">
             <label>Status</label>
             <select
               value={form.status}
@@ -116,23 +120,66 @@ export default function CreateProduct() {
               <option value="draft">Draft</option>
               <option value="published">Published</option>
             </select>
+
+            <label>Stock Quantity</label>
+            <input
+              type="number"
+              value={form.stock}
+              onChange={(e) =>
+                setForm({ ...form, stock: e.target.value })
+              }
+            />
           </div>
 
-          {/* ACTIONS */}
-          <div className="form-actions">
-            <button className="btn btn-primary" type="submit">
-              Save Product
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => navigate(-1)}
-            >
-              Cancel
-            </button>
+          {/* RIGHT COLUMN */}
+          <div className="form-section">
+            <label>Image URL</label>
+            <input
+              type="text"
+              value={form.image_url}
+              onChange={(e) =>
+                setForm({ ...form, image_url: e.target.value })
+              }
+              placeholder="https://example.com/image.jpg"
+            />
+
+            {form.image_url && (
+              <div className="image-preview">
+                <img src={form.image_url} alt="Preview" />
+              </div>
+            )}
+
+            <label>Description</label>
+            <textarea
+              rows="6"
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+              placeholder="Write a short product description..."
+            />
           </div>
-        </form>
-      </div>
+        </div>
+
+        {/* ACTIONS */}
+        <div className="form-actions">
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={loading}
+          >
+            {loading ? "Saving..." : "Save Product"}
+          </button>
+
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => navigate("/admin/products")}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

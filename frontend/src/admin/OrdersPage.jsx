@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
 import useAdminApi from "./useAdminApi";
 import "./OrdersAdmin.css";
 
@@ -10,7 +11,6 @@ export default function OrdersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const PAGE_SIZE = 10;
 
@@ -21,9 +21,7 @@ export default function OrdersPage() {
     const loadOrders = async () => {
       try {
         setLoading(true);
-        setError("");
 
-        // ✅ CORRECT AXIOS CALL
         const res = await api.get("/orders/admin", {
           params: { page, limit: PAGE_SIZE },
         });
@@ -31,8 +29,6 @@ export default function OrdersPage() {
         if (!isMounted) return;
 
         const data = res.data;
-
-        // ✅ BACKEND RESPONSE HANDLING
         setOrders(data.orders || []);
 
         const total = data.meta?.total || 0;
@@ -40,7 +36,7 @@ export default function OrdersPage() {
       } catch (err) {
         if (!isMounted) return;
         console.error("Load orders error:", err);
-        setError(
+        toast.error(
           err?.response?.data?.message || "Failed to load orders"
         );
       } finally {
@@ -57,17 +53,24 @@ export default function OrdersPage() {
 
   /* ================= DELETE ORDER ================= */
   const handleDelete = async (id) => {
-    const ok = window.confirm("Are you sure you want to delete this order?");
+    const ok = window.confirm(
+      "Are you sure you want to delete this order?"
+    );
     if (!ok) return;
 
     try {
       await api.delete(`/orders/admin/${id}`);
 
+      toast.success("Order deleted successfully");
+
       // ✅ Optimistic UI update
       setOrders((prev) => prev.filter((o) => o.id !== id));
     } catch (err) {
       console.error("Delete order error:", err);
-      alert("Failed to delete order");
+      toast.error(
+        err?.response?.data?.message ||
+          "Failed to delete order"
+      );
     }
   };
 
@@ -77,21 +80,22 @@ export default function OrdersPage() {
       {/* HEADER */}
       <div className="page-header">
         <h2>Orders</h2>
+
         <Link to="/admin/orders/new" className="btn btn-primary">
           Create Order
         </Link>
       </div>
 
-      {error && <div className="admin-error">{error}</div>}
-
       <div className="admin-card">
         {loading ? (
-          <div className="admin-loading">Loading orders...</div>
+          <div className="admin-loading">
+            Loading orders...
+          </div>
         ) : (
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
+                <th>#</th>
                 <th>Customer</th>
                 <th>Area</th>
                 <th>Total (₹)</th>
@@ -102,7 +106,7 @@ export default function OrdersPage() {
             </thead>
 
             <tbody>
-              {!loading && orders.length === 0 && (
+              {orders.length === 0 && (
                 <tr>
                   <td colSpan="7" style={{ textAlign: "center" }}>
                     No orders found
@@ -112,13 +116,18 @@ export default function OrdersPage() {
 
               {orders.map((order, index) => (
                 <tr key={order.id}>
-                  {/* ✅ SEQUENTIAL NUMBER */}
+                  {/* Sequential number */}
                   <td>{(page - 1) * PAGE_SIZE + index + 1}</td>
 
                   <td>{order.customer_name || "—"}</td>
                   <td>{order.area || "—"}</td>
 
-                  <td>₹{Number(order.total_amount || 0).toFixed(2)}</td>
+                  <td>
+                    ₹
+                    {Number(
+                      order.total_amount || 0
+                    ).toFixed(2)}
+                  </td>
 
                   <td>
                     <span
@@ -130,7 +139,9 @@ export default function OrdersPage() {
 
                   <td>
                     {order.created_at
-                      ? new Date(order.created_at).toLocaleDateString()
+                      ? new Date(
+                          order.created_at
+                        ).toLocaleDateString()
                       : "—"}
                   </td>
 
@@ -144,7 +155,9 @@ export default function OrdersPage() {
 
                     <button
                       className="btn-delete"
-                      onClick={() => handleDelete(order.id)}
+                      onClick={() =>
+                        handleDelete(order.id)
+                      }
                     >
                       Delete
                     </button>

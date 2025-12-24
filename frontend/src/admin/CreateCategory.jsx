@@ -1,5 +1,6 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import api from "../api/axios";
 
 export default function CreateCategory() {
@@ -8,9 +9,12 @@ export default function CreateCategory() {
   const [name, setName] = useState("");
   const [status, setStatus] = useState("active");
   const [imageUrl, setImageUrl] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  /* ================= CREATE CATEGORY ================= */
   const submit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
       await api.post("/categories", {
@@ -19,56 +23,81 @@ export default function CreateCategory() {
         image_url: imageUrl || null,
       });
 
-      navigate("/admin/categories");
+      toast.success("Category added successfully");
+
+      setTimeout(() => {
+        navigate("/admin/categories");
+      }, 1200);
     } catch (err) {
-      alert(
-        err.response?.data?.message ||
-          "Failed to create category"
+      toast.error(
+        err.response?.data?.message || "Failed to create category"
       );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="form-page">
-      <h1>Add Category</h1>
+    <div className="admin-page">
+      <div className="page-header">
+        <h2>Add Category</h2>
+        <p className="page-subtitle">
+          Create a new product category
+        </p>
+      </div>
 
-      <form onSubmit={submit} className="form-card">
-        {/* Category Name */}
-        <label>Category Name</label>
-        <input
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Enter category name"
-        />
+      <form onSubmit={submit} className="product-card">
+        <div className="form-grid">
+          {/* LEFT */}
+          <div className="form-section">
+            <label>Category Name</label>
+            <input
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter category name"
+            />
 
-        {/* Image URL */}
-        <label>Image URL</label>
-        <input
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="https://example.com/image.jpg"
-        />
+            <label>Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
 
-        {/* Status */}
-        <label>Status</label>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
+          {/* RIGHT */}
+          <div className="form-section">
+            <label>Image URL</label>
+            <input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://example.com/image.jpg"
+            />
 
-        {/* Actions */}
-        <div className="actions">
-          <button type="submit" className="btn btn-primary">
-            Save
+            {imageUrl && (
+              <div className="image-preview">
+                <img src={imageUrl} alt="Preview" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ACTIONS */}
+        <div className="form-actions">
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={loading}
+          >
+            {loading ? "Saving..." : "Save Category"}
           </button>
 
           <button
             type="button"
-            className="btn btn-light"
+            className="btn-secondary"
             onClick={() => navigate("/admin/categories")}
           >
             Cancel

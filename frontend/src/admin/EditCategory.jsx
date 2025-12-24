@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import api from "../api/axios";
 import "../styles/admin-form.css";
 
@@ -14,37 +15,53 @@ export default function EditCategory() {
   });
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
+  /* ================= LOAD CATEGORY ================= */
   useEffect(() => {
+    const loadCategory = async () => {
+      try {
+        const res = await api.get(`/categories/${id}`);
+        const c = res.data.category;
+
+        setForm({
+          name: c.name ?? "",
+          image_url: c.image_url ?? "",
+          status: c.status ?? "active",
+        });
+      } catch (err) {
+        toast.error("Failed to load category");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadCategory();
-    // eslint-disable-next-line
   }, [id]);
 
-  const loadCategory = async () => {
-    try {
-      const res = await api.get(`/categories/${id}`);
-      setForm(res.data.category);
-      setLoading(false);
-    } catch (err) {
-      setError("Failed to load category");
-      setLoading(false);
-    }
-  };
-
+  /* ================= UPDATE CATEGORY ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
 
     try {
-      await api.put(`/categories/${id}`, form);
-      navigate("/admin/categories");
+      await api.put(`/categories/${id}`, {
+        name: form.name,
+        image_url: form.image_url,
+        status: form.status,
+      });
+
+      toast.success("Category updated successfully");
+
+      setTimeout(() => {
+        navigate("/admin/categories");
+      }, 1200);
     } catch (err) {
-      setError("Failed to update category");
+      toast.error("Failed to update category");
     }
   };
 
-  if (loading) return <p className="loading-text">Loading...</p>;
+  if (loading) {
+    return <p className="loading-text">Loading...</p>;
+  }
 
   return (
     <div className="admin-page">
@@ -52,8 +69,6 @@ export default function EditCategory() {
         <h1>Edit Category</h1>
         <p>Manage category details and visibility</p>
       </div>
-
-      {error && <div className="alert-error">{error}</div>}
 
       <form className="admin-card" onSubmit={handleSubmit}>
         <div className="admin-grid">
@@ -112,18 +127,26 @@ export default function EditCategory() {
           </div>
         </div>
 
-        <div className="form-actions">
-          <button
-            type="button"
-            className="btn-outline"
-            onClick={() => navigate("/admin/categories")}
-          >
-            Cancel
-          </button>
-          <button type="submit" className="btn-primary">
-            Update Category
-          </button>
-        </div>
+<div className="form-actions-left">
+  <button type="submit" className="btn-primary">
+    Update Category
+  </button>
+
+  <button
+    type="button"
+    className="btn-outline"
+    onClick={() => navigate("/admin/categories")}
+  >
+    Cancel
+  </button>
+</div>
+
+
+
+
+
+
+
       </form>
     </div>
   );

@@ -22,3 +22,83 @@
   font-size: 20px;
   font-weight: 700;
 }
+
+
+.order-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  padding: 22px;
+  border-radius: 14px;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+.stat-card h4 {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.stat-card p {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* COLORS */
+.stat-card.total {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+}
+
+.stat-card.payment {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+}
+
+.stat-card.status.pending {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+}
+
+.stat-card.status.paid {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+}
+
+.stat-card.status.cancelled {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+}
+
+.stat-card.payment {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #ffffff;
+}
+
+
+/* ===== STATUS COLORS ===== */
+.stat-card.status {
+  color: #ffffff;
+}
+
+.stat-card.status.paid {
+  background: linear-gradient(135deg, #22c55e, #16a34a); /* Green */
+}
+
+.stat-card.status.pending {
+  background: linear-gradient(135deg, #facc15, #eab308); /* Yellow */
+  color: #78350f;
+}
+
+.stat-card.status.cancelled {
+  background: linear-gradient(135deg, #ef4444, #dc2626); /* Red */
+}
+
+.stat-card.status.shipped {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7); /* Blue */
+}
+
+.stat-card.status.delivered {
+  background: linear-gradient(135deg, #16a34a, #15803d); /* Dark Green */
+}

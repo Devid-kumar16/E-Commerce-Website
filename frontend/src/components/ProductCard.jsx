@@ -25,13 +25,14 @@ function ProductCard({
         />
 
         {/* ✅ Wishlist Button */}
-        <button
-          type="button"
-          className={`wishlist-btn ${isWishlisted ? "active" : ""}`}
-          onClick={() => onToggleWishlist(product)}
-        >
-          <FaHeart />
-        </button>
+<button
+  type="button"
+  className="wishlist-btn"
+  onClick={() => onToggleWishlist(product)}
+>
+  <FaHeart className="wishlist-icon" />
+</button>
+
       </div>
 
       <div className="product-info">

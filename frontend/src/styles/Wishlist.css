@@ -214,3 +214,33 @@
 .btn-remove:hover {
   background: #dc2626;
 }
+
+
+/* Wishlist icon button */
+.wishlist-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Default heart */
+.wishlist-icon {
+  color: #bbb; /* grey */
+  font-size: 18px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+/* Hover effect ONLY */
+.wishlist-btn:hover .wishlist-icon {
+  color: #ef4444; /* red */
+  transform: scale(1.15);
+}

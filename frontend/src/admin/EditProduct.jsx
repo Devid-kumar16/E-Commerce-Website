@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import api from "../api/axios";
 
 export default function EditProduct() {
@@ -18,7 +19,6 @@ export default function EditProduct() {
 
   const [categories, setCategories] = useState([]);
   const [productCategoryName, setProductCategoryName] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   /* ================= LOAD PRODUCT ================= */
@@ -31,17 +31,16 @@ export default function EditProduct() {
         setForm({
           name: p.name ?? "",
           price: p.price ?? "",
-          category_id: "", // set later
+          category_id: "",
           status: p.status ?? "draft",
           stock: p.stock ?? 0,
           image_url: p.image ?? "",
           description: p.description ?? "",
         });
 
-        // 🔑 save category NAME temporarily
         setProductCategoryName(p.category);
       } catch (err) {
-        setError("Failed to load product");
+        toast.error("Failed to load product");
       }
     };
 
@@ -55,7 +54,7 @@ export default function EditProduct() {
         const res = await api.get("/categories/active");
         setCategories(res.data.categories || []);
       } catch (err) {
-        console.error("Failed to load categories", err);
+        toast.error("Failed to load categories");
       }
     };
 
@@ -94,9 +93,13 @@ export default function EditProduct() {
         description: form.description,
       });
 
-      navigate("/admin/products");
+      toast.success("Product edit successfully");
+
+      setTimeout(() => {
+        navigate("/admin/products");
+      }, 1200);
     } catch (err) {
-      setError("Failed to update product");
+      toast.error("Failed to edit product");
     }
   };
 
@@ -111,18 +114,16 @@ export default function EditProduct() {
         </p>
       </div>
 
-      {error && <div className="alert-error">{error}</div>}
-
       <form className="product-card" onSubmit={handleSubmit}>
         <div className="form-grid">
-
           {/* LEFT COLUMN */}
           <div className="form-section">
             <label>Product Name</label>
             <input
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Enter product name"
+              onChange={(e) =>
+                setForm({ ...form, name: e.target.value })
+              }
               required
             />
 
@@ -130,7 +131,9 @@ export default function EditProduct() {
             <input
               type="number"
               value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, price: e.target.value })
+              }
               required
             />
 
@@ -180,7 +183,6 @@ export default function EditProduct() {
               onChange={(e) =>
                 setForm({ ...form, image_url: e.target.value })
               }
-              placeholder="https://example.com/image.jpg"
             />
 
             {form.image_url && (
@@ -196,7 +198,6 @@ export default function EditProduct() {
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
-              placeholder="Write a short product description..."
             />
           </div>
         </div>

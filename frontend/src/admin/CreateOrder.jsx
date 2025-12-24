@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import api from "../api/axios";
 import "./CreateOrder.css";
 
@@ -25,7 +26,6 @@ export default function CreateOrderPage() {
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   /* ================= LOAD PRODUCTS ================= */
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function CreateOrderPage() {
     });
   }, []);
 
-  /* ================= SEARCH CUSTOMER (PHONE ONLY) ================= */
+  /* ================= SEARCH CUSTOMER ================= */
   useEffect(() => {
     if (lockPhone || form.phone.length < 5) {
       setCustomers([]);
@@ -109,29 +109,24 @@ export default function CreateOrderPage() {
     e.preventDefault();
 
     if (!form.customer_name.trim())
-      return setError("Customer name is required");
+      return toast.error("Customer name is required");
     if (!form.phone)
-      return setError("Phone number is required");
+      return toast.error("Phone number is required");
     if (!form.customer_email)
-      return setError("Customer email is required");
+      return toast.error("Customer email is required");
     if (!form.address)
-      return setError("Address is required");
-    if (!form.payment_method)
-      return setError("Payment method is required");
-    if (!form.status)
-      return setError("Order status is required");
+      return toast.error("Address is required");
     if (!items.length)
-      return setError("Add at least one product");
+      return toast.error("Add at least one product");
 
     for (const i of items) {
       if (!i.product_id) {
-        return setError("Please select all products");
+        return toast.error("Please select all products");
       }
     }
 
     try {
       setLoading(true);
-      setError("");
 
       const payload = {
         customer: {
@@ -152,13 +147,17 @@ export default function CreateOrderPage() {
       const res = await api.post("/orders/admin/create", payload);
 
       if (res.data?.ok) {
-        navigate("/admin/orders");
+        toast.success("Order created successfully");
+
+        setTimeout(() => {
+          navigate("/admin/orders");
+        }, 1200);
       } else {
-        setError(res.data?.message || "Order failed");
+        toast.error(res.data?.message || "Order failed");
       }
     } catch (err) {
       console.error(err);
-      setError(
+      toast.error(
         err.response?.data?.message || "Failed to create order"
       );
     } finally {
@@ -171,8 +170,6 @@ export default function CreateOrderPage() {
     <div className="admin-page">
       <h2>Create Order</h2>
 
-      {error && <div className="admin-error">{error}</div>}
-
       <form className="order-card" onSubmit={handleSubmit}>
         {/* CUSTOMER INFO */}
         <div className="card-section">
@@ -182,7 +179,6 @@ export default function CreateOrderPage() {
             <input
               placeholder="Customer Name *"
               value={form.customer_name}
-              required
               onChange={(e) =>
                 setForm({ ...form, customer_name: e.target.value })
               }
@@ -192,7 +188,6 @@ export default function CreateOrderPage() {
               placeholder="Customer Mobile *"
               value={form.phone}
               disabled={lockPhone}
-              required
               onChange={(e) => {
                 setForm({ ...form, phone: e.target.value });
                 setLockPhone(false);
@@ -203,7 +198,6 @@ export default function CreateOrderPage() {
               type="email"
               placeholder="Customer Email *"
               value={form.customer_email}
-              required
               onChange={(e) =>
                 setForm({
                   ...form,
@@ -223,7 +217,6 @@ export default function CreateOrderPage() {
             <textarea
               placeholder="Full Address *"
               value={form.address}
-              required
               onChange={(e) =>
                 setForm({
                   ...form,
@@ -257,7 +250,6 @@ export default function CreateOrderPage() {
               {item.image && <img src={item.image} alt="" />}
 
               <select
-                required
                 value={item.product_id}
                 onChange={(e) =>
                   updateItem(i, "product_id", e.target.value)
@@ -307,7 +299,6 @@ export default function CreateOrderPage() {
         {/* ACTIONS */}
         <div className="actions">
           <select
-            required
             value={form.payment_method}
             onChange={(e) =>
               setForm({
@@ -316,33 +307,24 @@ export default function CreateOrderPage() {
               })
             }
           >
-            <option value="">Select Payment</option>
             <option value="COD">Cash on Delivery</option>
             <option value="UPI">UPI</option>
             <option value="Card">Card</option>
           </select>
 
           <select
-            required
             value={form.status}
             onChange={(e) =>
-              setForm({
-                ...form,
-                status: e.target.value,
-              })
+              setForm({ ...form, status: e.target.value })
             }
           >
-            <option value="">Select Status</option>
             <option value="Pending">Pending</option>
             <option value="Paid">Paid</option>
             <option value="Shipped">Shipped</option>
             <option value="Delivered">Delivered</option>
           </select>
 
-          <button
-            className="btn-primary"
-            disabled={loading}
-          >
+          <button className="btn-primary" disabled={loading}>
             {loading ? "Creating..." : "Create Order"}
           </button>
         </div>

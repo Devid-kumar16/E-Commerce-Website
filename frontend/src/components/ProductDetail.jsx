@@ -3,10 +3,12 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../api/axios";
 import "../styles/ProductDetails.css";
-import { addToCart } from "../utils/cart";
+import { useCart } from "../context/CartContext"; // ✅ FIX
 
-export default function ProductDetail({ onAddToCart }) {
+export default function ProductDetail() {
   const { id } = useParams();
+  const { addToCart } = useCart(); // ✅ FIX
+
   const [product, setProduct] = useState(null);
   const [similar, setSimilar] = useState([]);
 
@@ -26,13 +28,11 @@ export default function ProductDetail({ onAddToCart }) {
       const allProducts = all.data.products || [];
 
       // 3️⃣ Normalize category
-      const currentCategory = String(
-        currentProduct.category || ""
-      )
+      const currentCategory = String(currentProduct.category || "")
         .toLowerCase()
         .trim();
 
-      // 4️⃣ Filter similar products (ROBUST)
+      // 4️⃣ Filter similar products
       const filtered = allProducts.filter((p) => {
         const pCategory = String(p.category || "")
           .toLowerCase()
@@ -87,7 +87,7 @@ export default function ProductDetail({ onAddToCart }) {
               onClick={() =>
                 addToCart({
                   id: product.id,
-                  title: product.name,
+                  name: product.name,
                   price: product.price,
                   image,
                 })
@@ -106,30 +106,23 @@ export default function ProductDetail({ onAddToCart }) {
         <div className="pd-similar">
           <h2>Similar Products</h2>
 
-          {similar.length === 0 ? (
-            <p className="pd-no-similar">
-              No similar products found in this category.
-            </p>
-          ) : (
-            <div className="pd-similar-grid">
-              {similar.slice(0, 4).map((p) => (
-                <Link
-                  key={p.id}
-                  to={`/product/${p.id}`}
-                  className="pd-similar-card"
-                >
-                  <img
-                    src={p.image || p.image_url || "/images/placeholder.png"}
-                    alt={p.title || p.name}
-                  />
-                  <h4>{p.title || p.name}</h4>
-                  <p>₹{p.price}</p>
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className="pd-similar-grid">
+            {similar.slice(0, 4).map((p) => (
+              <Link
+                key={p.id}
+                to={`/product/${p.id}`}
+                className="pd-similar-card"
+              >
+                <img
+                  src={p.image || p.image_url || "/images/placeholder.png"}
+                  alt={p.name}
+                />
+                <h4>{p.name}</h4>
+                <p>₹{p.price}</p>
+              </Link>
+            ))}
+          </div>
         </div>
-
       )}
     </div>
   );

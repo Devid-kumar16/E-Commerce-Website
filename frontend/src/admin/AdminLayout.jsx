@@ -1,19 +1,34 @@
 import React from "react";
 import { NavLink, Outlet, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "./AdminStyles.css";
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // ✅ If not logged in, redirect safely
+  // 🔐 Protect admin routes
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
   return (
     <div className="admin-container">
+      {/* 🔔 GLOBAL ADMIN TOAST (FIXED & VISIBLE) */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        newestOnTop
+        limit={3}
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="light"
+        style={{ zIndex: 99999 }} // ✅ VERY IMPORTANT
+      />
+
       {/* ---------- SIDEBAR ---------- */}
       <aside className="admin-sidebar">
         <div className="admin-brand">
@@ -39,7 +54,7 @@ export default function AdminLayout() {
           <NavLink to="/admin/customers">
             Customers
           </NavLink>
-          <NavLink to="/admin/cms" className="sidebar-link">
+          <NavLink to="/admin/cms">
             CMS
           </NavLink>
         </nav>
@@ -55,9 +70,8 @@ export default function AdminLayout() {
         </button>
       </aside>
 
-      {/* MAIN CONTENT */}
+      {/* ---------- MAIN CONTENT ---------- */}
       <main className="admin-main">
-      
         <Outlet />
       </main>
     </div>

@@ -1555,3 +1555,21 @@ input:focus, select:focus, textarea:focus {
   margin-bottom: 20px;
   font-size: 14px;
 }
+
+
+.admin-container {
+  display: flex;
+  min-height: 100vh;
+  overflow: visible; /* ✅ DO NOT HIDE TOAST */
+}
+
+.admin-main {
+  flex: 1;
+  padding: 24px;
+  overflow: visible; /* ✅ IMPORTANT */
+}
+
+
+.btn-primary {
+  margin-right: 16px;   /* 👈 gap yahin se aayega */
+}
