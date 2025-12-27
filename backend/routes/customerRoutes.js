@@ -1,9 +1,9 @@
 ﻿import express from "express";
-import { authRequired, isAdmin } from "../middleware/authMiddleware.js";
+import { authRequired, adminOnly  } from "../middleware/authMiddleware.js";
 import { listCustomersAdmin } from "../controllers/customerController.js";
 
 const router = express.Router();
 
-router.get("/admin", authRequired, isAdmin, listCustomersAdmin);
+router.get("/admin", authRequired, adminOnly, listCustomersAdmin);
 
 export default router;

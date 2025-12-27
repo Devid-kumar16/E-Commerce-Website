@@ -21,8 +21,11 @@ export default function CreateOrderPage() {
     phone: "",
     area: "",
     address: "",
+    state: "",
+    pincode: "",
     payment_method: "COD",
-    status: "Pending",
+    payment_status: "Pending",
+    delivery_status: "Pending",
   });
 
   const [loading, setLoading] = useState(false);
@@ -116,6 +119,10 @@ export default function CreateOrderPage() {
       return toast.error("Customer email is required");
     if (!form.address)
       return toast.error("Address is required");
+    if (!form.state)
+      return toast.error("State is required");
+    if (!form.pincode || form.pincode.length !== 6)
+      return toast.error("Valid pincode is required");
     if (!items.length)
       return toast.error("Add at least one product");
 
@@ -135,23 +142,24 @@ export default function CreateOrderPage() {
           email: form.customer_email.trim(),
           area: form.area,
           address: form.address,
+          state: form.state,
+          pincode: form.pincode,
         },
         items: items.map((i) => ({
           product_id: Number(i.product_id),
           qty: Number(i.quantity),
         })),
         payment_method: form.payment_method,
-        status: form.status,
+        payment_status: form.payment_status,
+        delivery_status: form.delivery_status,
+        total_amount: totalAmount,
       };
 
       const res = await api.post("/orders/admin/create", payload);
 
       if (res.data?.ok) {
         toast.success("Order created successfully");
-
-        setTimeout(() => {
-          navigate("/admin/orders");
-        }, 1200);
+        setTimeout(() => navigate("/admin/orders"), 1200);
       } else {
         toast.error(res.data?.message || "Order failed");
       }
@@ -187,7 +195,6 @@ export default function CreateOrderPage() {
             <input
               placeholder="Customer Mobile *"
               value={form.phone}
-              disabled={lockPhone}
               onChange={(e) => {
                 setForm({ ...form, phone: e.target.value });
                 setLockPhone(false);
@@ -195,40 +202,61 @@ export default function CreateOrderPage() {
             />
 
             <input
-              type="email"
               placeholder="Customer Email *"
               value={form.customer_email}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  customer_email: e.target.value,
-                })
+                setForm({ ...form, customer_email: e.target.value })
               }
             />
 
             <input
-              placeholder="Area"
+              placeholder="Area / City"
               value={form.area}
               onChange={(e) =>
                 setForm({ ...form, area: e.target.value })
               }
             />
+          </div>
 
-            <textarea
-              placeholder="Full Address *"
-              value={form.address}
+          <div className="grid-3 mt-12">
+            <select
+              value={form.state}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  address: e.target.value,
-                })
+                setForm({ ...form, state: e.target.value })
+              }
+            >
+              <option value="">Select State*</option>
+              <option>Maharashtra</option>
+              <option>Delhi</option>
+              <option>Uttar Pradesh</option>
+              <option>Madhya Pradesh</option>
+              <option>Punjab</option>
+              <option>Chhattisgarh</option>
+              <option>Kerala</option>
+              <option>Karnataka</option>
+              <option>Jammu & Kashmir</option>
+            </select>
+
+            <input
+              placeholder="Pincode *"
+              value={form.pincode}
+              onChange={(e) =>
+                setForm({ ...form, pincode: e.target.value })
               }
             />
           </div>
 
-          {loadingCustomers && (
-            <div className="hint">Searching...</div>
-          )}
+          <textarea
+            className="mt-12"
+            placeholder="Full Address *"
+            rows="3"
+            value={form.address}
+            onChange={(e) =>
+              setForm({ ...form, address: e.target.value })
+            }
+          />
+
+          {loadingCustomers && <div className="hint">Searching...</div>}
 
           {customers.length > 0 && (
             <div className="customer-dropdown">
@@ -272,21 +300,19 @@ export default function CreateOrderPage() {
                 }
               />
 
-              <span>
-                ₹{(item.price * item.quantity).toFixed(2)}
-              </span>
+              <span>₹{(item.price * item.quantity).toFixed(2)}</span>
 
-              <button type="button" onClick={() => removeItem(i)}>
-                ✕
+              <button
+                type="button"
+                className="btn-remove"
+                onClick={() => removeItem(i)}
+              >
+                Remove
               </button>
             </div>
           ))}
 
-          <button
-            type="button"
-            className="btn-outline"
-            onClick={addItem}
-          >
+          <button type="button" className="btn-outline" onClick={addItem}>
             + Add Product
           </button>
         </div>
@@ -301,10 +327,7 @@ export default function CreateOrderPage() {
           <select
             value={form.payment_method}
             onChange={(e) =>
-              setForm({
-                ...form,
-                payment_method: e.target.value,
-              })
+              setForm({ ...form, payment_method: e.target.value })
             }
           >
             <option value="COD">Cash on Delivery</option>
@@ -313,15 +336,28 @@ export default function CreateOrderPage() {
           </select>
 
           <select
-            value={form.status}
+            value={form.payment_status}
             onChange={(e) =>
-              setForm({ ...form, status: e.target.value })
+              setForm({ ...form, payment_status: e.target.value })
             }
           >
-            <option value="Pending">Pending</option>
-            <option value="Paid">Paid</option>
-            <option value="Shipped">Shipped</option>
-            <option value="Delivered">Delivered</option>
+            <option>Pending</option>
+            <option>Paid</option>
+            <option>Failed</option>
+            <option>Refunded</option>
+          </select>
+
+          <select
+            value={form.delivery_status}
+            onChange={(e) =>
+              setForm({ ...form, delivery_status: e.target.value })
+            }
+          >
+            <option>Pending</option>
+            <option>Packed</option>
+            <option>Shipped</option>
+            <option>Delivered</option>
+            <option>Cancelled</option>
           </select>
 
           <button className="btn-primary" disabled={loading}>

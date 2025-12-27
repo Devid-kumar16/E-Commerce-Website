@@ -1,10 +1,10 @@
 import { useCart } from "../context/CartContext";
 import "../styles/Wishlist.css";
 
-function WishlistPage() {
-  const { wishlist, removeFromWishlist, addToCart } = useCart();
+export default function WishlistPage() {
+  const { wishlist, toggleWishlist, addToCart } = useCart();
 
-  if (wishlist.length === 0) {
+  if (!wishlist || wishlist.length === 0) {
     return <h2 className="wishlist-empty">Your wishlist is empty</h2>;
   }
 
@@ -17,9 +17,12 @@ function WishlistPage() {
           <div key={item.id} className="wishlist-card">
             <div className="wishlist-image">
               <img
-                src={item.image_url || item.image}
+                src={item.image_url || item.image || "/images/placeholder.png"}
                 alt={item.name}
-                onError={(e) => (e.target.src = "/placeholder.png")}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "/images/placeholder.png";
+                }}
               />
             </div>
 
@@ -37,7 +40,7 @@ function WishlistPage() {
 
                 <button
                   className="btn-remove"
-                  onClick={() => removeFromWishlist(item.id)}
+                  onClick={() => toggleWishlist(item)}
                 >
                   Remove
                 </button>
@@ -49,5 +52,3 @@ function WishlistPage() {
     </div>
   );
 }
-
-export default WishlistPage;

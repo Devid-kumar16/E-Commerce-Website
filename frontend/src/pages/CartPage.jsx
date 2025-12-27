@@ -1,124 +1,86 @@
-import React from "react";
-import "../styles/Cart.css";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import { useAuth } from "../context/AuthProvider";
+import "../styles/CartPage.css";
 
 export default function CartPage() {
   const { cart, updateQty, removeFromCart } = useCart();
-  const { user } = useAuth(); // ✅ logged-in user
+
+  // ✅ IMPORTANT: define navigate
   const navigate = useNavigate();
 
-  /* 🧮 Calculate total */
+  if (!cart.length) {
+    return <h2 className="cart-empty">Your cart is empty</h2>;
+  }
+
   const total = cart.reduce(
-    (sum, item) => sum + Number(item.price) * item.qty,
+    (sum, item) => sum + item.price * (item.qty || 1),
     0
   );
 
-  /* ✅ CHECKOUT HANDLER (INDUSTRY STANDARD) */
-  const handleCheckout = () => {
-    if (cart.length === 0) {
-      alert("Your cart is empty");
-      return;
-    }
-
-    if (!user) {
-      // redirect to login, then back to checkout
-      navigate("/login", { state: { from: "/checkout" } });
-      return;
-    }
-
-    navigate("/checkout");
-  };
-
   return (
     <div className="cart-page">
-      <h2 className="cart-title">Your Cart</h2>
+      <h2 className="cart-title">My Cart</h2>
 
       <div className="cart-container">
-        {/* LEFT - CART ITEMS */}
+        {/* CART ITEMS */}
         <div className="cart-items">
-          {cart.length === 0 && (
-            <p className="empty-cart">Your cart is empty</p>
-          )}
-
           {cart.map((item) => (
-            <div className="cart-item" key={item.id}>
+            <div key={item.id} className="cart-card">
               <img
-                src={item.image || item.image_url}
+                src={item.image_url || item.image}
                 alt={item.name}
-                className="cart-image"
-                onError={(e) =>
-                  (e.currentTarget.src = "/images/placeholder.png")
-                }
+                className="cart-img"
+                onError={(e) => {
+                  e.target.src = "/images/placeholder.png";
+                }}
               />
 
-              <div className="cart-details">
+              <div className="cart-info">
                 <h4>{item.name}</h4>
-                <p className="cart-price">₹{item.price}</p>
+                <p className="price">₹{item.price}</p>
 
-                <div className="cart-actions">
-                  <div className="qty-box">
-                    Qty:
-                    <div className="qty-control">
-                      <button
-                        onClick={() =>
-                          updateQty(item.id, item.qty - 1)
-                        }
-                        disabled={item.qty <= 1}
-                      >
-                        -
-                      </button>
+                <div className="qty-row">
+                  <button
+                    onClick={() =>
+                      updateQty(item.id, Math.max(1, item.qty - 1))
+                    }
+                  >
+                    -
+                  </button>
 
-                      <span>{item.qty}</span>
-
-                      <button
-                        onClick={() =>
-                          updateQty(item.id, item.qty + 1)
-                        }
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
+                  <span>{item.qty}</span>
 
                   <button
-                    className="remove-btn"
-                    onClick={() => removeFromCart(item.id)}
+                    onClick={() => updateQty(item.id, item.qty + 1)}
                   >
-                    Remove
+                    +
                   </button>
                 </div>
-              </div>
 
-              <div className="cart-subtotal">
-                ₹{item.price * item.qty}
+                <button
+                  className="remove-btn"
+                  onClick={() => removeFromCart(item.id)}
+                >
+                  Remove
+                </button>
               </div>
             </div>
           ))}
         </div>
 
-        {/* RIGHT - ORDER SUMMARY */}
+        {/* CART SUMMARY */}
         <div className="cart-summary">
-          <h3>Order Summary</h3>
+          <h3>Price Details</h3>
 
-          <div className="summary-row">
-            <span>Items</span>
-            <span>
-              {cart.reduce((sum, item) => sum + item.qty, 0)}
-            </span>
-          </div>
+          <p>Total Items: {cart.length}</p>
 
-          <div className="summary-row total">
-            <span>Total</span>
-            <span>₹{total}</span>
-          </div>
+          <p className="total">
+            Total: ₹{total}
+          </p>
 
-          {/* ✅ FIXED BUTTON */}
           <button
             className="checkout-btn"
-            disabled={cart.length === 0}
-            onClick={handleCheckout}
+            onClick={() => navigate("/checkout")}
           >
             Proceed to Checkout
           </button>

@@ -1717,4 +1717,7 @@
   color: #b91c1c;
 }
 
+.main-content {
+  padding-top: 80px; /* height of header */
+}
 

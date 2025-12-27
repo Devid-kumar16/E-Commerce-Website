@@ -7,12 +7,12 @@ import {
 } from "../controllers/cmsController.js";
 import { getPageBySlug } from "../controllers/cmsController.js";
 
-import { authRequired, isAdmin } from "../middleware/authMiddleware.js";
+import { authRequired, adminOnly } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 /* ================= ADMIN ================= */
-router.use(authRequired, isAdmin);
+router.use(authRequired, adminOnly);
 
 router.get("/pages", listCMSPages);
 router.get("/pages/:id", getCMSPage);

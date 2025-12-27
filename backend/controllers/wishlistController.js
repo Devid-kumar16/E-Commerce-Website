@@ -1,51 +1,89 @@
-import {
-  addToWishlist,
-  getWishlistItems,
-  removeWishlistItem
-} from "../models/wishlistModel.js";
+import pool from "../config/db.js";
 
-/* ADD TO WISHLIST */
+/**
+ * ADD TO WISHLIST (USER-SPECIFIC)
+ */
 export const addWishlistItem = async (req, res) => {
   try {
-    console.log("AUTH USER:", req.user);
-    console.log("BODY:", req.body); 
     const userId = req.user.id;
     const { productId } = req.body;
 
     if (!productId) {
-      return res.status(400).json({ ok: false, message: "Product ID required" });
+      return res
+        .status(400)
+        .json({ ok: false, message: "Product ID required" });
     }
 
-    await addToWishlist(userId, productId);
+    await pool.query(
+      `
+      INSERT IGNORE INTO wishlist_items (user_id, product_id)
+      VALUES (?, ?)
+      `,
+      [userId, productId]
+    );
 
     res.json({ ok: true, message: "Added to wishlist" });
   } catch (err) {
-    res.status(500).json({ ok: false, message: err.message });
+    console.error("addWishlistItem error:", err);
+    res.status(500).json({ ok: false, message: "Failed to add to wishlist" });
   }
 };
 
-/* GET WISHLIST */
+/**
+ * GET WISHLIST (USER-SPECIFIC)
+ */
 export const getWishlist = async (req, res) => {
   try {
     const userId = req.user.id;
-    const wishlist = await getWishlistItems(userId);
 
-    res.json({ ok: true, wishlist });
+    const [rows] = await pool.query(
+      `
+      SELECT 
+        w.product_id AS id,
+        p.name,
+        p.price,
+        p.image_url
+      FROM wishlist_items w
+      JOIN products p ON p.id = w.product_id
+      WHERE w.user_id = ?
+      `,
+      [userId]
+    );
+
+    res.json({ ok: true, wishlist: rows });
   } catch (err) {
-    res.status(500).json({ ok: false, message: err.message });
+    console.error("getWishlist error:", err);
+    res.status(500).json({ ok: false, message: "Failed to load wishlist" });
   }
 };
 
-/* REMOVE FROM WISHLIST */
+/**
+ * REMOVE FROM WISHLIST (USER-SPECIFIC)
+ */
 export const removeFromWishlist = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { productId } = req.params;
+    const productId = Number(req.params.productId);
 
-    await removeWishlistItem(userId, productId);
+    if (!productId) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "Invalid product ID" });
+    }
+
+    await pool.query(
+      `
+      DELETE FROM wishlist_items 
+      WHERE user_id = ? AND product_id = ?
+      `,
+      [userId, productId]
+    );
 
     res.json({ ok: true, message: "Removed from wishlist" });
   } catch (err) {
-    res.status(500).json({ ok: false, message: err.message });
+    console.error("removeFromWishlist error:", err);
+    res
+      .status(500)
+      .json({ ok: false, message: "Failed to remove wishlist item" });
   }
 };

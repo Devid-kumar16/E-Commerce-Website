@@ -1,27 +1,26 @@
-// src/pages/Profile.jsx
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../context/AuthContext";
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
-  // 1) Agar login hi nahi hai
-  if (!user) {
+  /* ================= AUTH GUARD ================= */
+  if (!isAuthenticated || !user) {
     return (
       <div className="page account-page">
         <div className="account-card">
           <h1 className="account-title">My Account</h1>
           <p className="account-subtitle">
-            Sign in to view your orders, wishlist and account details.
+            Please sign in to view your profile and orders.
           </p>
           <div className="account-actions">
             <Link className="btn-primary" to="/login">
-              Sign in
+              Login
             </Link>
-            <Link className="btn-outline" to="/signup">
-              Create an account
+            <Link className="btn-outline" to="/register">
+              Create Account
             </Link>
           </div>
         </div>
@@ -29,32 +28,22 @@ export default function Profile() {
     );
   }
 
-  // 2) LocalStorage se extra info (agar tumne signup ke time store ki ho)
-  const users = (() => {
-    try {
-      return JSON.parse(localStorage.getItem("estore_users_v1") || "[]");
-    } catch {
-      return [];
-    }
-  })();
-
-  const cur = users.find((u) => u.id === user.id) || {};
-
+  /* ================= DATA ================= */
   const displayName =
-    cur.name || user.name || user.username || "Customer";
+    user.name || user.username || "Customer";
 
-  const email = cur.email || user.email || "";
-  const phone = cur.phone || "";
+  const email = user.email || "";
+  const phone = user.phone || "";
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    navigate("/", { replace: true });
   };
 
   return (
     <div className="page account-page">
       <div className="account-layout">
-        {/* LEFT SIDEBAR – Amazon/Flipkart style */}
+        {/* ================= LEFT SIDEBAR ================= */}
         <aside className="account-sidebar">
           <div className="account-user">
             <div className="account-avatar">
@@ -62,7 +51,9 @@ export default function Profile() {
             </div>
             <div>
               <div className="account-user-name">{displayName}</div>
-              {email && <div className="account-user-email">{email}</div>}
+              {email && (
+                <div className="account-user-email">{email}</div>
+              )}
             </div>
           </div>
 
@@ -75,7 +66,9 @@ export default function Profile() {
             </div>
 
             <div className="account-nav-group">
-              <div className="account-nav-label">Account Settings</div>
+              <div className="account-nav-label">
+                Account Settings
+              </div>
               <button
                 type="button"
                 className="account-nav-link is-button"
@@ -106,30 +99,30 @@ export default function Profile() {
           </nav>
         </aside>
 
-        {/* RIGHT SIDE – overview card */}
+        {/* ================= RIGHT CONTENT ================= */}
         <main className="account-main">
           <section className="account-main-card">
             <h1>Account Overview</h1>
 
             <div className="account-overview-grid">
               <div className="account-overview-item">
-                <h3>Contact info</h3>
+                <h3>Contact Information</h3>
                 <p>{displayName}</p>
                 {email && <p>{email}</p>}
                 {phone && <p>{phone}</p>}
               </div>
 
               <div className="account-overview-item">
-                <h3>Quick actions</h3>
+                <h3>Quick Actions</h3>
                 <ul>
                   <li>
-                    <Link to="/orders">Track your orders</Link>
+                    <Link to="/orders">Track Orders</Link>
                   </li>
                   <li>
-                    <Link to="/cart">Go to cart</Link>
+                    <Link to="/cart">Go to Cart</Link>
                   </li>
                   <li>
-                    <Link to="/">Continue shopping</Link>
+                    <Link to="/">Continue Shopping</Link>
                   </li>
                 </ul>
               </div>
@@ -140,4 +133,3 @@ export default function Profile() {
     </div>
   );
 }
-

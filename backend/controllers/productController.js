@@ -212,3 +212,37 @@ export async function updateInventory(req, res, next) {
     next(err);
   }
 }
+
+
+export const getProductsByCategory = async (req, res) => {
+  const { slug } = req.params;
+
+  console.log("➡️ Category API hit, slug:", slug);
+
+  try {
+    const [rows] = await db.query(
+      `
+      SELECT p.*
+      FROM products p
+      INNER JOIN categories c ON p.category_id = c.id
+      WHERE c.slug = ?
+        AND c.status = 'active'
+        AND c.active = 1
+      `,
+      [slug]
+    );
+
+    console.log("✅ Products found:", rows.length);
+
+    return res.json({
+      ok: true,
+      products: rows,
+    });
+  } catch (err) {
+    console.error("❌ Category products error:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Server error",
+    });
+  }
+};

@@ -6,7 +6,7 @@ import {
   getCategory,
   updateCategory,
 } from "../controllers/categoryController.js";
-import { authRequired, isAdmin } from "../middleware/authMiddleware.js";
+import { authRequired,adminOnly  } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -17,9 +17,9 @@ router.get("/active", listActiveCategories);
 
 /* ================= ADMIN ================= */
 
-router.get("/", authRequired, isAdmin, listCategories);
-router.post("/", authRequired, isAdmin, createCategory);
-router.get("/:id", authRequired, isAdmin, getCategory);
-router.put("/:id", authRequired, isAdmin, updateCategory);
+router.get("/", authRequired, adminOnly, listCategories);
+router.post("/", authRequired, adminOnly, createCategory);
+router.get("/:id", authRequired, adminOnly, getCategory);
+router.put("/:id", authRequired, adminOnly, updateCategory);
 
 export default router;

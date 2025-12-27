@@ -1,0 +1,21 @@
+.my-orders-page {
+  max-width: 800px;
+  margin: 40px auto;
+}
+
+.order-card {
+  background: #fff;
+  padding: 20px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.view-btn {
+  align-self: center;
+  text-decoration: none;
+  color: #0a9d84;
+  font-weight: 500;
+}

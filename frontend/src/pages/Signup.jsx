@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../context/AuthContext";
+
 import "../styles/Auth.css";
 
 export default function Signup() {
@@ -57,7 +58,7 @@ export default function Signup() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2 className="auth-title">Create Account 🚀</h2>
+        <h2 className="auth-title">Create Account</h2>
         <p className="auth-subtitle">
           Join <strong>E-Store</strong> and start shopping today
         </p>

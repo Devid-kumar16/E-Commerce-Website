@@ -8,36 +8,27 @@ import {
   deleteProduct,
   publishToggle,
   updateInventory,
+  getProductsByCategory, // ✅ ADD THIS
 } from "../controllers/productController.js";
 
-import { authRequired, isAdmin } from "../middleware/authMiddleware.js";
+import { authRequired, adminOnly } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 /* ---------------- ADMIN (FIRST!) ---------------- */
 
-// ✅ LIST products (admin)
-router.get("/admin/list", authRequired, isAdmin, listAdminProducts);
-
-// ✅ GET single product (admin) 🔥 ADD THIS
-router.get("/admin/:id", authRequired, isAdmin, getProduct);
-
-// ✅ CREATE product
-router.post("/admin", authRequired, isAdmin, createProduct);
-
-// ✅ UPDATE product
-router.put("/admin/:id", authRequired, isAdmin, updateProduct);
-
-// ✅ DELETE product
-router.delete("/admin/:id", authRequired, isAdmin, deleteProduct);
-
-// ✅ PUBLISH toggle
-router.patch("/admin/:id/publish", authRequired, isAdmin, publishToggle);
-
-// ✅ INVENTORY update
-router.patch("/admin/:id/inventory", authRequired, isAdmin, updateInventory);
+router.get("/admin/list", authRequired, adminOnly, listAdminProducts);
+router.get("/admin/:id", authRequired, adminOnly, getProduct);
+router.post("/admin", authRequired, adminOnly, createProduct);
+router.put("/admin/:id", authRequired, adminOnly, updateProduct);
+router.delete("/admin/:id", authRequired, adminOnly, deleteProduct);
+router.patch("/admin/:id/publish", authRequired, adminOnly, publishToggle);
+router.patch("/admin/:id/inventory", authRequired, adminOnly, updateInventory);
 
 /* ---------------- PUBLIC ---------------- */
+
+// ✅ CATEGORY PRODUCTS (MUST BE ABOVE /:id)
+router.get("/category/:slug", getProductsByCategory);
 
 // GET /api/products
 router.get("/", listPublicProducts);

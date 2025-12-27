@@ -6,7 +6,6 @@ import { getCart } from "../utils/cart";
 export default function Navbar() {
   const { user } = useAuth();
   const navigate = useNavigate();
-
   const [cartCount, setCartCount] = useState(0);
 
   /* 🔁 Update cart count */
@@ -16,8 +15,6 @@ export default function Navbar() {
     };
 
     updateCartCount();
-
-    // Listen for cart updates
     window.addEventListener("storage", updateCartCount);
     window.addEventListener("cart-updated", updateCartCount);
 
@@ -35,7 +32,7 @@ export default function Navbar() {
       navigate("/admin");
     } else {
       navigate("/login", {
-        state: { from: { pathname: "/admin" } }
+        state: { from: { pathname: "/admin" } },
       });
     }
   };
@@ -44,13 +41,29 @@ export default function Navbar() {
     <nav className="navbar">
       {/* LEFT */}
       <div className="nav-left">
-        <Link to="/" className="nav-logo">E-Store</Link>
+        <Link to="/" className="nav-logo">
+          E-Store
+        </Link>
       </div>
 
       {/* CENTER */}
       <div className="nav-center">
         <Link to="/" className="nav-link">Home</Link>
-        <Link to="/products" className="nav-link">Products</Link>
+
+        {/* ✅ CATEGORY LINKS (FIXED) */}
+        <Link to="/category/electronics" className="nav-link">
+          Electronics
+        </Link>
+        <Link to="/category/mobiles" className="nav-link">
+          Mobiles & Tablets
+        </Link>
+        <Link to="/category/laptops" className="nav-link">
+          Laptops
+        </Link>
+        <Link to="/category/fashion" className="nav-link">
+          Fashion
+        </Link>
+
         <Link to="/cart" className="nav-link">
           Cart
           {cartCount > 0 && (
@@ -68,7 +81,9 @@ export default function Navbar() {
         {user ? (
           <span className="nav-user">Hi, {user.name}</span>
         ) : (
-          <Link to="/login" className="nav-link">Login</Link>
+          <Link to="/login" className="nav-link">
+            Login
+          </Link>
         )}
       </div>
     </nav>

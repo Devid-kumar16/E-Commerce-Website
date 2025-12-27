@@ -6,31 +6,44 @@ import {
   createOrderAdmin,
   updateOrderAdmin,
   deleteOrderAdmin,
-  getOrderWithItemsAdmin, // ✅ ONLY THIS
+  getOrderWithItemsAdmin,
+  getOrderWithItemsForUser,
 } from "../controllers/orderController.js";
 
-import { authRequired, isAdmin } from "../middleware/authMiddleware.js";
+import { authRequired, adminOnly } from "../middleware/authMiddleware.js";
 import { searchCustomers } from "../controllers/customerController.js";
 
 const router = express.Router();
 
-/* USER */
-router.post("/", authRequired, createOrder);
+/* ================= ADMIN (KEEP FIRST!) ================= */
+
+// ✅ Admin: list orders
+router.get("/admin", authRequired, adminOnly, listOrdersAdmin);
+
+// ✅ Admin: create order
+router.post("/admin", authRequired, adminOnly, createOrderAdmin);
+
+// ✅ Admin: order details
+router.get("/admin/:id", authRequired, adminOnly, getOrderWithItemsAdmin);
+
+// ✅ Admin: update order
+router.put("/admin/:id", authRequired, adminOnly, updateOrderAdmin);
+
+// ✅ Admin: delete order
+router.delete("/admin/:id", authRequired, adminOnly, deleteOrderAdmin);
+
+// ✅ Admin: customer search
+router.get("/customers/search", authRequired, adminOnly, searchCustomers);
+
+/* ================= USER / WEBSITE ================= */
+
+// ✅ Guest checkout allowed
+router.post("/", createOrder);
+
+// ✅ Logged-in user: order history
 router.get("/my", authRequired, listOrdersForUser);
 
-/* ADMIN */
-router.post("/admin/create", authRequired, isAdmin, createOrderAdmin);
-router.get("/admin", authRequired, isAdmin, listOrdersAdmin);
-router.get("/admin/:id", authRequired, isAdmin, getOrderWithItemsAdmin);
-router.put("/admin/:id", authRequired, isAdmin, updateOrderAdmin);
-router.delete("/admin/:id", authRequired, isAdmin, deleteOrderAdmin);
+// ✅ Logged-in user: single order details
+router.get("/:id", authRequired, getOrderWithItemsForUser);
 
-/* CUSTOMER SEARCH */
-router.get("/customers/search", authRequired, isAdmin, searchCustomers);
-router.post(
-  "/admin/create",
-  authRequired,
-  isAdmin,
-  createOrderAdmin
-);
 export default router;

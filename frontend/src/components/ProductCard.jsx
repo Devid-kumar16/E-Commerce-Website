@@ -1,49 +1,62 @@
-import { FaHeart } from "react-icons/fa";
+import React from "react";
+import { Link } from "react-router-dom";
+import "./ProductCard.css";
 
-function ProductCard({
+export default function ProductCard({
   product,
-  isWishlisted,
+  onAddToCart,
+  isWishlisted = false,
   onToggleWishlist,
-  onAddToCart, // ✅ ADD THIS
 }) {
-  // ✅ Safe image resolver
-  const imageSrc =
-    product.image_url ||
-    product.image ||
-    (Array.isArray(product.images) ? product.images[0] : null) ||
-    "/placeholder.png";
+  // 🛑 Stop event bubbling (VERY IMPORTANT)
+  const handleWishlistClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (typeof onToggleWishlist === "function") {
+      onToggleWishlist(product);
+    }
+  };
+
+  const handleAddToCart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (typeof onAddToCart === "function") {
+      onAddToCart(product);
+    }
+  };
 
   return (
     <div className="product-card">
-      <div className="product-image-wrapper">
+      {/* ❤️ Wishlist Button */}
+      <button
+        type="button"
+        className={`wishlist-btn ${isWishlisted ? "active" : ""}`}
+        onClick={handleWishlistClick}
+        aria-label="Add to wishlist"
+      >
+        ♥
+      </button>
+
+      {/* 🖼 Product Image */}
+      <Link to={`/product/${product.id}`} className="product-img">
         <img
-          src={imageSrc}
+          src={product.image_url || product.image || "/images/placeholder.png"}
           alt={product.name}
-          onError={(e) => {
-            e.target.src = "/placeholder.png";
-          }}
+          loading="lazy"
         />
+      </Link>
 
-        {/* ✅ Wishlist Button */}
-<button
-  type="button"
-  className="wishlist-btn"
-  onClick={() => onToggleWishlist(product)}
->
-  <FaHeart className="wishlist-icon" />
-</button>
-
-      </div>
-
+      {/* ℹ Product Info */}
       <div className="product-info">
-        <h4>{product.name}</h4>
+        <h3 className="product-title">{product.name}</h3>
         <p className="product-price">₹{product.price}</p>
 
-        {/* ✅ Add to Cart Button FIXED */}
         <button
           type="button"
-          className="btn-add-cart"
-          onClick={() => onAddToCart(product)}
+          className="btn-cart"
+          onClick={handleAddToCart}
         >
           Add to cart
         </button>
@@ -51,5 +64,3 @@ function ProductCard({
     </div>
   );
 }
-
-export default ProductCard;

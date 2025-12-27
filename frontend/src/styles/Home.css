@@ -1,0 +1,59 @@
+.home-page {
+  max-width: 1300px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* HERO */
+.home-hero img {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 30px;
+}
+
+/* SECTION */
+.home-section {
+  margin-top: 30px;
+}
+
+.section-title {
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+
+.home-page {
+  background: #f6f7f9;
+  padding-bottom: 40px;
+}
+
+.home-hero img {
+  width: 100%;
+  max-height: 360px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.home-section {
+  padding: 30px 60px;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.loading-text {
+  padding: 20px;
+  font-size: 16px;
+}
+
+/* 🔥 FIXED PRODUCT GRID */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 24px;
+}

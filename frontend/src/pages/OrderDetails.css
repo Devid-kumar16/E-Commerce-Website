@@ -1,0 +1,32 @@
+.order-details-page {
+  max-width: 900px;
+  margin: 40px auto;
+}
+
+.order-summary {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.items-table {
+  width: 100%;
+  background: #fff;
+  border-collapse: collapse;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.items-table th,
+.items-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 20px;
+  color: #0a9d84;
+  text-decoration: none;
+}

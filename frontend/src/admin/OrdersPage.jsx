@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback} from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import useAdminApi from "./useAdminApi";
@@ -95,7 +95,7 @@ export default function OrdersPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>#</th>
+                <th>ID</th>
                 <th>Customer</th>
                 <th>Area</th>
                 <th>Total (₹)</th>

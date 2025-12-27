@@ -799,3 +799,13 @@ a {
   border: 1px solid #e5e7eb;
   padding: 4px 10px;
 }
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.main-content {
+  padding-top: 80px; /* height of navbar */
+}
+

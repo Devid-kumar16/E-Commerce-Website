@@ -1,18 +1,43 @@
-// src/api/client.js
 import axios from "axios";
 
-// Create Axios instance
 const api = axios.create({
-  baseURL: "http://127.0.0.1:5000/api", // Your backend base URL
-  withCredentials: false,
+  baseURL: "http://localhost:5000/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Restore Authorization header from localStorage after page reload
-const storedToken = localStorage.getItem("token");
-if (storedToken) {
-  api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
-}
+/* ================= AUTH INTERCEPTOR ================= */
+api.interceptors.request.use(
+  (config) => {
+    // 🚫 public routes (NO TOKEN)
+    const publicRoutes = [
+      "/auth/login",
+      "/auth/register",
+    ];
+
+    const isPublic = publicRoutes.some((route) =>
+      config.url?.includes(route)
+    );
+
+    if (isPublic) {
+      // 🔥 IMPORTANT: ensure no token is sent
+      delete config.headers.Authorization;
+      return config;
+    }
+
+    // ✅ protected routes
+    const token = localStorage.getItem("token");
+
+    if (token && token !== "null" && token !== "undefined") {
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      delete config.headers.Authorization;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export default api;
-
-

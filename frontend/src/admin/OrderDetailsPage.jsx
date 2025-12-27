@@ -66,7 +66,7 @@ export default function OrderDetailsPage() {
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Invoice #${order.id}</title>
+  <title>Invoice ${order.id}</title>
   <style>
     body {
       font-family: "Segoe UI", Arial, sans-serif;
@@ -180,7 +180,7 @@ export default function OrderDetailsPage() {
     <div class="header">
       <div class="brand">E-Store</div>
       <div class="invoice-id">
-        <div><b>Invoice #${order.id}</b></div>
+        <div><b>Invoice ${order.id}</b></div>
         <div>${new Date(order.createdAt).toLocaleDateString()}</div>
         <div class="status">${order.status}</div>
       </div>

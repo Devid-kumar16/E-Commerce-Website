@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink, Outlet, Navigate, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../context/AuthContext";
+
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./AdminStyles.css";

@@ -1,0 +1,392 @@
+.header {
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  padding: 12px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0aa;
+  text-decoration: none;
+}
+
+.search-box {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+}
+
+.search-box input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.search-box button {
+  padding: 10px 16px;
+  border: none;
+  background: #0aa;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chip {
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  text-decoration: none;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.chip span {
+  background: #0aa;
+  color: white;
+  font-size: 12px;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.chip.admin {
+  border-color: #ff9800;
+  color: #ff9800;
+}
+
+.account {
+  position: relative;
+}
+
+.account-menu {
+  position: absolute;
+  right: 0;
+  top: 120%;
+  background: white;
+  min-width: 160px;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.account-menu a,
+.account-menu button {
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  color: #333;
+}
+
+.account-menu a:hover,
+.account-menu button:hover {
+  background: #f5f5f5;
+}
+
+.account-menu .logout {
+  color: red;
+}
+
+
+/* ================= CATEGORY STRIP FIX ================= */
+
+.category-strip {
+  background: #fff;
+  border-top: 1px solid #eee;
+  padding: 14px 0;
+}
+
+.category-strip-inner {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 0 32px;
+  overflow-x: auto;
+}
+
+.category-item {
+  min-width: 120px;
+  text-align: center;
+  text-decoration: none;
+  color: #222;
+  flex-shrink: 0;
+}
+
+.category-img-wrap {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 6px;
+  border-radius: 16px;
+
+  /* 🔥 KEY FIX */
+  background-color: #f2f2f2;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* fallback letter */
+.category-fallback {
+  font-size: 22px;
+  font-weight: 600;
+  color: #999;
+}
+
+.category-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+/* Hover polish */
+.category-item:hover .category-img-wrap {
+  background-color: #eefafa;
+}
+
+.category-item:hover {
+  color: #0aa;
+}
+
+
+.category-img-wrap {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 6px;
+  border-radius: 16px;
+  background: #f2f2f2;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.category-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.category-fallback {
+  font-size: 22px;
+  font-weight: 600;
+  color: #999;
+}
+
+.category-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+}
+
+
+.header {
+  position: sticky;       /* ✅ keeps navbar at top */
+  top: 0;
+  z-index: 1000;          /* ✅ always above content */
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 24px;
+}
+
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #fff;
+}
+
+
+/* ================= HEADER ================= */
+.header {
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.header-inner {
+  max-width: 1300px;
+  margin: auto;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: bold;
+  color: #0aa;
+  text-decoration: none;
+}
+
+/* ================= SEARCH ================= */
+.search-box {
+  flex: 1;
+  display: flex;
+}
+
+.search-box input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-right: none;
+  border-radius: 6px 0 0 6px;
+}
+
+.search-box button {
+  padding: 10px 16px;
+  background: #0aa;
+  color: #fff;
+  border: none;
+  border-radius: 0 6px 6px 0;
+  cursor: pointer;
+}
+
+/* ================= ACTIONS ================= */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chip {
+  position: relative;
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  text-decoration: none;
+  color: #333;
+  background: #fff;
+  cursor: pointer;
+}
+
+.chip span {
+  background: #0aa;
+  color: #fff;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 50%;
+  margin-left: 6px;
+}
+
+/* ================= ACCOUNT MENU ================= */
+.account {
+  position: relative;
+}
+
+.account-menu {
+  position: absolute;
+  right: 0;
+  top: 120%;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  overflow: hidden;
+  min-width: 160px;
+}
+
+.account-menu a,
+.account-menu button {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  color: #333;
+}
+
+.account-menu a:hover,
+.account-menu button:hover {
+  background: #f5f5f5;
+}
+
+.logout {
+  color: #d11a2a;
+}
+
+/* ================= CATEGORY STRIP ================= */
+.category-strip {
+  display: flex;
+  gap: 18px;
+  padding: 10px 16px;
+  overflow-x: auto;
+  border-top: 1px solid #eee;
+  background: #fff;
+  white-space: nowrap;
+}
+
+.category-strip::-webkit-scrollbar {
+  height: 6px;
+}
+
+.category-strip::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 10px;
+}
+
+/* ================= CATEGORY ITEM ================= */
+.category-item {
+  flex: 0 0 auto;
+  width: 80px;
+  text-align: center;
+  text-decoration: none;
+  color: #333;
+}
+
+.category-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 50%;
+  background: #f2f2f2;
+  margin-bottom: 6px;
+}
+
+.category-item span {
+  font-size: 12px;
+  display: block;
+  white-space: normal;
+}

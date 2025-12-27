@@ -1,5 +1,5 @@
 import express from "express";
-import { authRequired, isAdmin } from "../middleware/authMiddleware.js";
+import { authRequired, adminOnly } from "../middleware/authMiddleware.js";
 
 
 import {
@@ -21,7 +21,7 @@ const router = express.Router();
 router.post(
   "/customers",
   authRequired,
-  isAdmin,
+  adminOnly,
   createCustomer
 );
 
@@ -34,7 +34,7 @@ router.post(
 router.get(
   "/users",
   authRequired,
-  isAdmin,
+  adminOnly,
   listAdminUsers
 );
 
@@ -43,7 +43,7 @@ router.get(
 router.get(
   "/users/:id",
   authRequired,
-  isAdmin,
+  adminOnly,
   getAdminUser
 );
 
@@ -52,7 +52,7 @@ router.get(
 router.patch(
   "/users/:id/promote",
   authRequired,
-  isAdmin,
+  adminOnly,
   promoteUser
 );
 
@@ -61,7 +61,7 @@ router.patch(
 router.patch(
   "/users/:id/demote",
   authRequired,
-  isAdmin,
+  adminOnly,
   demoteUser
 );
 

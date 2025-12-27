@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../context/AuthContext";
 import "../styles/Auth.css";
 
 export default function Login() {
@@ -24,17 +24,17 @@ export default function Login() {
     try {
       setLoading(true);
 
-      // ✅ CORRECT CALL
+      // ✅ SINGLE SOURCE OF TRUTH (AuthContext)
       const user = await login({ email, password });
 
-      // ✅ Redirect based on role
-      if (user.role === "admin") {
-        navigate("/admin");
+      // ✅ Role-based redirect
+      if (user?.role === "admin") {
+        navigate("/admin", { replace: true });
       } else {
-        navigate("/");
+        navigate("/", { replace: true });
       }
     } catch (err) {
-      setError(err.message || "Login failed");
+      setError(err.message || "Invalid email or password");
     } finally {
       setLoading(false);
     }
@@ -43,7 +43,7 @@ export default function Login() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2 className="auth-title">Welcome Back 👋</h2>
+        <h2 className="auth-title">Welcome Back</h2>
         <p className="auth-subtitle">
           Login to continue shopping on <strong>E-Store</strong>
         </p>
@@ -81,8 +81,7 @@ export default function Login() {
         </form>
 
         <p className="auth-footer">
-          Don’t have an account?{" "}
-          <Link to="/signup">Create one</Link>
+          Don’t have an account? <Link to="/signup">Create one</Link>
         </p>
       </div>
     </div>
