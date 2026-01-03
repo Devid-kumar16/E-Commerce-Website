@@ -551,3 +551,21 @@ button {
   font-size: 14px;
 }
 
+/* ===== ORDER SUMMARY ===== */
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.summary-row span {
+  font-size: 14px;
+  color: #555;
+}
+
+.summary-row strong {
+  font-size: 18px;
+  font-weight: 700;
+}

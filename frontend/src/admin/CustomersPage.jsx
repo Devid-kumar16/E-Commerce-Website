@@ -65,7 +65,7 @@ export default function CustomersPage() {
         </div>
 
         <Link to="/admin/customers/new" className="btn-primary">
-          + Add Customer
+          Add Customer
         </Link>
       </div>
 

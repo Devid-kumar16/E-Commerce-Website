@@ -1570,6 +1570,157 @@ input:focus, select:focus, textarea:focus {
 }
 
 
-.btn-primary {
-  margin-right: 16px;   /* 👈 gap yahin se aayega */
+
+/* ===============================
+   ADD PRODUCT – BUTTON FIX
+   =============================== */
+
+.admin-page .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+
+  /* override all broken rules */
+  margin-top: 32px;
+}
+
+/* REMOVE ALL BUTTON OFFSET ISSUES */
+.admin-page .form-actions .btn,
+.admin-page .form-actions .btn-primary,
+.admin-page .form-actions .btn-secondary {
+  margin: 0 !important;          /* 🔥 THIS FIXES IT */
+  height: 44px;
+  min-width: 120px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  white-space: nowrap;
+}
+
+
+
+/* =====================================================
+   ADD PRODUCT – PERMANENT BUTTON ALIGNMENT FIX
+   ===================================================== */
+
+.add-product-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* HARD RESET FOR BUTTONS (kills all conflicts) */
+.add-product-actions .btn {
+  margin: 0 !important;          /* 🔥 MOST IMPORTANT */
+  padding: 0 24px;
+  height: 44px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Primary */
+.add-product-actions .btn-primary {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+}
+
+/* Secondary */
+.add-product-actions .btn-secondary {
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+}
+
+/* =====================================================
+   ADMIN FORM ACTIONS – GLOBAL, PERMANENT FIX
+   ===================================================== */
+
+.admin-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;                 /* ✅ REAL GAP */
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Normalize all buttons inside admin actions */
+.admin-actions .btn {
+  margin: 0 !important;     /* 🔥 kills random margins */
+  min-width: 140px;
+  height: 44px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  white-space: nowrap;
+}
+
+/* Primary */
+.admin-actions .btn-primary {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+}
+
+/* Secondary */
+.admin-actions .btn-secondary {
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+}
+
+
+.stat-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  min-height: 110px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.stat-card span {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.stat-card strong {
+  font-size: 26px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.stat-card.highlight {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.stat-card.highlight span,
+.stat-card.highlight strong {
+  color: #ffffff;
 }

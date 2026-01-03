@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon --signal SIGTERM index.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

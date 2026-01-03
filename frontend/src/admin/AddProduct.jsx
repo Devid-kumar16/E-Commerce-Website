@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../api/axios";
+import "./AddProduct.css";
 
 export default function AddProduct() {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ export default function AddProduct() {
     price: "",
     category_id: "",
     status: "draft",
-    stock: 0,
+    stock: "",
     image_url: "",
     description: "",
   });
@@ -25,18 +26,16 @@ export default function AddProduct() {
       try {
         const res = await api.get("/categories/active");
         setCategories(res.data.categories || []);
-      } catch (err) {
+      } catch {
         toast.error("Failed to load categories");
       }
     };
-
     loadCategories();
   }, []);
 
   /* ================= ADD PRODUCT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     setLoading(true);
 
     try {
@@ -51,11 +50,8 @@ export default function AddProduct() {
       });
 
       toast.success("Product added successfully");
-
-      setTimeout(() => {
-        navigate("/admin/products");
-      }, 1200);
-    } catch (err) {
+      setTimeout(() => navigate("/admin/products"), 1200);
+    } catch {
       toast.error("Failed to add product");
     } finally {
       setLoading(false);
@@ -64,36 +60,31 @@ export default function AddProduct() {
 
   return (
     <div className="admin-page">
+      {/* ===== HEADER ===== */}
       <div className="page-header">
-        <h2>Add Product</h2>
-        <p className="page-subtitle">
-          Create a new product for your store
-        </p>
+        <h1>Add Product</h1>
+        <p>Create a new product for your store</p>
       </div>
 
       <form className="product-card" onSubmit={handleSubmit}>
+        {/* ===== BASIC INFO ===== */}
+        <h3 className="section-title">Basic Information</h3>
+
         <div className="form-grid">
-          {/* LEFT COLUMN */}
-          <div className="form-section">
+          {/* Row 1 */}
+          <div className="form-field">
             <label>Product Name</label>
             <input
               value={form.name}
               onChange={(e) =>
                 setForm({ ...form, name: e.target.value })
               }
+              placeholder="Enter product name"
               required
             />
+          </div>
 
-            <label>Price (₹)</label>
-            <input
-              type="number"
-              value={form.price}
-              onChange={(e) =>
-                setForm({ ...form, price: e.target.value })
-              }
-              required
-            />
-
+          <div className="form-field">
             <label>Category</label>
             <select
               value={form.category_id}
@@ -109,7 +100,10 @@ export default function AddProduct() {
                 </option>
               ))}
             </select>
+          </div>
 
+          {/* Row 2 (FIXED) */}
+          <div className="form-field">
             <label>Status</label>
             <select
               value={form.status}
@@ -120,7 +114,9 @@ export default function AddProduct() {
               <option value="draft">Draft</option>
               <option value="published">Published</option>
             </select>
+          </div>
 
+          <div className="form-field">
             <label>Stock Quantity</label>
             <input
               type="number"
@@ -130,9 +126,26 @@ export default function AddProduct() {
               }
             />
           </div>
+        </div>
 
-          {/* RIGHT COLUMN */}
-          <div className="form-section">
+        {/* ===== PRICING ===== */}
+        <h3 className="section-title">Pricing</h3>
+
+        <div className="form-grid">
+          <div className="form-field">
+            <label>Price (₹)</label>
+            <input
+              type="number"
+              value={form.price}
+              onChange={(e) =>
+                setForm({ ...form, price: e.target.value })
+              }
+              placeholder="0.00"
+              required
+            />
+          </div>
+
+          <div className="form-field">
             <label>Image URL</label>
             <input
               type="text"
@@ -142,43 +155,49 @@ export default function AddProduct() {
               }
               placeholder="https://example.com/image.jpg"
             />
-
-            {form.image_url && (
-              <div className="image-preview">
-                <img src={form.image_url} alt="Preview" />
-              </div>
-            )}
-
-            <label>Description</label>
-            <textarea
-              rows="6"
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-              placeholder="Write a short product description..."
-            />
           </div>
         </div>
 
-        {/* ACTIONS */}
-        <div className="form-actions">
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Save Product"}
-          </button>
+        {/* ===== IMAGE PREVIEW ===== */}
+        {form.image_url && (
+          <div className="image-preview">
+            <img src={form.image_url} alt="Preview" />
+          </div>
+        )}
 
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => navigate("/admin/products")}
-          >
-            Cancel
-          </button>
-        </div>
+        {/* ===== DESCRIPTION ===== */}
+        <h3 className="section-title">Description</h3>
+        <textarea
+          rows="5"
+          value={form.description}
+          onChange={(e) =>
+            setForm({ ...form, description: e.target.value })
+          }
+          placeholder="Write a short product description..."
+        />
+
+{/* ===== ACTIONS ===== */}
+<div className="add-product-actions">
+  <button
+    type="button"
+    className="btn btn-secondary"
+    onClick={() => navigate("/admin/products")}
+  >
+    Cancel
+  </button>
+
+  <button
+    type="submit"
+    className="btn btn-primary"
+    disabled={loading}
+  >
+    {loading ? "Saving..." : "Save Product"}
+  </button>
+</div>
+
+
+
+
       </form>
     </div>
   );

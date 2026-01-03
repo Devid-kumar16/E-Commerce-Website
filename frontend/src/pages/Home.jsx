@@ -14,16 +14,21 @@ export default function Home() {
     loadProducts();
   }, []);
 
-  const loadProducts = async () => {
-    try {
-      const res = await api.get("/products");
-      setProducts(res.data.products || []);
-    } catch (err) {
-      console.error("Home products error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+const loadProducts = async () => {
+  try {
+    const res = await api.get("/products");
+
+    // ✅ DIRECTLY USE products
+    setProducts(res.data.products || []);
+  } catch (err) {
+    console.error("Home products error:", err);
+    setProducts([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const topDeals = products.slice(0, 20);
 

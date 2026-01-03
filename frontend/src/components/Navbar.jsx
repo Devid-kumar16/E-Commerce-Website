@@ -50,18 +50,45 @@ export default function Navbar() {
       <div className="nav-center">
         <Link to="/" className="nav-link">Home</Link>
 
-        {/* ✅ CATEGORY LINKS (FIXED) */}
+        {/* ✅ CATEGORY LINKS — SLUG BASED */}
         <Link to="/category/electronics" className="nav-link">
           Electronics
         </Link>
-        <Link to="/category/mobiles" className="nav-link">
+
+        <Link to="/category/mobiles-tablets" className="nav-link">
           Mobiles & Tablets
         </Link>
+
         <Link to="/category/laptops" className="nav-link">
           Laptops
         </Link>
+
         <Link to="/category/fashion" className="nav-link">
           Fashion
+        </Link>
+
+        <Link to="/category/home" className="nav-link">
+          Home
+        </Link>
+
+        <Link to="/category/beauty" className="nav-link">
+          Beauty
+        </Link>
+
+        <Link to="/category/toys" className="nav-link">
+          Toys
+        </Link>
+
+        <Link to="/category/sports" className="nav-link">
+          Sports
+        </Link>
+
+        <Link to="/category/grocery" className="nav-link">
+          Grocery
+        </Link>
+
+        <Link to="/category/tvs-appliances" className="nav-link">
+          TVs & Appliances
         </Link>
 
         <Link to="/cart" className="nav-link">

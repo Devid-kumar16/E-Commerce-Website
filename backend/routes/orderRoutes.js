@@ -15,13 +15,13 @@ import { searchCustomers } from "../controllers/customerController.js";
 
 const router = express.Router();
 
-/* ================= ADMIN (KEEP FIRST!) ================= */
+/* ================= ADMIN ROUTES ================= */
 
-// ✅ Admin: list orders
+// ✅ Admin: list all orders
 router.get("/admin", authRequired, adminOnly, listOrdersAdmin);
 
-// ✅ Admin: create order
-router.post("/admin", authRequired, adminOnly, createOrderAdmin);
+// ✅ Admin: create order (MAIN FIX 🔥)
+router.post("/admin/create", authRequired, adminOnly, createOrderAdmin);
 
 // ✅ Admin: order details
 router.get("/admin/:id", authRequired, adminOnly, getOrderWithItemsAdmin);
@@ -37,13 +37,13 @@ router.get("/customers/search", authRequired, adminOnly, searchCustomers);
 
 /* ================= USER / WEBSITE ================= */
 
-// ✅ Guest checkout allowed
+// ✅ Guest checkout
 router.post("/", createOrder);
 
 // ✅ Logged-in user: order history
 router.get("/my", authRequired, listOrdersForUser);
 
-// ✅ Logged-in user: single order details
+// ✅ Logged-in user: order details
 router.get("/:id", authRequired, getOrderWithItemsForUser);
 
 export default router;

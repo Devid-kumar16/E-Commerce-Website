@@ -3,6 +3,7 @@ import { pool } from "../config/db.js";
 
 export async function adminDashboard(req, res) {
   try {
+    /* ================== COUNTS ================== */
     const [[products]] = await pool.query(
       "SELECT COUNT(*) AS total FROM products"
     );
@@ -19,27 +20,39 @@ export async function adminDashboard(req, res) {
       "SELECT COUNT(*) AS total FROM users WHERE role = 'customer'"
     );
 
+    /* ================== REVENUE ================== */
     const [[revenue]] = await pool.query(
-      "SELECT IFNULL(SUM(total_amount), 0) AS total FROM orders WHERE status = 'Paid'"
+      `
+      SELECT IFNULL(SUM(total_amount), 0) AS total
+      FROM orders
+      WHERE payment_status = 'Paid'
+      `
     );
 
-    const [recentOrders] = await pool.query(`
-      SELECT o.id, o.total_amount, o.status, o.created_at,
-             u.name AS customer
+    /* ================== RECENT ORDERS (FIXED) ================== */
+    const [recentOrders] = await pool.query(
+      `
+      SELECT 
+        o.id,
+        o.total_amount,
+        o.payment_status,
+        o.delivery_status,
+        o.created_at,
+        u.name AS customer_name
       FROM orders o
       LEFT JOIN users u ON u.id = o.user_id
-      ORDER BY o.id ASC
+      ORDER BY o.id DESC          -- ✅ FIX: latest orders first
       LIMIT 5
-    `);
+      `
+    );
 
+    /* ================== RESPONSE ================== */
     res.json({
-      stats: {
-        products: products.total,
-        categories: categories.total,
-        orders: orders.total,
-        customers: customers.total,
-        revenue: revenue.total,
-      },
+      products: products.total,
+      categories: categories.total,
+      orders: orders.total,
+      customers: customers.total,
+      revenue: revenue.total,
       recentOrders,
     });
   } catch (err) {

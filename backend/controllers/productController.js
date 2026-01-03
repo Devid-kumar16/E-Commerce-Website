@@ -44,12 +44,21 @@ export async function listPublicProducts(req, res) {
       LIMIT 20
     `);
 
-    res.json({ products: rows });
+    // ✅ ALWAYS return consistent JSON
+    return res.json({
+      ok: true,
+      products: rows,
+    });
   } catch (err) {
-    console.error("listPublicProducts error:", err);
-    res.status(500).json({ message: "Failed to load products" });
+    console.error("❌ listPublicProducts error:", err);
+    return res.status(500).json({
+      ok: false,
+      products: [],
+      message: "Failed to load products",
+    });
   }
 }
+
 
 /* ---------- ADMIN PRODUCTS ---------- */
 export async function listAdminProducts(req, res) {
@@ -214,35 +223,41 @@ export async function updateInventory(req, res, next) {
 }
 
 
+/**
+ * GET products by category slug
+ * URL: /api/products/category/:slug
+ */
 export const getProductsByCategory = async (req, res) => {
-  const { slug } = req.params;
-
-  console.log("➡️ Category API hit, slug:", slug);
-
   try {
-    const [rows] = await db.query(
-      `
-      SELECT p.*
-      FROM products p
-      INNER JOIN categories c ON p.category_id = c.id
-      WHERE c.slug = ?
-        AND c.status = 'active'
-        AND c.active = 1
-      `,
+    const { slug } = req.params;
+
+    // 1️⃣ Find category by slug
+    const [categories] = await pool.query(
+      "SELECT id, name FROM categories WHERE slug = ?",
       [slug]
     );
 
-    console.log("✅ Products found:", rows.length);
+    if (categories.length === 0) {
+      return res.json({
+        products: [],
+        message: "Category not found",
+      });
+    }
 
-    return res.json({
-      ok: true,
-      products: rows,
+    const categoryId = categories[0].id;
+
+    // 2️⃣ Fetch products using category_id
+    const [products] = await pool.query(
+      "SELECT * FROM products WHERE category_id = ?",
+      [categoryId]
+    );
+
+    res.json({
+      category: categories[0],
+      products,
     });
-  } catch (err) {
-    console.error("❌ Category products error:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Server error",
-    });
+  } catch (error) {
+    console.error("getProductsByCategory error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };

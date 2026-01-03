@@ -4,6 +4,7 @@ import useAdminApi from "./useAdminApi";
 import "./OrderDetails.css";
 
 export default function OrderDetailsPage() {
+  
   const { id } = useParams();
   const api = useAdminApi();
 
@@ -14,6 +15,7 @@ export default function OrderDetailsPage() {
 
   /* ================= LOAD ORDER ================= */
   useEffect(() => {
+    
     let mounted = true;
 
     const loadOrder = async () => {
@@ -28,23 +30,33 @@ export default function OrderDetailsPage() {
 
         const o = data.order;
 
-        const normalizedOrder = {
-          id: o.id,
-          totalAmount: Number(o.total_amount || 0),
-          paymentMethod: o.payment_method,
-          status: o.status,
-          createdAt: o.created_at,
+const normalizedOrder = {
+  id: o.id,
 
-          customerName: o.customer_name,
-          customerEmail: o.customer_email,
-          phone: o.phone,
-          address: o.address,
-          area: o.area,
-        };
+  // ✅ FIX TOTAL
+  totalAmount: Number(o.total_amount || 0),
+
+  // ✅ FIX PAYMENT
+  paymentMethod: o.payment_method,
+  paymentStatus: o.payment_status,
+
+  // ✅ FIX STATUS (THIS WAS THE MAIN BUG)
+  deliveryStatus: o.delivery_status,
+
+  createdAt: o.created_at,
+
+  customerName: o.customer_name,
+  customerEmail: o.customer_email,
+  phone: o.phone,
+  address: o.address,
+  area: o.area,
+};
+
 
         if (mounted) {
           setOrder(normalizedOrder);
           setItems(data.items || []);
+           console.log("ORDER OBJECT:", normalizedOrder);
         }
       } catch (err) {
         console.error(err);
@@ -246,6 +258,7 @@ export default function OrderDetailsPage() {
   if (!order) return null;
 
   return (
+    
     <div className="admin-page">
       <div className="page-header">
         <h2>Order {order.id}</h2>
@@ -262,22 +275,26 @@ export default function OrderDetailsPage() {
       </div>
 
       {/* STATS */}
-      <div className="order-stats">
-        <div className="stat-card total">
-          <h4>Total</h4>
-          <p>₹{order.totalAmount.toFixed(2)}</p>
-        </div>
+<div className="order-stats">
+  <div className="stat-card total">
+    <h4>Total</h4>
+    <p>₹{order.totalAmount.toFixed(2)}</p>
+  </div>
 
-        <div className="stat-card payment">
-          <h4>Payment</h4>
-          <p>{order.paymentMethod}</p>
-        </div>
+  <div className="stat-card payment">
+    <h4>Payment</h4>
+    <p>{order.paymentMethod}</p>
+  </div>
 
-        <div className={`stat-card status ${order.status.toLowerCase()}`}>
-          <h4>Status</h4>
-          <p>{order.status}</p>
-        </div>
-      </div>
+  <div
+    className={`stat-card status ${order.deliveryStatus.toLowerCase()}`}
+  >
+    <h4>Status</h4>
+    <p>{order.deliveryStatus}</p>
+  </div>
+</div>
+
+
 
       {/* CUSTOMER */}
       <div className="admin-card">

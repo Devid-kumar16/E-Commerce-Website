@@ -34,7 +34,7 @@ export default function OrderDetails() {
 
   return (
     <div className="order-details-page">
-      <h2>Order #{order.id}</h2>
+      <h2>Order {order.id}</h2>
 
       <div className="order-summary">
         <p><strong>Total:</strong> ₹{order.total_amount}</p>
@@ -71,7 +71,7 @@ export default function OrderDetails() {
       )}
 
       <Link to="/orders" className="back-link">
-        ← Back to My Orders
+        Back to My Orders
       </Link>
     </div>
   );

@@ -93,21 +93,51 @@ export const createOrder = async (req, res) => {
 };
 
 /* ======================================================
-   ADMIN: CREATE ORDER
+   ADMIN: CREATE ORDER (FIXED)
 ====================================================== */
 export const createOrderAdmin = async (req, res) => {
   const conn = await pool.getConnection();
 
   try {
-    const { customer, items, payment_method, delivery_status, total_amount } = req.body;
+    console.log("👉 CREATE ORDER BODY:", JSON.stringify(req.body, null, 2));
 
-    if (!customer?.phone || !customer?.address || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ ok: false, message: "Invalid order data" });
+    const {
+      customer,
+      items,
+      payment_method,
+      payment_status,
+      delivery_status,
+      total_amount,
+    } = req.body;
+
+    console.log("PAYMENT DATA:", payment_method, payment_status, delivery_status);
+
+
+    /* ================= VALIDATION ================= */
+
+    if (
+      !customer?.phone ||
+      !customer?.address ||
+      !Array.isArray(items) ||
+      items.length === 0
+    ) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid customer or items data",
+      });
+    }
+
+    if (!payment_method || !payment_status || !delivery_status) {
+      return res.status(400).json({
+        ok: false,
+        message: "Payment and delivery status are required",
+      });
     }
 
     await conn.beginTransaction();
 
-    /* FIND OR CREATE USER */
+    /* ================= FIND OR CREATE CUSTOMER ================= */
+
     const [[existingUser]] = await conn.query(
       "SELECT id FROM users WHERE phone = ?",
       [customer.phone]
@@ -119,50 +149,69 @@ export const createOrderAdmin = async (req, res) => {
       userId = existingUser.id;
     } else {
       const hash = await bcrypt.hash(Math.random().toString(36), 10);
+
       const [u] = await conn.query(
         `INSERT INTO users (name, phone, email, password_hash, role, area)
          VALUES (?, ?, ?, ?, 'customer', ?)`,
-        [customer.name || "", customer.phone, customer.email || "", hash, customer.area || ""]
+        [
+          customer.name || "Guest User",
+          customer.phone,
+          customer.email || "",
+          hash,
+          customer.area || "",
+        ]
       );
+
       userId = u.insertId;
     }
 
-    /* CALCULATE TOTAL */
+    /* ================= CALCULATE TOTAL (SECURITY CHECK) ================= */
+
     let calculatedTotal = 0;
 
     for (const item of items) {
+      if (!item.product_id || !item.qty || item.qty <= 0) {
+        throw new Error("Invalid order item data");
+      }
+
       const [[product]] = await conn.query(
         "SELECT price FROM products WHERE id = ?",
         [item.product_id]
       );
 
-      if (!product) throw new Error("Invalid product");
+      if (!product) {
+        throw new Error("Invalid product selected");
+      }
+
       calculatedTotal += product.price * item.qty;
     }
 
     if (Number(calculatedTotal) !== Number(total_amount)) {
-      throw new Error("Total mismatch");
+      throw new Error("Total amount mismatch");
     }
 
-    /* CREATE ORDER */
+    /* ================= CREATE ORDER ================= */
+
     const [orderRes] = await conn.query(
       `INSERT INTO orders
        (user_id, phone, area, address, payment_method, payment_status, delivery_status, total_amount)
-       VALUES (?, ?, ?, ?, ?, 'Pending', ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         customer.phone,
         customer.area || "",
         customer.address,
-        payment_method,
-        delivery_status || "Pending",
+        payment_method,      // ✅ exact frontend value
+        payment_status,      // ✅ no silent override
+        delivery_status,     // ✅ no silent override
         calculatedTotal,
       ]
     );
 
     const orderId = orderRes.insertId;
 
-    /* ORDER ITEMS */
+    /* ================= INSERT ORDER ITEMS ================= */
+
     for (const item of items) {
       const [[product]] = await conn.query(
         "SELECT name, price FROM products WHERE id = ?",
@@ -178,19 +227,31 @@ export const createOrderAdmin = async (req, res) => {
     }
 
     await conn.commit();
-    res.json({ ok: true, order_id: orderId });
+
+    res.json({
+      ok: true,
+      message: "Order created successfully",
+      order_id: orderId,
+    });
 
   } catch (err) {
     await conn.rollback();
-    console.error("createOrderAdmin error:", err);
-    res.status(400).json({ ok: false, message: err.message });
+    console.error("❌ createOrderAdmin error:", err);
+
+    res.status(400).json({
+      ok: false,
+      message: err.message,
+    });
   } finally {
     conn.release();
   }
 };
 
+
+
+
 /* ======================================================
-   ADMIN: LIST ORDERS (🔥 FIXED – MAIN ISSUE)
+   ADMIN: LIST ORDERS (FINAL – FIXED)
 ====================================================== */
 export const listOrdersAdmin = async (req, res) => {
   try {
@@ -198,8 +259,15 @@ export const listOrdersAdmin = async (req, res) => {
     const limit = Number(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
+    // ✅ MAIN QUERY (DELIVERY STATUS USED AS STATUS)
     const [orders] = await pool.query(
-      `SELECT o.*, u.name AS customer_name, u.email AS customer_email
+      `SELECT
+         o.id,
+         u.name AS customer_name,
+         o.area,
+         o.total_amount,
+         o.delivery_status AS status,   -- ✅ IMPORTANT FIX
+         o.created_at
        FROM orders o
        LEFT JOIN users u ON u.id = o.user_id
        ORDER BY o.created_at DESC
@@ -207,24 +275,30 @@ export const listOrdersAdmin = async (req, res) => {
       [limit, offset]
     );
 
+    // ✅ TOTAL COUNT
     const [[count]] = await pool.query(
       "SELECT COUNT(*) AS total FROM orders"
     );
 
     res.json({
       ok: true,
-      orders, // ✅ THIS FIXES YOUR ADMIN PANEL
+      orders,
       meta: {
         total: count.total,
         page,
         totalPages: Math.ceil(count.total / limit),
       },
     });
+
   } catch (err) {
     console.error("listOrdersAdmin error:", err);
-    res.status(500).json({ ok: false, message: "Failed to load orders" });
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load orders",
+    });
   }
 };
+
 
 /* ======================================================
    ADMIN: ORDER DETAILS

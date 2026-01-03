@@ -61,7 +61,6 @@ export default function CreateOrderPage() {
     return () => clearTimeout(timer);
   }, [form.phone, lockPhone]);
 
-  /* ================= SELECT CUSTOMER ================= */
   const selectCustomer = (c) => {
     setCustomers([]);
     setForm((prev) => ({
@@ -93,7 +92,6 @@ export default function CreateOrderPage() {
         copy[index].image = p.image_url;
       }
     }
-
     setItems(copy);
   };
 
@@ -126,12 +124,6 @@ export default function CreateOrderPage() {
     if (!items.length)
       return toast.error("Add at least one product");
 
-    for (const i of items) {
-      if (!i.product_id) {
-        return toast.error("Please select all products");
-      }
-    }
-
     try {
       setLoading(true);
 
@@ -147,13 +139,15 @@ export default function CreateOrderPage() {
         },
         items: items.map((i) => ({
           product_id: Number(i.product_id),
-          qty: Number(i.quantity),
+          qty: Number(i.quantity), // 👈 MUST be qty
         })),
         payment_method: form.payment_method,
         payment_status: form.payment_status,
         delivery_status: form.delivery_status,
         total_amount: totalAmount,
       };
+
+      console.log("FINAL PAYLOAD:", payload);
 
       const res = await api.post("/orders/admin/create", payload);
 
@@ -164,7 +158,6 @@ export default function CreateOrderPage() {
         toast.error(res.data?.message || "Order failed");
       }
     } catch (err) {
-      console.error(err);
       toast.error(
         err.response?.data?.message || "Failed to create order"
       );
@@ -176,193 +169,216 @@ export default function CreateOrderPage() {
   /* ================= UI ================= */
   return (
     <div className="admin-page">
-      <h2>Create Order</h2>
+      <div className="page-header">
+        <h1>Create Order</h1>
+        <p>Create and manage a new customer order</p>
+      </div>
 
-      <form className="order-card" onSubmit={handleSubmit}>
-        {/* CUSTOMER INFO */}
-        <div className="card-section">
-          <h3>Customer Information</h3>
+      <form className="order-layout" onSubmit={handleSubmit}>
+        {/* ================= LEFT ================= */}
+        <div className="order-left">
+          {/* CUSTOMER */}
+          <div className="card">
+            <h3 className="section-title">Customer Information</h3>
 
-          <div className="grid-4">
-            <input
-              placeholder="Customer Name *"
-              value={form.customer_name}
-              onChange={(e) =>
-                setForm({ ...form, customer_name: e.target.value })
-              }
-            />
-
-            <input
-              placeholder="Customer Mobile *"
-              value={form.phone}
-              onChange={(e) => {
-                setForm({ ...form, phone: e.target.value });
-                setLockPhone(false);
-              }}
-            />
-
-            <input
-              placeholder="Customer Email *"
-              value={form.customer_email}
-              onChange={(e) =>
-                setForm({ ...form, customer_email: e.target.value })
-              }
-            />
-
-            <input
-              placeholder="Area / City"
-              value={form.area}
-              onChange={(e) =>
-                setForm({ ...form, area: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="grid-3 mt-12">
-            <select
-              value={form.state}
-              onChange={(e) =>
-                setForm({ ...form, state: e.target.value })
-              }
-            >
-              <option value="">Select State*</option>
-              <option>Maharashtra</option>
-              <option>Delhi</option>
-              <option>Uttar Pradesh</option>
-              <option>Madhya Pradesh</option>
-              <option>Punjab</option>
-              <option>Chhattisgarh</option>
-              <option>Kerala</option>
-              <option>Karnataka</option>
-              <option>Jammu & Kashmir</option>
-            </select>
-
-            <input
-              placeholder="Pincode *"
-              value={form.pincode}
-              onChange={(e) =>
-                setForm({ ...form, pincode: e.target.value })
-              }
-            />
-          </div>
-
-          <textarea
-            className="mt-12"
-            placeholder="Full Address *"
-            rows="3"
-            value={form.address}
-            onChange={(e) =>
-              setForm({ ...form, address: e.target.value })
-            }
-          />
-
-          {loadingCustomers && <div className="hint">Searching...</div>}
-
-          {customers.length > 0 && (
-            <div className="customer-dropdown">
-              {customers.map((c) => (
-                <div key={c.id} onClick={() => selectCustomer(c)}>
-                  📱 {c.phone} {c.email ? `– ${c.email}` : ""}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ORDER ITEMS */}
-        <div className="card-section">
-          <h3>Order Items</h3>
-
-          {items.map((item, i) => (
-            <div key={i} className="item-row">
-              {item.image && <img src={item.image} alt="" />}
-
-              <select
-                value={item.product_id}
-                onChange={(e) =>
-                  updateItem(i, "product_id", e.target.value)
-                }
-              >
-                <option value="">Select Product</option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-
+            <div className="form-grid">
               <input
-                type="number"
-                min="1"
-                value={item.quantity}
+                placeholder="Customer Name *"
+                value={form.customer_name}
                 onChange={(e) =>
-                  updateItem(i, "quantity", Number(e.target.value))
+                  setForm({ ...form, customer_name: e.target.value })
                 }
               />
+              <input
+                placeholder="Phone *"
+                value={form.phone}
+                onChange={(e) => {
+                  setForm({ ...form, phone: e.target.value });
+                  setLockPhone(false);
+                }}
+              />
+              <input
+                placeholder="Email *"
+                value={form.customer_email}
+                onChange={(e) =>
+                  setForm({ ...form, customer_email: e.target.value })
+                }
+              />
+              <input
+                placeholder="Area / City"
+                value={form.area}
+                onChange={(e) =>
+                  setForm({ ...form, area: e.target.value })
+                }
+              />
+              <select
+                value={form.state}
+                onChange={(e) =>
+                  setForm({ ...form, state: e.target.value })
+                }
+              >
+                <option value="">Select State *</option>
+                <option>Maharashtra</option>
+                <option>Delhi</option>
+                <option>Karnataka</option>
+              </select>
+              <input
+                placeholder="Pincode *"
+                value={form.pincode}
+                onChange={(e) =>
+                  setForm({ ...form, pincode: e.target.value })
+                }
+              />
+              <textarea
+                className="full"
+                placeholder="Full Address *"
+                rows="3"
+                value={form.address}
+                onChange={(e) =>
+                  setForm({ ...form, address: e.target.value })
+                }
+              />
+            </div>
 
-              <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+            {loadingCustomers && (
+              <div className="hint">Searching customer...</div>
+            )}
 
+            {customers.length > 0 && (
+              <div className="customer-dropdown">
+                {customers.map((c) => (
+                  <div key={c.id} onClick={() => selectCustomer(c)}>
+                    📱 {c.phone} {c.email && `– ${c.email}`}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ITEMS */}
+          <div className="card">
+            <h3 className="section-title">Order Items</h3>
+
+            {items.map((item, i) => (
+              <div key={i} className="item-row">
+                {item.image && <img src={item.image} alt="" />}
+                <select
+                  value={item.product_id}
+                  onChange={(e) =>
+                    updateItem(i, "product_id", e.target.value)
+                  }
+                >
+                  <option value="">Select Product</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  type="number"
+                  min="1"
+                  value={item.quantity}
+                  onChange={(e) =>
+                    updateItem(i, "quantity", Number(e.target.value))
+                  }
+                />
+
+                <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+
+                <button
+                  type="button"
+                  className="btn-remove"
+                  onClick={() => removeItem(i)}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+
+            <button type="button" className="btn-outline" onClick={addItem}>
+              + Add Product
+            </button>
+          </div>
+        </div>
+
+        {/* ================= RIGHT ================= */}
+        <div className="order-right">
+          <div className="card">
+            <h3 className="section-title">Order Summary</h3>
+
+            <div className="summary-row">
+              <span>Total</span>
+              <strong>₹{totalAmount.toFixed(2)}</strong>
+            </div>
+
+            <div className="order-summary">
+              <h3>Order Summary</h3>
+
+              <div className="summary-row">
+                <label>Payment Method</label>
+                <select
+                  value={form.payment_method}
+                  onChange={(e) =>
+                    setForm({ ...form, payment_method: e.target.value })
+                  }
+                >
+                  <option value="COD">Cash on Delivery</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Card">Card</option>
+                </select>
+              </div>
+
+
+              <div className="summary-row">
+                <label>Payment Status</label>
+                <select
+                  value={form.payment_status}
+                  onChange={(e) =>
+                    setForm({ ...form, payment_status: e.target.value })
+                  }
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Paid">Paid</option>
+                  <option value="Failed">Failed</option>
+                </select>
+              </div>
+
+
+              <div className="summary-row">
+                <label>Delivery Status</label>
+                <select
+                  value={form.delivery_status}
+                  onChange={(e) =>
+                    setForm({ ...form, delivery_status: e.target.value })
+                  }
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Shipped">Shipped</option>
+                  <option value="Delivered">Delivered</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="admin-actions">
               <button
                 type="button"
-                className="btn-remove"
-                onClick={() => removeItem(i)}
+                className="btn btn-secondary"
+                onClick={() => navigate("/admin/orders")}
               >
-                Remove
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={loading}
+              >
+                {loading ? "Creating..." : "Create Order"}
               </button>
             </div>
-          ))}
-
-          <button type="button" className="btn-outline" onClick={addItem}>
-            + Add Product
-          </button>
-        </div>
-
-        {/* SUMMARY */}
-        <div className="summary">
-          <strong>Total: ₹{totalAmount.toFixed(2)}</strong>
-        </div>
-
-        {/* ACTIONS */}
-        <div className="actions">
-          <select
-            value={form.payment_method}
-            onChange={(e) =>
-              setForm({ ...form, payment_method: e.target.value })
-            }
-          >
-            <option value="COD">Cash on Delivery</option>
-            <option value="UPI">UPI</option>
-            <option value="Card">Card</option>
-          </select>
-
-          <select
-            value={form.payment_status}
-            onChange={(e) =>
-              setForm({ ...form, payment_status: e.target.value })
-            }
-          >
-            <option>Pending</option>
-            <option>Paid</option>
-            <option>Failed</option>
-            <option>Refunded</option>
-          </select>
-
-          <select
-            value={form.delivery_status}
-            onChange={(e) =>
-              setForm({ ...form, delivery_status: e.target.value })
-            }
-          >
-            <option>Pending</option>
-            <option>Packed</option>
-            <option>Shipped</option>
-            <option>Delivered</option>
-            <option>Cancelled</option>
-          </select>
-
-          <button className="btn-primary" disabled={loading}>
-            {loading ? "Creating..." : "Create Order"}
-          </button>
+          </div>
         </div>
       </form>
     </div>

@@ -31,7 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000", "http://localhost:3001"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -47,7 +47,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/customers", customerRoutes);
 
-/* 🔥 CART & WISHLIST (MUST COME EARLY) */
+/* CART & WISHLIST */
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 
@@ -59,30 +59,49 @@ app.use("/api/admin/cms", cmsRoutes);
 app.use("/api/cms", cmsRoutes);
 app.use("/api/pages", publicCmsRoutes);
 
-/* ⚠️ GENERIC /api ROUTES (MUST BE LAST) */
+/* GENERIC API (LAST) */
 app.use("/api", dashboardRoutes);
 app.use("/api", publicPageRoutes);
-
 
 /* HEALTH CHECK */
 app.get("/api/health", (req, res) => {
   res.json({ status: "Backend is running", pid: process.pid });
 });
 
-/* ❌ 404 PAGE NOT FOUND (MUST BE LAST) */
+/* 404 */
 app.use((req, res) => {
   res.status(404).json({ message: "Page not found" });
 });
 
-/* SERVER */
-const PORT = process.env.PORT || 5000;
+/* ================= SERVER (FIXED) ================= */
 
-const server = app.listen(PORT, "0.0.0.0", () => {
+const PORT = process.env.PORT || 5000;
+let server;
+
+/* START SERVER ONCE */
+server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Backend listening on port ${PORT}`);
 });
 
+/* HANDLE PORT ERRORS */
 server.on("error", (err) => {
   console.error("❌ SERVER FAILED TO START");
   console.error(err);
   process.exit(1);
 });
+
+/* ✅ GRACEFUL SHUTDOWN (THIS FIXES EADDRINUSE) */
+const shutdown = (signal) => {
+  console.log(`🛑 ${signal} received. Closing server...`);
+  if (server) {
+    server.close(() => {
+      console.log("✅ Server closed cleanly");
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+};
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
