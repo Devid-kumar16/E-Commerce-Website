@@ -1,10 +1,27 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import api from "../api/axios";
+import useAdminApi from "./useAdminApi";
 import "./CreateOrder.css";
 
-export default function CreateOrderPage() {
+const STATES = [
+  "Andhra Pradesh",
+  "Bihar",
+  "Delhi",
+  "Gujarat",
+  "Haryana",
+  "Karnataka",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Punjab",
+  "Rajasthan",
+  "Tamil Nadu",
+  "Uttar Pradesh",
+  "West Bengal",
+];
+
+export default function CreateOrder() {
+  const api = useAdminApi();
   const navigate = useNavigate();
 
   /* ================= STATE ================= */
@@ -12,17 +29,18 @@ export default function CreateOrderPage() {
   const [items, setItems] = useState([]);
 
   const [customers, setCustomers] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [lockPhone, setLockPhone] = useState(false);
 
   const [form, setForm] = useState({
+    phone: "",
     customer_name: "",
     customer_email: "",
-    phone: "",
     area: "",
-    address: "",
     state: "",
     pincode: "",
+    address: "",
     payment_method: "COD",
     payment_status: "Pending",
     delivery_status: "Pending",
@@ -32,74 +50,76 @@ export default function CreateOrderPage() {
 
   /* ================= LOAD PRODUCTS ================= */
   useEffect(() => {
-    api.get("/products/admin/list").then((res) => {
-      setProducts(res.data.products || []);
-    });
-  }, []);
+    api
+      .get("/admin/products")
+      .then((res) => setProducts(res.data?.products || []))
+      .catch(() => toast.error("Failed to load products"));
+  }, [api]);
 
-  /* ================= SEARCH CUSTOMER ================= */
+  /* ================= CUSTOMER SEARCH ================= */
   useEffect(() => {
-    if (lockPhone || form.phone.length < 5) {
+    if (lockPhone || form.phone.trim().length < 4) {
       setCustomers([]);
+      setShowSuggestions(false);
       return;
     }
 
     const timer = setTimeout(async () => {
       try {
         setLoadingCustomers(true);
-        const res = await api.get(
-          `/orders/customers/search?q=${form.phone}`
-        );
-        setCustomers(res.data.customers || []);
-      } catch (err) {
-        console.error(err);
+        const res = await api.get("/admin/customers/search", {
+          params: { q: form.phone },
+        });
+
+        setCustomers(res.data?.customers || []);
+        setShowSuggestions(true);
+      } catch {
+        console.error("Customer search failed");
       } finally {
         setLoadingCustomers(false);
       }
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [form.phone, lockPhone]);
+  }, [form.phone, lockPhone, api]);
 
+  /* ================= SELECT CUSTOMER ================= */
   const selectCustomer = (c) => {
-    setCustomers([]);
     setForm((prev) => ({
       ...prev,
+      phone: c.phone || "",
       customer_name: c.name || "",
-      phone: c.phone,
       customer_email: c.email || "",
+      area: c.area || "",
+      state: "",
+      pincode: "",
+      address: "",
     }));
+
+    setCustomers([]);
+    setShowSuggestions(false);
     setLockPhone(true);
   };
 
   /* ================= ORDER ITEMS ================= */
-  const addItem = () => {
-    setItems([
-      ...items,
-      { product_id: "", name: "", price: 0, quantity: 1, image: "" },
-    ]);
-  };
+  const addItem = () =>
+    setItems([...items, { product_id: "", price: 0, quantity: 1 }]);
+
+  const removeItem = (index) =>
+    setItems(items.filter((_, i) => i !== index));
 
   const updateItem = (index, field, value) => {
     const copy = [...items];
     copy[index][field] = value;
 
     if (field === "product_id") {
-      const p = products.find((x) => x.id === Number(value));
-      if (p) {
-        copy[index].name = p.name;
-        copy[index].price = Number(p.price);
-        copy[index].image = p.image_url;
-      }
+      const product = products.find((p) => p.id === Number(value));
+      if (product) copy[index].price = Number(product.price);
     }
+
     setItems(copy);
   };
 
-  const removeItem = (index) => {
-    setItems(items.filter((_, i) => i !== index));
-  };
-
-  /* ================= TOTAL ================= */
   const totalAmount = items.reduce(
     (sum, i) => sum + i.price * i.quantity,
     0
@@ -109,58 +129,29 @@ export default function CreateOrderPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.customer_name.trim())
-      return toast.error("Customer name is required");
-    if (!form.phone)
-      return toast.error("Phone number is required");
-    if (!form.customer_email)
-      return toast.error("Customer email is required");
-    if (!form.address)
-      return toast.error("Address is required");
-    if (!form.state)
-      return toast.error("State is required");
-    if (!form.pincode || form.pincode.length !== 6)
-      return toast.error("Valid pincode is required");
+    if (!form.phone || !form.customer_name || !form.address)
+      return toast.error("Customer details required");
+
     if (!items.length)
       return toast.error("Add at least one product");
 
     try {
       setLoading(true);
 
-      const payload = {
-        customer: {
-          name: form.customer_name.trim(),
-          phone: form.phone,
-          email: form.customer_email.trim(),
-          area: form.area,
-          address: form.address,
-          state: form.state,
-          pincode: form.pincode,
-        },
-        items: items.map((i) => ({
-          product_id: Number(i.product_id),
-          qty: Number(i.quantity), // 👈 MUST be qty
-        })),
-        payment_method: form.payment_method,
-        payment_status: form.payment_status,
-        delivery_status: form.delivery_status,
+      await api.post("/admin/orders", {
+        ...form,
         total_amount: totalAmount,
-      };
+        items: items.map((i) => ({
+          product_id: i.product_id,
+          quantity: i.quantity,
+          price: i.price,
+        })),
+      });
 
-      console.log("FINAL PAYLOAD:", payload);
-
-      const res = await api.post("/orders/admin/create", payload);
-
-      if (res.data?.ok) {
-        toast.success("Order created successfully");
-        setTimeout(() => navigate("/admin/orders"), 1200);
-      } else {
-        toast.error(res.data?.message || "Order failed");
-      }
-    } catch (err) {
-      toast.error(
-        err.response?.data?.message || "Failed to create order"
-      );
+      toast.success("Order created successfully");
+      navigate("/admin/orders");
+    } catch {
+      toast.error("Order creation failed");
     } finally {
       setLoading(false);
     }
@@ -170,215 +161,219 @@ export default function CreateOrderPage() {
   return (
     <div className="admin-page">
       <div className="page-header">
-        <h1>Create Order</h1>
-        <p>Create and manage a new customer order</p>
+        <h2>Create Order</h2>
+        <p>Create and manage customer orders</p>
       </div>
 
       <form className="order-layout" onSubmit={handleSubmit}>
-        {/* ================= LEFT ================= */}
-        <div className="order-left">
-          {/* CUSTOMER */}
-          <div className="card">
-            <h3 className="section-title">Customer Information</h3>
+        {/* CUSTOMER INFO */}
+        <div className="card">
+          <h3>Customer Information</h3>
 
-            <div className="form-grid">
-              <input
-                placeholder="Customer Name *"
-                value={form.customer_name}
-                onChange={(e) =>
-                  setForm({ ...form, customer_name: e.target.value })
-                }
-              />
-              <input
-                placeholder="Phone *"
-                value={form.phone}
-                onChange={(e) => {
-                  setForm({ ...form, phone: e.target.value });
-                  setLockPhone(false);
-                }}
-              />
-              <input
-                placeholder="Email *"
-                value={form.customer_email}
-                onChange={(e) =>
-                  setForm({ ...form, customer_email: e.target.value })
-                }
-              />
-              <input
-                placeholder="Area / City"
-                value={form.area}
-                onChange={(e) =>
-                  setForm({ ...form, area: e.target.value })
-                }
-              />
-              <select
-                value={form.state}
-                onChange={(e) =>
-                  setForm({ ...form, state: e.target.value })
-                }
-              >
-                <option value="">Select State *</option>
-                <option>Maharashtra</option>
-                <option>Delhi</option>
-                <option>Karnataka</option>
-              </select>
-              <input
-                placeholder="Pincode *"
-                value={form.pincode}
-                onChange={(e) =>
-                  setForm({ ...form, pincode: e.target.value })
-                }
-              />
-              <textarea
-                className="full"
-                placeholder="Full Address *"
-                rows="3"
-                value={form.address}
-                onChange={(e) =>
-                  setForm({ ...form, address: e.target.value })
-                }
-              />
+          <label>Mobile Number *</label>
+          <input
+            value={form.phone}
+            disabled={lockPhone}
+            onChange={(e) => {
+              setForm({ ...form, phone: e.target.value });
+              setLockPhone(false);
+            }}
+          />
+
+          {loadingCustomers && <div className="hint">Searching...</div>}
+
+          {showSuggestions && customers.length > 0 && (
+            <div className="autocomplete-box">
+              {customers.map((c) => (
+                <div
+                  key={c.id}
+                  className="autocomplete-item"
+                  onClick={() => selectCustomer(c)}
+                >
+                  <strong>{c.name}</strong> — {c.phone}
+                  <div className="muted">{c.email}</div>
+                </div>
+              ))}
             </div>
+          )}
 
-            {loadingCustomers && (
-              <div className="hint">Searching customer...</div>
-            )}
+          <label>Customer Name *</label>
+          <input value={form.customer_name} readOnly />
 
-            {customers.length > 0 && (
-              <div className="customer-dropdown">
-                {customers.map((c) => (
-                  <div key={c.id} onClick={() => selectCustomer(c)}>
-                    📱 {c.phone} {c.email && `– ${c.email}`}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <label>Email</label>
+          <input value={form.customer_email} readOnly />
 
-          {/* ITEMS */}
-          <div className="card">
-            <h3 className="section-title">Order Items</h3>
+          <label>Area / City</label>
+          <input
+            value={form.area}
+            onChange={(e) =>
+              setForm({ ...form, area: e.target.value })
+            }
+          />
 
-            {items.map((item, i) => (
+          <label>State *</label>
+          <select
+            value={form.state}
+            onChange={(e) =>
+              setForm({ ...form, state: e.target.value })
+            }
+          >
+            <option value="">Select State</option>
+            {STATES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+
+          <label>Pincode *</label>
+          <input
+            value={form.pincode}
+            onChange={(e) =>
+              setForm({ ...form, pincode: e.target.value })
+            }
+          />
+
+          <label>Full Address *</label>
+          <textarea
+            value={form.address}
+            onChange={(e) =>
+              setForm({ ...form, address: e.target.value })
+            }
+          />
+        </div>
+
+        {/* PAYMENT & DELIVERY */}
+        <div className="card">
+          <h3>Payment & Delivery</h3>
+
+          <label>Payment Method</label>
+          <select
+            value={form.payment_method}
+            onChange={(e) =>
+              setForm({ ...form, payment_method: e.target.value })
+            }
+          >
+            <option value="COD">Cash on Delivery</option>
+            <option value="ONLINE">Online</option>
+            <option value="UPI">UPI</option>
+          </select>
+
+          <label>Payment Status</label>
+          <select
+            value={form.payment_status}
+            onChange={(e) =>
+              setForm({ ...form, payment_status: e.target.value })
+            }
+          >
+            <option value="Pending">Pending</option>
+            <option value="Paid">Paid</option>
+            <option value="Failed">Failed</option>
+          </select>
+
+          <label>Delivery Status</label>
+          <select
+            value={form.delivery_status}
+            onChange={(e) =>
+              setForm({ ...form, delivery_status: e.target.value })
+            }
+          >
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Out for Delivery">Out for Delivery</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        {/* ORDER ITEMS */}
+        <div className="card">
+          <h3>Order Items</h3>
+
+          {items.map((item, i) => {
+            const product = products.find(
+              (p) => p.id === Number(item.product_id)
+            );
+
+            return (
               <div key={i} className="item-row">
-                {item.image && <img src={item.image} alt="" />}
                 <select
                   value={item.product_id}
                   onChange={(e) =>
                     updateItem(i, "product_id", e.target.value)
                   }
                 >
-                  <option value="">Select Product</option>
+                  <option value="">Select product</option>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name}
+                      {p.name} — ₹{p.price}
                     </option>
                   ))}
                 </select>
+
+                {product && (
+                  <div className="product-preview">
+                    <img
+                      src={
+                        product.image_url ||
+                        "/images/placeholder.png"
+                      }
+                      alt={product.name}
+                    />
+                    <div>
+                      <strong>{product.name}</strong>
+                      <div className="muted">
+                        ₹{product.price}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <input
                   type="number"
                   min="1"
                   value={item.quantity}
                   onChange={(e) =>
-                    updateItem(i, "quantity", Number(e.target.value))
+                    updateItem(
+                      i,
+                      "quantity",
+                      Number(e.target.value)
+                    )
                   }
                 />
 
-                <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                <span className="price">
+                  ₹{(item.price * item.quantity).toFixed(2)}
+                </span>
 
                 <button
                   type="button"
-                  className="btn-remove"
                   onClick={() => removeItem(i)}
                 >
                   Remove
                 </button>
               </div>
-            ))}
+            );
+          })}
 
-            <button type="button" className="btn-outline" onClick={addItem}>
-              + Add Product
-            </button>
-          </div>
+          <button type="button" onClick={addItem}>
+            + Add Product
+          </button>
         </div>
 
-        {/* ================= RIGHT ================= */}
-        <div className="order-right">
-          <div className="card">
-            <h3 className="section-title">Order Summary</h3>
+        {/* SUMMARY */}
+        <div className="card summary">
+          <h3>Order Summary</h3>
 
-            <div className="summary-row">
-              <span>Total</span>
-              <strong>₹{totalAmount.toFixed(2)}</strong>
-            </div>
-
-            <div className="order-summary">
-              <h3>Order Summary</h3>
-
-              <div className="summary-row">
-                <label>Payment Method</label>
-                <select
-                  value={form.payment_method}
-                  onChange={(e) =>
-                    setForm({ ...form, payment_method: e.target.value })
-                  }
-                >
-                  <option value="COD">Cash on Delivery</option>
-                  <option value="UPI">UPI</option>
-                  <option value="Card">Card</option>
-                </select>
-              </div>
-
-
-              <div className="summary-row">
-                <label>Payment Status</label>
-                <select
-                  value={form.payment_status}
-                  onChange={(e) =>
-                    setForm({ ...form, payment_status: e.target.value })
-                  }
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Paid">Paid</option>
-                  <option value="Failed">Failed</option>
-                </select>
-              </div>
-
-
-              <div className="summary-row">
-                <label>Delivery Status</label>
-                <select
-                  value={form.delivery_status}
-                  onChange={(e) =>
-                    setForm({ ...form, delivery_status: e.target.value })
-                  }
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Shipped">Shipped</option>
-                  <option value="Delivered">Delivered</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="admin-actions">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => navigate("/admin/orders")}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={loading}
-              >
-                {loading ? "Creating..." : "Create Order"}
-              </button>
-            </div>
+          <div className="summary-row">
+            <span>Total</span>
+            <strong>₹{totalAmount.toFixed(2)}</strong>
           </div>
+
+          <button type="submit" disabled={loading}>
+            {loading ? "Creating..." : "Create Order"}
+          </button>
         </div>
       </form>
     </div>

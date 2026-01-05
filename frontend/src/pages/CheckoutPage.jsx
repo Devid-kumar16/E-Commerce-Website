@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { useCart } from "../context/CartContext";
@@ -16,62 +16,86 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    setError("");
-  }, []);
+  /* ================= TOTAL ================= */
+  const totalAmount = useMemo(() => {
+    return cart.reduce(
+      (sum, item) => sum + (item.price || 0) * (item.qty || 1),
+      0
+    );
+  }, [cart]);
 
-  const totalAmount = cart.reduce(
-    (sum, item) => sum + Number(item.price) * (item.qty || 1),
-    0
+  /* ================= STOCK CHECK ================= */
+  const outOfStockItem = useMemo(
+    () => cart.find((item) => item.stock <= 0),
+    [cart]
   );
 
+  /* ================= PLACE ORDER ================= */
   const handlePlaceOrder = async () => {
+    setError("");
+
+    /* ---- Frontend validations ---- */
     if (!cart.length) {
       setError("Your cart is empty");
       return;
     }
 
-    if (!phone || !area || !address) {
-      setError("Please fill all required fields");
+    if (outOfStockItem) {
+      setError(`${outOfStockItem.name} is out of stock`);
       return;
     }
 
-    setLoading(true);
-    setError("");
+    if (!phone.trim()) {
+      setError("Phone number is required");
+      return;
+    }
+
+    if (!area.trim()) {
+      setError("Area / City is required");
+      return;
+    }
+
+    if (!address.trim()) {
+      setError("Address is required");
+      return;
+    }
 
     try {
+      setLoading(true);
+
       const payload = {
         cart: cart.map((item) => ({
           product_id: item.id,
-          quantity: item.qty || 1,
+          quantity: item.qty,
         })),
-        phone,
-        area,
-        address,
+        phone: phone.trim(),
+        area: area.trim(),
+        address: address.trim(),
         payment_method: paymentMethod,
       };
 
       const res = await api.post("/orders", payload);
 
-      if (res.data?.ok === true) {
-        clearCart(); // ✅ VERY IMPORTANT
+      if (res.data?.ok) {
+        clearCart();
         navigate(`/order-success/${res.data.order_id}`);
+      }
+    } catch (err) {
+      const data = err.response?.data;
+
+      /* ---- Proper backend error handling ---- */
+      if (data?.code === "INSUFFICIENT_STOCK") {
+        setError(data.message);
         return;
       }
 
-      throw new Error("Order failed");
-    } catch (err) {
-      console.error("Checkout error:", err);
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Order failed. Please try again."
-      );
+      setError(data?.message || "Order failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  /* ================= UI ================= */
   return (
     <div className="checkout-page">
       <h2 className="checkout-title">Checkout</h2>
@@ -112,8 +136,8 @@ export default function CheckoutPage() {
 
         <button
           className="checkout-btn"
+          disabled={loading || !!outOfStockItem}
           onClick={handlePlaceOrder}
-          disabled={loading}
         >
           {loading ? "Placing Order..." : "Place Order"}
         </button>

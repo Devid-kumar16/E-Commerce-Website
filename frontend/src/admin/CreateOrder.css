@@ -569,3 +569,235 @@ button {
   font-size: 18px;
   font-weight: 700;
 }
+
+
+/* ================= PAGE LAYOUT ================= */
+.admin-page {
+  padding: 24px 32px;
+  background: #f5f7fb;
+  min-height: 100vh;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.page-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.page-header p {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* ================= FORM GRID ================= */
+.order-layout {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr;
+  gap: 24px;
+}
+
+/* ================= CARD ================= */
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 10px;
+}
+
+/* ================= INPUTS ================= */
+.card label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+.card input,
+.card select,
+.card textarea {
+  width: 100%;
+  padding: 11px 12px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  outline: none;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+  background: #ffffff;
+}
+
+.card textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.card input:focus,
+.card select:focus,
+.card textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.card input[readonly] {
+  background: #f9fafb;
+  cursor: not-allowed;
+}
+
+/* ================= AUTOCOMPLETE ================= */
+.autocomplete-box {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  margin-top: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+
+.autocomplete-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.autocomplete-item:hover {
+  background: #f3f4f6;
+}
+
+.autocomplete-item strong {
+  display: block;
+  color: #111827;
+}
+
+.autocomplete-item .muted {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ================= ORDER ITEMS ================= */
+.item-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.item-row span {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ================= BUTTONS ================= */
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button[type="submit"] {
+  background: #6366f1;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+button[type="submit"]:hover {
+  background: #4f46e5;
+}
+
+button[type="button"] {
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 500;
+}
+
+button[type="button"]:hover {
+  background: #e0e7ff;
+}
+
+/* ================= ORDER SUMMARY ================= */
+.card.summary {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  margin-bottom: 18px;
+  font-size: 15px;
+}
+
+.summary-row span {
+  color: #374151;
+}
+
+.summary-row strong {
+  font-size: 18px;
+  color: #111827;
+}
+
+/* ================= SMALL TEXT ================= */
+.hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 1024px) {
+  .order-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.product-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.product-preview img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.price {
+  font-weight: 600;
+  color: #111827;
+}

@@ -1,16 +1,15 @@
 // backend/models/Product.js
-import {pool} from "../config/db.js";
+import pool from "../config/db.js";
 
-/**
- * Product model
- * Matches DB columns exactly
- */
+/* ================= HELPERS ================= */
 
 function buildWhereClause({ q, categoryId, published, active }, params) {
   const where = [];
 
   if (published !== undefined) {
-    where.push(published ? "p.status = 'published'" : "p.status <> 'published'");
+    where.push(
+      published ? "p.status = 'published'" : "p.status <> 'published'"
+    );
   }
 
   if (active !== undefined) {
@@ -31,7 +30,6 @@ function buildWhereClause({ q, categoryId, published, active }, params) {
   return where.length ? `WHERE ${where.join(" AND ")}` : "";
 }
 
-/* slug helper */
 function makeSlug(text) {
   return text
     .trim()
@@ -41,6 +39,8 @@ function makeSlug(text) {
     .replace(/-+/g, "-");
 }
 
+/* ================= MODEL ================= */
+
 const ProductModel = {
   /* ================= ADMIN LIST ================= */
   async listAdmin({ page = 1, limit = 10, q, categoryId, published, active } = {}) {
@@ -48,13 +48,13 @@ const ProductModel = {
     const params = [];
     const where = buildWhereClause({ q, categoryId, published, active }, params);
 
-    const sql = `
+    const [products] = await pool.query(
+      `
       SELECT
         p.id,
         p.name,
         p.description,
         p.price,
-        p.inventory,
         p.stock,
         p.status,
         p.active,
@@ -62,17 +62,15 @@ const ProductModel = {
       FROM products p
       LEFT JOIN categories c ON c.id = p.category_id
       ${where}
-      ORDER BY p.id ASC
+      ORDER BY p.id DESC
       LIMIT ? OFFSET ?
-    `;
-
-    params.push(Number(limit), Number(offset));
-
-    const [products] = await pool.query(sql, params);
+      `,
+      [...params, Number(limit), Number(offset)]
+    );
 
     const [[{ total }]] = await pool.query(
       `SELECT COUNT(*) AS total FROM products p ${where}`,
-      params.slice(0, params.length - 2)
+      params
     );
 
     return { products, total };
@@ -80,18 +78,18 @@ const ProductModel = {
 
   /* ================= FIND BY ID ================= */
   async findById(id) {
-    const [rows] = await pool.query(
+    const [[product]] = await pool.query(
       `
       SELECT
         p.id,
         p.name,
         p.description,
         p.price,
-        p.inventory,
         p.stock,
         p.status,
         p.active,
-        c.name AS category
+        c.name AS category,
+        p.category_id
       FROM products p
       LEFT JOIN categories c ON c.id = p.category_id
       WHERE p.id = ?
@@ -99,7 +97,8 @@ const ProductModel = {
       `,
       [id]
     );
-    return rows[0] || null;
+
+    return product || null;
   },
 
   /* ================= CREATE ================= */
@@ -109,22 +108,21 @@ const ProductModel = {
       description = null,
       price,
       category_id,
-      inventory = 0,
       stock = 0,
       status = "draft",
       admin_id = null,
-      active = 1,
     } = data;
 
-    if (!name) throw new Error("name is required");
+    if (!name) throw new Error("Product name is required");
 
     const slug = makeSlug(name);
+    const active = stock > 0 ? 1 : 0;
 
     const [result] = await pool.query(
       `
       INSERT INTO products
-      (admin_id, name, slug, description, price, category_id, inventory, stock, status, active, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      (admin_id, name, slug, description, price, category_id, stock, status, active, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
       `,
       [
         admin_id,
@@ -133,7 +131,6 @@ const ProductModel = {
         description,
         price,
         category_id,
-        inventory,
         stock,
         status,
         active,
@@ -150,10 +147,8 @@ const ProductModel = {
       "description",
       "price",
       "category_id",
-      "inventory",
       "stock",
       "status",
-      "active",
     ];
 
     const set = [];
@@ -166,12 +161,36 @@ const ProductModel = {
       }
     }
 
+    // auto-active handling
+    if (fields.stock !== undefined) {
+      set.push("active = ?");
+      params.push(fields.stock > 0 ? 1 : 0);
+    }
+
     if (!set.length) return this.findById(id);
 
     await pool.query(
       `UPDATE products SET ${set.join(", ")} WHERE id = ?`,
       [...params, id]
     );
+
+    return this.findById(id);
+  },
+
+  /* ================= INVENTORY UPDATE (ADMIN) ================= */
+  async setInventory(id, stock) {
+    const active = stock > 0 ? 1 : 0;
+
+    const [result] = await pool.query(
+      `
+      UPDATE products
+      SET stock = ?, active = ?
+      WHERE id = ?
+      `,
+      [stock, active, id]
+    );
+
+    if (result.affectedRows === 0) return null;
 
     return this.findById(id);
   },

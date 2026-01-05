@@ -1,20 +1,31 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../context/AuthContext";
 
 export default function AdminRoute() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
 
-  // not logged in
-  if (!user) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+  // ⏳ Wait until auth is resolved
+  if (loading) {
+    return null; // or a loader component
   }
 
-  // logged in but not admin
+  // ❌ Not logged in
+  if (!user) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location }}
+      />
+    );
+  }
+
+  // ❌ Logged in but not admin
   if (user.role !== "admin") {
     return <Navigate to="/" replace />;
   }
 
-  // admin → allow access
+  // ✅ Admin → allow access
   return <Outlet />;
 }

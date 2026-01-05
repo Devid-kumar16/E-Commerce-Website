@@ -1,3 +1,4 @@
+// src/context/CartContext.js
 import { createContext, useContext, useEffect, useState } from "react";
 import api from "../api/client";
 import { useAuth } from "./AuthContext";
@@ -8,12 +9,11 @@ export const CartProvider = ({ children }) => {
   const { isAuthenticated } = useAuth();
 
   const [cart, setCart] = useState([]);
-  const [wishlist, setWishlist] = useState(() => {
-    const stored = localStorage.getItem("wishlist");
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [wishlist, setWishlist] = useState([]);
 
-  /* ================= LOAD DATA ON LOGIN ================= */
+  /* ======================================================
+     LOAD CART & WISHLIST ON LOGIN / LOGOUT
+  ====================================================== */
   useEffect(() => {
     if (!isAuthenticated) {
       setCart([]);
@@ -23,16 +23,15 @@ export const CartProvider = ({ children }) => {
       return;
     }
 
-    loadCart();
-    loadWishlist();
+    fetchCart();
+    fetchWishlist();
   }, [isAuthenticated]);
 
-  /* ================= LOAD CART FROM DB ================= */
-  const loadCart = async () => {
+  /* ================= LOAD CART ================= */
+  const fetchCart = async () => {
     try {
       const res = await api.get("/cart");
-      const dbCart = res.data.cart || [];
-
+      const dbCart = res.data?.cart || [];
       setCart(dbCart);
       localStorage.setItem("cart", JSON.stringify(dbCart));
     } catch (err) {
@@ -40,12 +39,11 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  /* ================= LOAD WISHLIST FROM DB ================= */
-  const loadWishlist = async () => {
+  /* ================= LOAD WISHLIST ================= */
+  const fetchWishlist = async () => {
     try {
       const res = await api.get("/wishlist");
-      const dbWishlist = res.data.wishlist || [];
-
+      const dbWishlist = res.data?.wishlist || [];
       setWishlist(dbWishlist);
       localStorage.setItem("wishlist", JSON.stringify(dbWishlist));
     } catch (err) {
@@ -53,80 +51,132 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  /* ================= CART OPS ================= */
-  const addToCart = async (product) => {
-    const updated = [...cart];
-    const idx = updated.findIndex((p) => p.id === product.id);
+  /* ======================================================
+     ADD TO CART
+  ====================================================== */
+const addToCart = async (product) => {
+  if (product.stock === 0) {
+    alert("This product is out of stock");
+    return;
+  }
 
-    if (idx >= 0) updated[idx].qty += 1;
-    else updated.push({ ...product, qty: 1 });
+  let updated = [...cart];
+  const idx = updated.findIndex(p => p.id === product.id);
 
-    setCart(updated);
-    localStorage.setItem("cart", JSON.stringify(updated));
+  if (idx >= 0) {
+    updated[idx] = {
+      ...updated[idx],
+      qty: updated[idx].qty + 1,
+    };
+  } else {
+    updated.push({
+      ...product,
+      qty: 1,
+      stock: product.stock, // ✅ CRITICAL
+    });
+  }
 
-    try {
-      await api.post("/cart/sync", { cart: updated });
-    } catch (err) {
-      console.error("Cart sync failed", err);
-    }
-  };
-
-  const removeFromCart = async (id) => {
-    const updated = cart.filter((i) => i.id !== id);
-
-    setCart(updated);
-    localStorage.setItem("cart", JSON.stringify(updated));
-
-    try {
-      await api.post("/cart/sync", { cart: updated });
-    } catch (err) {
-      console.error("Cart sync failed", err);
-    }
-  };
-
-  /* ================= CLEAR CART (🔥 FIX) ================= */
-const clearCart = () => {
-  setCart([]);
-  localStorage.removeItem("cart");
-
-  api.post("/cart/sync", { cart: [] }).catch(() => {});
+  setCart(updated);
+  localStorage.setItem("cart", JSON.stringify(updated));
+  await api.post("/cart/sync", { cart: updated });
 };
 
 
-  /* ================= WISHLIST OPS ================= */
+
+
+  /* ======================================================
+     UPDATE QUANTITY (🔥 FIXED & SAFE)
+  ====================================================== */
+const updateQty = async (productId, qty) => {
+  const product = cart.find((i) => i.id === productId);
+  if (!product) return;
+
+  if (product.stock === 0) {
+    alert(`${product.name} is out of stock`);
+    removeFromCart(productId);
+    return;
+  }
+
+  if (qty > product.stock) {
+    alert(`Only ${product.stock} left`);
+    return;
+  }
+
+  const updated = cart.map((item) =>
+    item.id === productId ? { ...item, qty } : item
+  );
+
+  setCart(updated);
+  localStorage.setItem("cart", JSON.stringify(updated));
+
+  await api.post("/cart/sync", { cart: updated }).catch(() => {});
+};
+
+
+  /* ======================================================
+     REMOVE FROM CART
+  ====================================================== */
+  const removeFromCart = async (productId) => {
+    const updated = cart.filter((item) => item.id !== productId);
+
+    setCart(updated);
+    localStorage.setItem("cart", JSON.stringify(updated));
+
+    try {
+      await api.post("/cart/sync", { cart: updated });
+    } catch (err) {
+      console.error("Cart sync failed", err);
+    }
+  };
+
+  /* ======================================================
+     CLEAR CART
+  ====================================================== */
+  const clearCart = async () => {
+    setCart([]);
+    localStorage.removeItem("cart");
+
+    try {
+      await api.post("/cart/sync", { cart: [] });
+    } catch {
+      /* silent */
+    }
+  };
+
+  /* ======================================================
+     WISHLIST TOGGLE
+  ====================================================== */
   const toggleWishlist = async (product) => {
+    if (!product?.id) return;
+
     const exists = wishlist.some((p) => p.id === product.id);
     let updated;
 
     if (exists) {
       updated = wishlist.filter((p) => p.id !== product.id);
-      try {
-        await api.delete(`/wishlist/${product.id}`);
-      } catch (err) {
-        console.error("Wishlist remove failed", err);
-      }
+      await api.delete(`/wishlist/${product.id}`).catch(() => {});
     } else {
       updated = [...wishlist, product];
-      try {
-        await api.post("/wishlist", { productId: product.id });
-      } catch (err) {
-        console.error("Wishlist add failed", err);
-      }
+      await api.post("/wishlist", { productId: product.id }).catch(() => {});
     }
 
     setWishlist(updated);
     localStorage.setItem("wishlist", JSON.stringify(updated));
   };
 
+  /* ======================================================
+     CONTEXT PROVIDER
+  ====================================================== */
   return (
     <CartContext.Provider
       value={{
         cart,
         wishlist,
         addToCart,
+        updateQty,      // ✅ exists
         removeFromCart,
+        clearCart,
         toggleWishlist,
-        clearCart, // ✅ NOW AVAILABLE
       }}
     >
       {children}
@@ -134,6 +184,7 @@ const clearCart = () => {
   );
 };
 
+/* ================= USE CART HOOK ================= */
 export const useCart = () => {
   const ctx = useContext(CartContext);
   if (!ctx) {

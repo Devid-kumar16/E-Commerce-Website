@@ -5,6 +5,7 @@ import "./OrderDetails.css";
 
 export default function OrderDetails() {
   const { id } = useParams();
+
   const [order, setOrder] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,12 +15,18 @@ export default function OrderDetails() {
     const loadOrder = async () => {
       try {
         setLoading(true);
+        setError("");
+
         const res = await api.get(`/orders/${id}`);
 
+        if (!res.data?.order) {
+          throw new Error("Order not found");
+        }
+
         setOrder(res.data.order);
-        setItems(res.data.items || []);
+        setItems(Array.isArray(res.data.items) ? res.data.items : []);
       } catch (err) {
-        console.error("Order load failed", err);
+        console.error("Order load failed:", err);
         setError("Order not found");
       } finally {
         setLoading(false);
@@ -30,18 +37,39 @@ export default function OrderDetails() {
   }, [id]);
 
   if (loading) return <p className="center">Loading...</p>;
-  if (error || !order) return <p className="center">{error}</p>;
+  if (error) return <p className="center error">{error}</p>;
 
   return (
     <div className="order-details-page">
       <h2>Order {order.id}</h2>
 
+      {/* ===== ORDER SUMMARY ===== */}
       <div className="order-summary">
-        <p><strong>Total:</strong> ₹{order.total_amount}</p>
-        <p><strong>Payment:</strong> {order.payment_method}</p>
-        <p><strong>Status:</strong> {order.delivery_status}</p>
+        <div>
+          <strong>Total:</strong>{" "}
+          ₹{Number(order.total_amount ?? 0).toFixed(2)}
+        </div>
+
+        <div>
+          <strong>Payment Method:</strong> {order.payment_method}
+        </div>
+
+        <div>
+          <strong>Payment Status:</strong>{" "}
+          <span className={`status ${order.payment_status?.toLowerCase()}`}>
+            {order.payment_status}
+          </span>
+        </div>
+
+        <div>
+          <strong>Delivery Status:</strong>{" "}
+          <span className={`status ${order.delivery_status?.toLowerCase()}`}>
+            {order.delivery_status}
+          </span>
+        </div>
       </div>
 
+      {/* ===== ITEMS ===== */}
       <h3>Items</h3>
 
       {items.length === 0 ? (
@@ -57,15 +85,20 @@ export default function OrderDetails() {
             </tr>
           </thead>
           <tbody>
-            
-            {items.map((item, idx) => (
-              <tr key={idx}>
-                <td>{item.name}</td>
-                <td>₹{item.price.toFixed(2)}</td>
-                <td>{item.qty}</td>
-                <td>₹{item.subtotal.toFixed(2)}</td>
-              </tr>
-            ))}
+            {items.map((item, idx) => {
+              const price = Number(item.price ?? 0);
+              const qty = Number(item.quantity ?? 0);
+              const subtotal = price * qty;
+
+              return (
+                <tr key={idx}>
+                  <td>{item.product_name}</td>
+                  <td>₹{price.toFixed(2)}</td>
+                  <td>{qty}</td>
+                  <td>₹{subtotal.toFixed(2)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}

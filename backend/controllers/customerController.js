@@ -61,19 +61,95 @@ export async function listCustomersAdmin(req, res) {
 }
 
 
-export async function searchCustomers(req, res) {
+export const searchCustomers = async (req, res) => {
   try {
-    const q = req.query.q;
+    const { q } = req.query;
 
-    if (!q || q.length < 3) {
+    if (!q || q.trim().length < 3) {
+      return res.json({ customers: [] });
+    }
+
+    const [customers] = await pool.query(
+      `
+      SELECT id, name, email, phone, area
+      FROM users
+      WHERE role = 'customer'
+        AND active = 1
+        AND (
+          phone LIKE ?
+          OR name LIKE ?
+          OR email LIKE ?
+        )
+      LIMIT 5
+      `,
+      [`%${q}%`, `%${q}%`, `%${q}%`]
+    );
+
+    res.json({ customers });
+  } catch (err) {
+    console.error("Customer search error:", err);
+    res.status(500).json({ message: "Failed to search customers" });
+  }
+};
+
+
+
+
+
+/* ================= USER PROFILE ================= */
+export const getProfile = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        ok: false,
+        message: "Authentication required",
+      });
+    }
+
+    const [rows] = await pool.query(
+      `
+      SELECT id, name, email, phone, role, created_at
+      FROM users
+      WHERE id = ?
+      `,
+      [req.user.id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({
+        ok: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      ok: true,
+      user: rows[0],
+    });
+  } catch (err) {
+    console.error("getProfile error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load profile",
+    });
+  }
+};
+
+
+export const searchCustomersAdmin = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+
+    if (q.length < 3) {
       return res.json({ customers: [] });
     }
 
     const [rows] = await pool.query(
       `
-      SELECT id, phone, email
-      FROM users
-      WHERE phone LIKE ? OR email LIKE ?
+      SELECT id, name, email, phone, area, state, pincode, address
+      FROM customers
+      WHERE phone LIKE ? OR name LIKE ?
+      ORDER BY created_at DESC
       LIMIT 10
       `,
       [`%${q}%`, `%${q}%`]
@@ -81,7 +157,7 @@ export async function searchCustomers(req, res) {
 
     res.json({ customers: rows });
   } catch (err) {
-    console.error("searchCustomers error:", err);
-    res.status(500).json({ message: "Customer search failed" });
+    console.error("Admin customer search error:", err);
+    res.status(500).json({ message: "Failed to search customers" });
   }
-}
+};

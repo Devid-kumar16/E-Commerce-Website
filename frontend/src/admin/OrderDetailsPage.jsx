@@ -23,7 +23,7 @@ export default function OrderDetailsPage() {
         setLoading(true);
         setError("");
 
-        const res = await api.get(`/orders/admin/${id}`);
+        const res = await api.get(`/admin/orders/${id}`);
         const data = res?.data;
 
         if (!data?.order) throw new Error("Order not found");

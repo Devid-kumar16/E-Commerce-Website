@@ -1,32 +1,7 @@
 import { pool } from "../config/db.js";
 import ProductModel from "../models/Product.js";
 
-/* ---------- helpers ---------- */
-function makeSlug(text) {
-  if (!text) return null;
-  return String(text)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
-async function generateUniqueSlug(baseSlug) {
-  let slug = baseSlug;
-  let counter = 1;
-
-  while (true) {
-    const [[row]] = await pool.query(
-      "SELECT id FROM products WHERE slug = ? LIMIT 1",
-      [slug]
-    );
-
-    if (!row) return slug;
-    slug = `${baseSlug}-${counter++}`;
-  }
-}
-
-/* ---------- PUBLIC PRODUCTS ---------- */
+/* ================= PUBLIC PRODUCTS ================= */
 export async function listPublicProducts(req, res) {
   try {
     const [rows] = await pool.query(`
@@ -39,19 +14,18 @@ export async function listPublicProducts(req, res) {
         category_id
       FROM products
       WHERE status = 'published'
-        AND active = 1
+        AND (active = 1 OR active IS NULL)
       ORDER BY id DESC
       LIMIT 20
     `);
 
-    // ✅ ALWAYS return consistent JSON
-    return res.json({
+    res.json({
       ok: true,
       products: rows,
     });
   } catch (err) {
-    console.error("❌ listPublicProducts error:", err);
-    return res.status(500).json({
+    console.error("listPublicProducts error:", err);
+    res.status(500).json({
       ok: false,
       products: [],
       message: "Failed to load products",
@@ -60,7 +34,8 @@ export async function listPublicProducts(req, res) {
 }
 
 
-/* ---------- ADMIN PRODUCTS ---------- */
+
+/* ================= ADMIN PRODUCTS ================= */
 export async function listAdminProducts(req, res) {
   try {
     const [rows] = await pool.query(`
@@ -84,9 +59,7 @@ export async function listAdminProducts(req, res) {
   }
 }
 
-
-
-/* ---------- SINGLE PRODUCT ---------- */
+/* ================= SINGLE PRODUCT ================= */
 export async function getProduct(req, res) {
   try {
     const { id } = req.params;
@@ -94,45 +67,47 @@ export async function getProduct(req, res) {
     const [rows] = await pool.query(
       `
       SELECT 
-        p.id,
-        p.name,
-        p.price,
-        p.status,
-        p.stock,
-        p.image_url AS image,
-        p.description,
-        c.name AS category
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.id = ?
+        id,
+        name,
+        price,
+        status,
+        stock,
+        image_url,
+        description,
+        category
+      FROM products
+      WHERE id = ?
+        AND status = 'published'
+        AND active = 1
       `,
       [id]
     );
 
     if (!rows.length) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({
+        ok: false,
+        message: "Product not found",
+      });
     }
 
-    res.json({ product: rows[0] });
+    res.json({
+      ok: true,
+      product: rows[0],
+    });
   } catch (err) {
     console.error("GET PRODUCT ERROR:", err);
-    res.status(500).json({ message: "Failed to load product" });
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load product",
+    });
   }
 }
 
 
-
-
-/* ---------- CREATE PRODUCT ---------- */
+/* ================= CREATE PRODUCT ================= */
 export async function createProduct(req, res) {
   try {
-    const {
-      name,
-      price,
-      status,
-      category_id,
-      image_url
-    } = req.body;
+    const { name, price, status, category_id, image_url } = req.body;
 
     await pool.query(
       `INSERT INTO products (name, price, status, category_id, image_url)
@@ -147,31 +122,76 @@ export async function createProduct(req, res) {
   }
 }
 
-
-/* ---------- UPDATE PRODUCT ---------- */
-
+/* ================= UPDATE PRODUCT ================= */
 export async function updateProduct(req, res) {
   try {
     const { id } = req.params;
-    const { name, price, status, category_id, image_url } = req.body;
 
-    await pool.query(
-      `UPDATE products
-       SET name=?, price=?, status=?, category_id=?, image_url=?
-       WHERE id=?`,
-      [name, price, status, category_id, image_url || null, id]
+    const {
+      name,
+      price,
+      status,
+      category_id,
+      stock,          // ✅ READ STOCK
+      image_url,
+      description,
+    } = req.body;
+
+    /* ================= VALIDATION ================= */
+    if (stock === undefined || Number(stock) < 0) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid stock value",
+      });
+    }
+
+    const [result] = await pool.query(
+      `
+      UPDATE products
+      SET
+        name = ?,
+        price = ?,
+        status = ?,
+        category_id = ?,
+        stock = ?,          -- ✅ CRITICAL FIX
+        image_url = ?,
+        description = ?
+      WHERE id = ?
+      `,
+      [
+        name,
+        price,
+        status,
+        category_id,
+        Number(stock),
+        image_url || null,
+        description || "",
+        id,
+      ]
     );
 
-    res.json({ message: "Product updated" });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        ok: false,
+        message: "Product not found",
+      });
+    }
+
+    res.json({
+      ok: true,
+      message: "Product updated successfully",
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to update product" });
+    console.error("updateProduct error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to update product",
+    });
   }
 }
 
 
-
-/* ---------- DELETE PRODUCT ---------- */
+/* ================= DELETE PRODUCT ================= */
 export async function deleteProduct(req, res, next) {
   try {
     await ProductModel.remove(req.params.id);
@@ -181,7 +201,117 @@ export async function deleteProduct(req, res, next) {
   }
 }
 
-/* ---------- PUBLISH / DRAFT ---------- */
+// /* ================= INVENTORY ================= */
+// export async function updateInventory(req, res, next) {
+//   try {
+//     const stock = Number(req.body.stock);
+
+//     if (Number.isNaN(stock) || stock < 0) {
+//       return res.status(400).json({
+//         ok: false,
+//         message: "Invalid stock value",
+//       });
+//     }
+
+//     const product = await ProductModel.setInventory(
+//       req.params.id,
+//       stock
+//     );
+
+//     if (!product) {
+//       return res.status(404).json({
+//         ok: false,
+//         message: "Product not found",
+//       });
+//     }
+
+//     res.json({
+//       ok: true,
+//       product,
+//     });
+//   } catch (err) {
+//     next(err);
+//   }
+// }
+
+
+/* ===================================================
+   ✅ CATEGORY PRODUCTS (FIXED & FINAL)
+   URL: /api/products/category/:slug
+=================================================== */
+export async function getProductsByCategory(req, res) {
+  try {
+    let { slug } = req.params;
+
+    // normalize URL slug
+    const normalizedSlug = slug
+      .toLowerCase()
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]+/g, "")
+      .trim();
+
+    // 1️⃣ Find category using SQL normalization
+    const [categories] = await pool.query(
+      `
+      SELECT id, name
+      FROM categories
+      WHERE REPLACE(
+              REPLACE(
+                REPLACE(LOWER(name), '&', 'and'),
+              ' ', ''),
+            's', ''
+          ) =
+          REPLACE(?, 's', '')
+      `,
+      [normalizedSlug]
+    );
+
+    if (!categories.length) {
+      return res.json({
+        ok: true,
+        category: null,
+        products: [],
+      });
+    }
+
+    const category = categories[0];
+
+    // 2️⃣ Fetch products using category_id
+    const [products] = await pool.query(
+      `
+      SELECT 
+        id,
+        name,
+        price,
+        image_url,
+        stock,
+        slug
+      FROM products
+      WHERE category_id = ?
+        AND status = 'published'
+        AND active = 1
+      ORDER BY id DESC
+      `,
+      [category.id]
+    );
+
+    res.json({
+      ok: true,
+      category,
+      products,
+    });
+  } catch (err) {
+    console.error("getProductsByCategory error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load category products",
+    });
+  }
+}
+
+
+
+/* ---------- PUBLISH / UNPUBLISH ---------- */
 export async function publishToggle(req, res, next) {
   try {
     const published =
@@ -189,75 +319,57 @@ export async function publishToggle(req, res, next) {
       req.body.published === "true" ||
       req.body.published === 1;
 
-    const product = await ProductModel.setPublished(req.params.id, published);
-    res.json(product);
-  } catch (err) {
-    next(err);
-  }
-}
-
-/* ---------- ACTIVE / INACTIVE ---------- */
-export async function activeToggle(req, res, next) {
-  try {
-    const active =
-      req.body.active === true ||
-      req.body.active === "true" ||
-      req.body.active === 1;
-
-    const product = await ProductModel.setActive(req.params.id, active);
-    res.json(product);
-  } catch (err) {
-    next(err);
-  }
-}
-
-/* ---------- UPDATE INVENTORY ---------- */
-export async function updateInventory(req, res, next) {
-  try {
-    const inventory = Number(req.body.inventory) || 0;
-    const product = await ProductModel.setInventory(req.params.id, inventory);
-    res.json(product);
-  } catch (err) {
-    next(err);
-  }
-}
-
-
-/**
- * GET products by category slug
- * URL: /api/products/category/:slug
- */
-export const getProductsByCategory = async (req, res) => {
-  try {
-    const { slug } = req.params;
-
-    // 1️⃣ Find category by slug
-    const [categories] = await pool.query(
-      "SELECT id, name FROM categories WHERE slug = ?",
-      [slug]
+    const product = await ProductModel.setPublished(
+      req.params.id,
+      published
     );
 
-    if (categories.length === 0) {
-      return res.json({
-        products: [],
-        message: "Category not found",
+    res.json(product);
+  } catch (err) {
+    next(err);
+  }
+}
+
+
+/* ================= ADMIN: SINGLE PRODUCT ================= */
+export async function getProductAdmin(req, res) {
+  try {
+    const { id } = req.params;
+
+    const [rows] = await pool.query(
+      `
+      SELECT 
+        p.id,
+        p.name,
+        p.price,
+        p.status,
+        p.stock,
+        p.inventory,
+        p.image_url,
+        p.description,
+        p.category_id
+      FROM products p
+      WHERE p.id = ?
+      `,
+      [id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({
+        ok: false,
+        message: "Product not found",
       });
     }
 
-    const categoryId = categories[0].id;
-
-    // 2️⃣ Fetch products using category_id
-    const [products] = await pool.query(
-      "SELECT * FROM products WHERE category_id = ?",
-      [categoryId]
-    );
-
     res.json({
-      category: categories[0],
-      products,
+      ok: true,
+      product: rows[0],
     });
-  } catch (error) {
-    console.error("getProductsByCategory error:", error);
-    res.status(500).json({ message: "Server error" });
+  } catch (err) {
+    console.error("getProductAdmin error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load product",
+    });
   }
-};
+}

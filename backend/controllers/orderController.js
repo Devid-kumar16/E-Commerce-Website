@@ -4,93 +4,167 @@ import bcrypt from "bcryptjs";
 /* ======================================================
    USER: CREATE ORDER (FROM CART)
 ====================================================== */
+// controllers/orderController.js
 export const createOrder = async (req, res) => {
   const conn = await pool.getConnection();
 
   try {
     const { cart, phone, area, address, payment_method } = req.body;
 
-    if (!phone || !address || !payment_method || !Array.isArray(cart) || cart.length === 0) {
-      return res.status(400).json({ ok: false, message: "Invalid order data" });
+    // ✅ FIX: safe user id (guest or logged-in)
+    const userId = req.user?.id ?? null;
+
+    /* ================= BASIC VALIDATION ================= */
+    if (
+      !Array.isArray(cart) ||
+      cart.length === 0 ||
+      !phone ||
+      !address ||
+      !payment_method
+    ) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid order data",
+      });
     }
 
     await conn.beginTransaction();
 
-    /* FIND OR CREATE USER */
-    const [[existingUser]] = await conn.query(
-      "SELECT id FROM users WHERE phone = ?",
-      [phone]
-    );
+    let totalAmount = 0;
+    const productsMap = new Map();
 
-    let userId;
-
-    if (existingUser) {
-      userId = existingUser.id;
-    } else {
-      const passwordHash = await bcrypt.hash(Math.random().toString(36), 10);
-      const [u] = await conn.query(
-        `INSERT INTO users (name, phone, email, password_hash, role)
-         VALUES ('Guest User', ?, ?, ?, 'customer')`,
-        [phone, `guest_${phone}@estore.local`, passwordHash]
-      );
-      userId = u.insertId;
-    }
-
-    /* CALCULATE TOTAL */
-    let total = 0;
-
+    /* ================= STOCK CHECK + LOCK ================= */
     for (const item of cart) {
+      if (!item.product_id || item.quantity <= 0) {
+        await conn.rollback();
+        return res.status(400).json({
+          ok: false,
+          message: "Invalid cart item",
+        });
+      }
+
       const [[product]] = await conn.query(
-        "SELECT price FROM products WHERE id = ?",
+        `
+        SELECT id, name, price, stock
+        FROM products
+        WHERE id = ? AND status = 'published'
+        FOR UPDATE
+        `,
         [item.product_id]
       );
 
-      if (!product) throw new Error("Invalid product");
+      if (!product) {
+        await conn.rollback();
+        return res.status(404).json({
+          ok: false,
+          message: "Product not found",
+        });
+      }
 
-      total += product.price * item.quantity;
+      if (product.stock < item.quantity) {
+        await conn.rollback();
+        return res.status(400).json({
+          ok: false,
+          code: "INSUFFICIENT_STOCK",
+          product_id: product.id,
+          product_name: product.name,
+          available_stock: product.stock,
+          message: `Only ${product.stock} left for ${product.name}`,
+        });
+      }
+
+      totalAmount += product.price * item.quantity;
+      productsMap.set(product.id, product);
     }
 
-    /* CREATE ORDER */
+    /* ================= PAYMENT STATUS ================= */
+    const payment_status = payment_method === "COD" ? "Pending" : "Paid";
+
+    /* ================= CREATE ORDER ================= */
     const [orderRes] = await conn.query(
-      `INSERT INTO orders
-       (user_id, phone, area, address, payment_method, payment_status, delivery_status, total_amount)
-       VALUES (?, ?, ?, ?, ?, 'Pending', 'Pending', ?)`,
-      [userId, phone, area || "", address, payment_method, total]
+      `
+      INSERT INTO orders
+      (user_id, phone, area, address, payment_method, payment_status, delivery_status, total_amount)
+      VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?)
+      `,
+      [
+        userId,                    // ✅ FIXED
+        phone.trim(),
+        area?.trim() || "",
+        address.trim(),
+        payment_method,
+        payment_status,
+        totalAmount,
+      ]
     );
 
     const orderId = orderRes.insertId;
 
-    /* ORDER ITEMS */
+    /* ================= INSERT ITEMS + DEDUCT STOCK ================= */
     for (const item of cart) {
-      const [[product]] = await conn.query(
-        "SELECT name, price FROM products WHERE id = ?",
-        [item.product_id]
-      );
+      const product = productsMap.get(item.product_id);
 
       await conn.query(
-        `INSERT INTO order_items
-         (order_id, product_id, product_name, price, quantity)
-         VALUES (?, ?, ?, ?, ?)`,
-        [orderId, item.product_id, product.name, product.price, item.quantity]
+        `
+        INSERT INTO order_items
+        (order_id, product_id, product_name, price, quantity)
+        VALUES (?, ?, ?, ?, ?)
+        `,
+        [orderId, product.id, product.name, product.price, item.quantity]
+      );
+
+      // ✅ SINGLE SAFE STOCK UPDATE
+      const [updateRes] = await conn.query(
+        `
+        UPDATE products
+        SET stock = stock - ?
+        WHERE id = ? AND stock >= ?
+        `,
+        [item.quantity, product.id, item.quantity]
+      );
+
+      if (updateRes.affectedRows === 0) {
+        throw new Error("Stock update failed");
+      }
+
+      // ✅ STOCK LOG
+      await conn.query(
+        `
+        INSERT INTO stock_logs
+        (product_id, change_qty, reason, ref_id)
+        VALUES (?, ?, 'order', ?)
+        `,
+        [product.id, -item.quantity, orderId]
       );
     }
 
     await conn.commit();
 
-    res.status(201).json({
+    return res.status(201).json({
       ok: true,
       order_id: orderId,
-      message: "Order placed successfully",
     });
-
   } catch (err) {
     await conn.rollback();
-    console.error("ORDER ERROR:", err);
-    res.status(500).json({ ok: false, message: "Order failed" });
+    console.error("createOrder error:", err);
+
+    return res.status(500).json({
+      ok: false,
+      message: "Order failed",
+    });
   } finally {
     conn.release();
   }
 };
+
+
+
+
+
+
+
+
+
 
 /* ======================================================
    ADMIN: CREATE ORDER (FIXED)
@@ -99,130 +173,115 @@ export const createOrderAdmin = async (req, res) => {
   const conn = await pool.getConnection();
 
   try {
-    console.log("👉 CREATE ORDER BODY:", JSON.stringify(req.body, null, 2));
-
     const {
-      customer,
-      items,
+      phone,
+      customer_name,
+      customer_email,
+      area,
+      state,
+      pincode,
+      address,
       payment_method,
       payment_status,
       delivery_status,
-      total_amount,
+      items,
     } = req.body;
 
-    console.log("PAYMENT DATA:", payment_method, payment_status, delivery_status);
-
-
     /* ================= VALIDATION ================= */
-
     if (
-      !customer?.phone ||
-      !customer?.address ||
+      !phone ||
+      !customer_name ||
+      !address ||
       !Array.isArray(items) ||
       items.length === 0
     ) {
       return res.status(400).json({
         ok: false,
-        message: "Invalid customer or items data",
-      });
-    }
-
-    if (!payment_method || !payment_status || !delivery_status) {
-      return res.status(400).json({
-        ok: false,
-        message: "Payment and delivery status are required",
+        message: "Invalid order data",
       });
     }
 
     await conn.beginTransaction();
 
     /* ================= FIND OR CREATE CUSTOMER ================= */
+    let customerId;
 
     const [[existingUser]] = await conn.query(
-      "SELECT id FROM users WHERE phone = ?",
-      [customer.phone]
+      `SELECT id FROM users WHERE phone = ? LIMIT 1`,
+      [phone]
     );
 
-    let userId;
-
     if (existingUser) {
-      userId = existingUser.id;
+      customerId = existingUser.id;
     } else {
-      const hash = await bcrypt.hash(Math.random().toString(36), 10);
-
-      const [u] = await conn.query(
-        `INSERT INTO users (name, phone, email, password_hash, role, area)
-         VALUES (?, ?, ?, ?, 'customer', ?)`,
-        [
-          customer.name || "Guest User",
-          customer.phone,
-          customer.email || "",
-          hash,
-          customer.area || "",
-        ]
+      const [result] = await conn.query(
+        `
+        INSERT INTO users (name, email, phone, role, active)
+        VALUES (?, ?, ?, 'customer', 1)
+        `,
+        [customer_name, customer_email || null, phone]
       );
-
-      userId = u.insertId;
+      customerId = result.insertId;
     }
 
-    /* ================= CALCULATE TOTAL (SECURITY CHECK) ================= */
-
-    let calculatedTotal = 0;
+    /* ================= CALCULATE TOTAL AMOUNT ================= */
+    let totalAmount = 0;
 
     for (const item of items) {
-      if (!item.product_id || !item.qty || item.qty <= 0) {
-        throw new Error("Invalid order item data");
-      }
-
       const [[product]] = await conn.query(
-        "SELECT price FROM products WHERE id = ?",
+        `SELECT price, stock FROM products WHERE id = ?`,
         [item.product_id]
       );
 
-      if (!product) {
-        throw new Error("Invalid product selected");
+      if (!product || product.stock < item.quantity) {
+        throw new Error("Insufficient stock");
       }
 
-      calculatedTotal += product.price * item.qty;
-    }
-
-    if (Number(calculatedTotal) !== Number(total_amount)) {
-      throw new Error("Total amount mismatch");
+      totalAmount += product.price * item.quantity;
     }
 
     /* ================= CREATE ORDER ================= */
-
-    const [orderRes] = await conn.query(
-      `INSERT INTO orders
-       (user_id, phone, area, address, payment_method, payment_status, delivery_status, total_amount)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    const [orderResult] = await conn.query(
+      `
+      INSERT INTO orders
+        (user_id, phone, area, state, pincode, address, total_amount, payment_method, payment_status, delivery_status)
+      VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
       [
-        userId,
-        customer.phone,
-        customer.area || "",
-        customer.address,
-        payment_method,      // ✅ exact frontend value
-        payment_status,      // ✅ no silent override
-        delivery_status,     // ✅ no silent override
-        calculatedTotal,
+        customerId,
+        phone,
+        area || "",
+        state || "",
+        pincode || "",
+        address,
+        totalAmount,
+        payment_method,
+        payment_status,
+        delivery_status,
       ]
     );
 
-    const orderId = orderRes.insertId;
+    const orderId = orderResult.insertId;
 
-    /* ================= INSERT ORDER ITEMS ================= */
-
+    /* ================= ORDER ITEMS + STOCK UPDATE ================= */
     for (const item of items) {
       const [[product]] = await conn.query(
-        "SELECT name, price FROM products WHERE id = ?",
+        `SELECT price, stock FROM products WHERE id = ?`,
         [item.product_id]
       );
 
       await conn.query(
-        `INSERT INTO order_items
-         (order_id, product_id, product_name, price, quantity)
-         VALUES (?, ?, ?, ?, ?)`,
-        [orderId, item.product_id, product.name, product.price, item.qty]
+        `
+        INSERT INTO order_items (order_id, product_id, quantity, price)
+        VALUES (?, ?, ?, ?)
+        `,
+        [orderId, item.product_id, item.quantity, product.price]
+      );
+
+      await conn.query(
+        `UPDATE products SET stock = stock - ? WHERE id = ?`,
+        [item.quantity, item.product_id]
       );
     }
 
@@ -233,19 +292,19 @@ export const createOrderAdmin = async (req, res) => {
       message: "Order created successfully",
       order_id: orderId,
     });
-
   } catch (err) {
     await conn.rollback();
-    console.error("❌ createOrderAdmin error:", err);
+    console.error("createOrderAdmin error:", err);
 
-    res.status(400).json({
+    res.status(500).json({
       ok: false,
-      message: err.message,
+      message: "Failed to create order",
     });
   } finally {
     conn.release();
   }
 };
+
 
 
 
@@ -259,37 +318,38 @@ export const listOrdersAdmin = async (req, res) => {
     const limit = Number(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
-    // ✅ MAIN QUERY (DELIVERY STATUS USED AS STATUS)
+    // ✅ IMPORTANT: select BOTH statuses
     const [orders] = await pool.query(
-      `SELECT
-         o.id,
-         u.name AS customer_name,
-         o.area,
-         o.total_amount,
-         o.delivery_status AS status,   -- ✅ IMPORTANT FIX
-         o.created_at
-       FROM orders o
-       LEFT JOIN users u ON u.id = o.user_id
-       ORDER BY o.created_at DESC
-       LIMIT ? OFFSET ?`,
-      [limit, offset]
+      `
+      SELECT
+        o.id,
+        u.name AS customer_name,
+        o.area,
+        o.total_amount,
+        o.delivery_status,
+        o.payment_status,
+        o.created_at
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      ORDER BY o.created_at DESC
+      LIMIT ?, ?
+      `,
+      [offset, limit]
     );
 
-    // ✅ TOTAL COUNT
-    const [[count]] = await pool.query(
-      "SELECT COUNT(*) AS total FROM orders"
+    const [[{ total }]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM orders`
     );
 
     res.json({
       ok: true,
       orders,
       meta: {
-        total: count.total,
         page,
-        totalPages: Math.ceil(count.total / limit),
+        limit,
+        total,
       },
     });
-
   } catch (err) {
     console.error("listOrdersAdmin error:", err);
     res.status(500).json({
@@ -298,6 +358,7 @@ export const listOrdersAdmin = async (req, res) => {
     });
   }
 };
+
 
 
 /* ======================================================
@@ -445,3 +506,143 @@ export const getOrderWithItemsForUser = async (req, res) => {
 
   res.json({ ok: true, order, items });
 };
+
+
+export const cancelOrder = async (req, res) => {
+  const conn = await pool.getConnection();
+  const { id } = req.params;
+
+  try {
+    await conn.beginTransaction();
+
+    const [items] = await conn.query(
+      "SELECT product_id, quantity FROM order_items WHERE order_id = ?",
+      [id]
+    );
+
+    for (const item of items) {
+      await conn.query(
+        `UPDATE products
+         SET stock = stock + ?
+         WHERE id = ?`,
+        [item.quantity, item.product_id]
+      );
+    }
+
+    await conn.query(
+      `UPDATE orders SET status = 'cancelled' WHERE id = ?`,
+      [id]
+    );
+
+    await conn.commit();
+    res.json({ ok: true });
+  } catch {
+    await conn.rollback();
+    res.status(500).json({ ok: false });
+  } finally {
+    conn.release();
+  }
+};
+
+
+export const getLowStockProducts = async (req, res) => {
+  const [rows] = await pool.query(
+    "SELECT id, name, stock FROM products WHERE stock <= 5"
+  );
+  res.json({ products: rows });
+};
+
+
+/* ======================================================
+   USER / GUEST: LIST MY ORDERS (INDUSTRY STANDARD)
+====================================================== */
+export const listOrdersForSession = async (req, res) => {
+  try {
+    let orders;
+
+    if (req.user) {
+      // ✅ Logged-in user
+      [orders] = await pool.query(
+        `SELECT id, total_amount, payment_status, delivery_status, created_at
+         FROM orders
+         WHERE user_id = ?
+         ORDER BY created_at DESC`,
+        [req.user.id]
+      );
+    } else {
+      // ✅ Guest user (checkout session)
+      if (!req.checkoutSessionId) {
+        return res.json({ ok: true, orders: [] });
+      }
+
+      [orders] = await pool.query(
+        `SELECT id, total_amount, payment_status, delivery_status, created_at
+         FROM orders
+         WHERE checkout_session_id = ?
+         ORDER BY created_at DESC`,
+        [req.checkoutSessionId]
+      );
+    }
+
+    res.json({ ok: true, orders });
+  } catch (err) {
+    console.error("listOrdersForSession error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to fetch orders",
+    });
+  }
+};
+
+
+/* ======================================================
+   USER / GUEST: ORDER DETAILS (SECURE)
+====================================================== */
+export const getOrderWithItemsForSession = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    let order;
+
+    if (req.user) {
+      // ✅ Logged-in user
+      [[order]] = await pool.query(
+        "SELECT * FROM orders WHERE id = ? AND user_id = ?",
+        [orderId, req.user.id]
+      );
+    } else {
+      // ✅ Guest user
+      if (!req.checkoutSessionId) {
+        return res.status(404).json({
+          ok: false,
+          message: "Order not found",
+        });
+      }
+
+      [[order]] = await pool.query(
+        "SELECT * FROM orders WHERE id = ? AND checkout_session_id = ?",
+        [orderId, req.checkoutSessionId]
+      );
+    }
+
+    if (!order) {
+      return res.status(404).json({
+        ok: false,
+        message: "Order not found",
+      });
+    }
+
+    const [items] = await pool.query(
+      "SELECT product_name, price, quantity FROM order_items WHERE order_id = ?",
+      [orderId]
+    );
+
+    res.json({ ok: true, order, items });
+  } catch (err) {
+    console.error("getOrderWithItemsForSession error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load order details",
+    });
+  }
+};
+

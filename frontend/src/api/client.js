@@ -7,37 +7,32 @@ const api = axios.create({
   },
 });
 
-/* ================= AUTH INTERCEPTOR ================= */
-api.interceptors.request.use(
-  (config) => {
-    // 🚫 public routes (NO TOKEN)
-    const publicRoutes = [
-      "/auth/login",
-      "/auth/register",
-    ];
+/* ================= REQUEST ================= */
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
 
-    const isPublic = publicRoutes.some((route) =>
-      config.url?.includes(route)
-    );
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
 
-    if (isPublic) {
-      // 🔥 IMPORTANT: ensure no token is sent
-      delete config.headers.Authorization;
-      return config;
+  return config;
+});
+
+/* ================= RESPONSE ================= */
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
     }
 
-    // ✅ protected routes
-    const token = localStorage.getItem("token");
-
-    if (token && token !== "null" && token !== "undefined") {
-      config.headers.Authorization = `Bearer ${token}`;
-    } else {
-      delete config.headers.Authorization;
-    }
-
-    return config;
-  },
-  (error) => Promise.reject(error)
+    return Promise.reject(error);
+  }
 );
 
 export default api;

@@ -5,11 +5,20 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
+/* AUTH MIDDLEWARE */
+import {
+  attachUserIfExists,
+  checkoutSession,
+} from "./middleware/authMiddleware.js";
+
 /* ROUTES */
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
+import adminProductRoutes from "./routes/adminProductRoutes.js";
+import adminCategoryRoutes from "./routes/adminCategoryRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
+import adminOrderRoutes from "./routes/adminOrderRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import cmsRoutes from "./routes/cmsRoutes.js";
@@ -18,14 +27,15 @@ import publicCmsRoutes from "./routes/publicCmsRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
-
+import adminCustomerRoutes from "./routes/adminCustomerRoutes.js";
 /* DEBUG */
 console.log("🔥 INDEX SERVER FILE LOADED");
 console.log("✅ BACKEND DB NAME:", process.env.DB_NAME);
 
 const app = express();
 
-/* GLOBAL MIDDLEWARE */
+/* ================= GLOBAL MIDDLEWARE ================= */
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -38,23 +48,34 @@ app.use(
   })
 );
 
+/* ✅ REQUIRED FOR GUEST CHECKOUT */
 app.use(cookieParser());
 
-/* API ROUTES */
+/* ✅ ORDER MATTERS (INDUSTRY STANDARD) */
+app.use(attachUserIfExists); // soft auth (JWT if exists)
+app.use(checkoutSession);    // guest checkout identity
+
+/* ================= API ROUTES ================= */
+
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/customers", customerRoutes);
-
+app.use("/api/admin/dashboard", dashboardRoutes);
 /* CART & WISHLIST */
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 
 /* ADMIN */
 app.use("/api/admin", adminUserRoutes);
+app.use("/api/admin/products", adminProductRoutes);
 app.use("/api/admin/cms", cmsRoutes);
-
+app.use("/api/admin/customers", customerRoutes);
+app.use("/api/admin/categories", adminCategoryRoutes);
+app.use("/api/admin/orders", adminOrderRoutes);
+app.use("/api/admin/", adminCustomerRoutes);
+app.use("/api/admin", orderRoutes);
 /* CMS */
 app.use("/api/cms", cmsRoutes);
 app.use("/api/pages", publicCmsRoutes);
@@ -63,22 +84,26 @@ app.use("/api/pages", publicCmsRoutes);
 app.use("/api", dashboardRoutes);
 app.use("/api", publicPageRoutes);
 
-/* HEALTH CHECK */
+/* ================= HEALTH CHECK ================= */
+
 app.get("/api/health", (req, res) => {
-  res.json({ status: "Backend is running", pid: process.pid });
+  res.json({
+    status: "Backend is running",
+    pid: process.pid,
+  });
 });
 
-/* 404 */
+/* ================= 404 HANDLER ================= */
+
 app.use((req, res) => {
   res.status(404).json({ message: "Page not found" });
 });
 
-/* ================= SERVER (FIXED) ================= */
+/* ================= SERVER ================= */
 
 const PORT = process.env.PORT || 5000;
 let server;
 
-/* START SERVER ONCE */
 server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Backend listening on port ${PORT}`);
 });
@@ -90,7 +115,7 @@ server.on("error", (err) => {
   process.exit(1);
 });
 
-/* ✅ GRACEFUL SHUTDOWN (THIS FIXES EADDRINUSE) */
+/* ✅ GRACEFUL SHUTDOWN */
 const shutdown = (signal) => {
   console.log(`🛑 ${signal} received. Closing server...`);
   if (server) {

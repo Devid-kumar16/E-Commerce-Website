@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { toast } from "react-toastify";
+
+import api from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Auth.css";
 
@@ -9,32 +12,46 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
 
     if (!email || !password) {
-      setError("Email and password are required");
+      toast.error("Email and password are required");
       return;
     }
 
     try {
       setLoading(true);
 
-      // ✅ SINGLE SOURCE OF TRUTH (AuthContext)
-      const user = await login({ email, password });
+      // ✅ 1. CALL LOGIN API
+      const res = await api.post("/auth/login", {
+        email,
+        password,
+      });
 
-      // ✅ Role-based redirect
-      if (user?.role === "admin") {
+      const { token, user } = res.data || {};
+
+      if (!token || !user) {
+        throw new Error("Invalid login response");
+      }
+
+      // ✅ 2. UPDATE AUTH CONTEXT
+      login({ token, user });
+
+      toast.success("Login successful");
+
+      // ✅ 3. ROLE-BASED REDIRECT
+      if (user.role === "admin") {
         navigate("/admin", { replace: true });
       } else {
         navigate("/", { replace: true });
       }
     } catch (err) {
-      setError(err.message || "Invalid email or password");
+      toast.error(
+        err.response?.data?.message || "Invalid email or password"
+      );
     } finally {
       setLoading(false);
     }
@@ -47,8 +64,6 @@ export default function Login() {
         <p className="auth-subtitle">
           Login to continue shopping on <strong>E-Store</strong>
         </p>
-
-        {error && <div className="auth-error">{error}</div>}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">

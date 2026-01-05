@@ -1,7 +1,6 @@
-// backend/controllers/dashboardController.js
-import { pool } from "../config/db.js";
+import pool from "../config/db.js";
 
-export async function adminDashboard(req, res) {
+export const adminDashboard = async (req, res) => {
   try {
     /* ================== COUNTS ================== */
     const [[products]] = await pool.query(
@@ -23,13 +22,13 @@ export async function adminDashboard(req, res) {
     /* ================== REVENUE ================== */
     const [[revenue]] = await pool.query(
       `
-      SELECT IFNULL(SUM(total_amount), 0) AS total
+      SELECT COALESCE(SUM(total_amount), 0) AS total
       FROM orders
       WHERE payment_status = 'Paid'
       `
     );
 
-    /* ================== RECENT ORDERS (FIXED) ================== */
+    /* ================== RECENT ORDERS ================== */
     const [recentOrders] = await pool.query(
       `
       SELECT 
@@ -41,22 +40,28 @@ export async function adminDashboard(req, res) {
         u.name AS customer_name
       FROM orders o
       LEFT JOIN users u ON u.id = o.user_id
-      ORDER BY o.id DESC          -- ✅ FIX: latest orders first
+      ORDER BY o.created_at DESC
       LIMIT 5
       `
     );
 
-    /* ================== RESPONSE ================== */
+    /* ================== RESPONSE (STANDARDIZED) ================== */
     res.json({
-      products: products.total,
-      categories: categories.total,
-      orders: orders.total,
-      customers: customers.total,
+      ok: true,
+      counts: {
+        products: products.total,
+        categories: categories.total,
+        orders: orders.total,
+        customers: customers.total,
+      },
       revenue: revenue.total,
       recentOrders,
     });
   } catch (err) {
     console.error("❌ Dashboard API error:", err);
-    res.status(500).json({ message: "Failed to load dashboard data" });
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load dashboard data",
+    });
   }
-}
+};

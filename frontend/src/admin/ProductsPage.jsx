@@ -1,59 +1,134 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import AdminSearchBar from "../components/AdminSearchBar";
+
+import api from "../api/client";
+import { useAuth } from "../context/AuthContext";
 
 const ITEMS_PER_PAGE = 8;
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState([]);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState("");
+
+  const { user, loading: authLoading } = useAuth();
+
+  // ✅ page from URL
+  const page = Math.max(
+    1,
+    Number(searchParams.get("page")) || 1
+  );
+
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   /* ================= LOAD PRODUCTS ================= */
   useEffect(() => {
-    loadProducts();
-  }, []);
+    if (authLoading) return;
 
-  const loadProducts = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/products/admin/list");
-      setProducts(res.data.products || []);
-    } catch (err) {
-      console.error("Failed to load products", err);
-    } finally {
+    if (!user || user.role !== "admin") {
       setLoading(false);
+      return;
     }
-  };
+
+    let cancelled = false;
+
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+
+        const res = await api.get("/admin/products");
+
+        const list =
+          res.data?.products ||
+          res.data?.data ||
+          res.data ||
+          [];
+
+        if (!cancelled) {
+          setProducts(Array.isArray(list) ? list : []);
+        }
+      } catch (err) {
+        console.error("❌ Failed to load products:", err);
+        if (!cancelled) setProducts([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authLoading]);
+
+  /* ================= SEARCH ================= */
+  const filteredProducts = products.filter((p) =>
+    `${p.name} ${p.category_name || ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
+
+  // 🔁 reset page when search changes
+  useEffect(() => {
+    setSearchParams({ page: 1 });
+  }, [search, setSearchParams]);
 
   /* ================= PAGINATION ================= */
-  const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
-  const paginatedProducts = products.slice(
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredProducts.length / ITEMS_PER_PAGE)
+  );
+
+  const paginatedProducts = filteredProducts.slice(
     (page - 1) * ITEMS_PER_PAGE,
     page * ITEMS_PER_PAGE
   );
 
+  const goToPage = (newPage) => {
+    setSearchParams({ page: newPage });
+  };
+
+  /* ================= STATES ================= */
+  if (loading || authLoading) {
+    return <div className="admin-loading">Loading products…</div>;
+  }
+
+  if (!user || user.role !== "admin") {
+    return <div className="admin-error">Access denied</div>;
+  }
+
   /* ================= UI ================= */
   return (
     <div className="admin-page">
-      <div className="page-header">
-        <h2>Products</h2>
-        <button
-          className="btn btn-primary"
-          onClick={() => navigate("/admin/products/new")}
-        >
-          Add Product
-        </button>
-      </div>
+      {/* HEADER */}
+<div className="page-header">
+  <h2>Products</h2>
 
-      {loading && <p>Loading...</p>}
+  <div style={{ display: "flex", gap: 12 }}>
+    <AdminSearchBar
+      value={search}
+      onChange={setSearch}
+      placeholder="Search products..."
+    />
 
+    <button
+      className="btn btn-primary"
+      onClick={() => navigate("/admin/products/new")}
+    >
+      Add Product
+    </button>
+  </div>
+</div>
+
+
+      {/* TABLE */}
       <table className="admin-table">
         <thead>
           <tr>
-            <th>ID</th>
+            <th>S. no.</th>
             <th>Name</th>
             <th>Image</th>
             <th>Price</th>
@@ -64,9 +139,19 @@ export default function ProductsPage() {
         </thead>
 
         <tbody>
+          {paginatedProducts.length === 0 && (
+            <tr>
+              <td colSpan="7" style={{ textAlign: "center" }}>
+                No products found
+              </td>
+            </tr>
+          )}
+
           {paginatedProducts.map((p, index) => (
             <tr key={p.id}>
-              <td>{(page - 1) * ITEMS_PER_PAGE + index + 1}</td>
+              <td>
+                {(page - 1) * ITEMS_PER_PAGE + index + 1}
+              </td>
 
               <td>{p.name}</td>
 
@@ -75,9 +160,9 @@ export default function ProductsPage() {
                   <img
                     src={p.image_url}
                     alt={p.name}
+                    width={40}
+                    height={40}
                     style={{
-                      width: 40,
-                      height: 40,
                       objectFit: "cover",
                       borderRadius: 6,
                     }}
@@ -87,7 +172,7 @@ export default function ProductsPage() {
                 )}
               </td>
 
-              <td>₹{p.price}</td>
+              <td>₹{Number(p.price).toFixed(2)}</td>
 
               <td>
                 <span
@@ -101,14 +186,15 @@ export default function ProductsPage() {
                 </span>
               </td>
 
-              {/* ✅ FIXED CATEGORY COLUMN */}
               <td>{p.category_name || "-"}</td>
 
               <td>
                 <button
                   className="btn btn-primary"
                   onClick={() =>
-                    navigate(`/admin/products/${p.id}/edit`)
+                    navigate(
+                      `/admin/products/${p.id}/edit?page=${page}`
+                    )
                   }
                 >
                   Edit
@@ -116,21 +202,16 @@ export default function ProductsPage() {
               </td>
             </tr>
           ))}
-
-          {!loading && paginatedProducts.length === 0 && (
-            <tr>
-              <td colSpan="7" style={{ textAlign: "center" }}>
-                No products found
-              </td>
-            </tr>
-          )}
         </tbody>
       </table>
 
-      {/* ================= PAGINATION ================= */}
+      {/* PAGINATION */}
       {totalPages > 1 && (
         <div className="admin-pagination">
-          <button disabled={page === 1} onClick={() => setPage(page - 1)}>
+          <button
+            disabled={page === 1}
+            onClick={() => goToPage(page - 1)}
+          >
             Prev
           </button>
 
@@ -140,7 +221,7 @@ export default function ProductsPage() {
 
           <button
             disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
+            onClick={() => goToPage(page + 1)}
           >
             Next
           </button>

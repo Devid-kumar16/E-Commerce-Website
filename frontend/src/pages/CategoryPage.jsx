@@ -17,7 +17,12 @@ export default function CategoryPage() {
         setLoading(true);
         setError("");
 
-        const res = await api.get(`/products/category/${slug}`);
+        // ✅ IMPORTANT FIX (THIS WAS MISSING)
+        const encodedSlug = encodeURIComponent(slug);
+
+        const res = await api.get(
+          `/products/category/${encodedSlug}`
+        );
 
         // ✅ SAFE & CORRECT
         setItems(res.data?.products || []);

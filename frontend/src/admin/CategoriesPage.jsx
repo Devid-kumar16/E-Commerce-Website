@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import api from "../api/client";
+import AdminSearchBar from "../components/AdminSearchBar";
 
 /* ===== PAGINATION CONFIG ===== */
 const ITEMS_PER_PAGE = 10;
@@ -10,6 +11,7 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
 
   const navigate = useNavigate();
 
@@ -33,10 +35,24 @@ export default function CategoriesPage() {
     loadCategories();
   }, []);
 
-  /* ================= PAGINATION ================= */
-  const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
+  /* ================= SEARCH ================= */
+  const filteredItems = items.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  );
+  
 
-  const paginatedItems = items.slice(
+  // reset page on search
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  /* ================= PAGINATION ================= */
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredItems.length / ITEMS_PER_PAGE)
+  );
+
+  const paginatedItems = filteredItems.slice(
     (page - 1) * ITEMS_PER_PAGE,
     page * ITEMS_PER_PAGE
   );
@@ -45,13 +61,22 @@ export default function CategoriesPage() {
   return (
     <div className="admin-page">
       {/* HEADER */}
-      <div className="page-header">
-        <h2>Categories</h2>
+<div className="page-header">
+  <h2>Categories</h2>
 
-        <Link to="/admin/categories/new" className="btn btn-primary">
-          Add Category
-        </Link>
-      </div>
+  <div style={{ display: "flex", gap: 12 }}>
+    <AdminSearchBar
+      value={search}
+      onChange={setSearch}
+      placeholder="Search categories..."
+    />
+
+    <Link to="/admin/categories/new" className="btn btn-primary">
+      Add Category
+    </Link>
+  </div>
+</div>
+
 
       {error && <p className="admin-error">{error}</p>}
       {loading && <p className="admin-loading">Loading...</p>}
@@ -61,7 +86,7 @@ export default function CategoriesPage() {
         <table className="admin-table">
           <thead>
             <tr>
-              <th>ID</th>
+              <th>S.No.</th>
               <th>Name</th>
               <th>Status</th>
               <th>Image</th>
@@ -70,21 +95,35 @@ export default function CategoriesPage() {
           </thead>
 
           <tbody>
+            {paginatedItems.length === 0 && !loading && (
+              <tr>
+                <td colSpan="5" style={{ textAlign: "center" }}>
+                  No categories found
+                </td>
+              </tr>
+            )}
+
             {paginatedItems.map((c, index) => (
               <tr key={c.id}>
-                {/* Sequential ID */}
-                <td>{(page - 1) * ITEMS_PER_PAGE + index + 1}</td>
+                {/* Serial number */}
+                <td>
+                  {(page - 1) * ITEMS_PER_PAGE + index + 1}
+                </td>
 
                 <td>{c.name}</td>
 
                 <td>
-                  <span className={`badge ${c.status === "active" ? "badge-success" : "badge-danger"}`}>
+                  <span
+                    className={`badge ${
+                      c.status === "active"
+                        ? "badge-success"
+                        : "badge-danger"
+                    }`}
+                  >
                     {c.status}
                   </span>
                 </td>
 
-
-                {/* IMAGE */}
                 <td>
                   {c.image_url ? (
                     <img
@@ -102,7 +141,6 @@ export default function CategoriesPage() {
                   )}
                 </td>
 
-                {/* ✅ ACTIONS */}
                 <td>
                   <button
                     className="btn btn-sm btn-primary"
@@ -115,39 +153,33 @@ export default function CategoriesPage() {
                 </td>
               </tr>
             ))}
-
-            {!loading && paginatedItems.length === 0 && (
-              <tr>
-                <td colSpan="5" style={{ textAlign: "center" }}>
-                  No categories found
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
 
         {/* PAGINATION */}
-        <div className="admin-pagination">
-          <button
-            className="btn btn-secondary"
-            disabled={page === 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            Prev
-          </button>
+        {totalPages > 1 && (
+          <div className="admin-pagination">
+            <button
+              className="btn btn-secondary"
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              Prev
+            </button>
 
-          <span className="pagination-info">
-            Page <strong>{page}</strong> of {totalPages}
-          </span>
+            <span className="pagination-info">
+              Page <strong>{page}</strong> of {totalPages}
+            </span>
 
-          <button
-            className="btn btn-secondary"
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          >
-            Next
-          </button>
-        </div>
+            <button
+              className="btn btn-secondary"
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

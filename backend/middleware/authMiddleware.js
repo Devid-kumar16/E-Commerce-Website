@@ -1,50 +1,56 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import crypto from "crypto";
 
 dotenv.config();
 
-/**
- * 🔐 Auth middleware
- * - Verifies JWT
- * - Attaches STANDARDIZED user object to req.user
- * - Required for cart / wishlist / orders
- */
-export function authRequired(req, res, next) {
+/* ======================================================
+   1️⃣ SOFT AUTH (attach user if token exists)
+   - Does NOT block guest users
+   - Industry standard for checkout, cart, wishlist
+====================================================== */
+export function attachUserIfExists(req, res, next) {
   const authHeader = req.headers.authorization;
 
-  // ❌ No token
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (authHeader?.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.split(" ")[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+      req.user = {
+        id: decoded.id,
+        email: decoded.email,
+        role: decoded.role,
+      };
+    } catch {
+      // ❌ Invalid token → ignore silently
+      req.user = null;
+    }
+  } else {
+    req.user = null;
+  }
+
+  next();
+}
+
+/* ======================================================
+   2️⃣ HARD AUTH (protected routes only)
+   - Admin, profile, dashboard, etc.
+====================================================== */
+export function authRequired(req, res, next) {
+  if (!req.user) {
     return res.status(401).json({
       ok: false,
       message: "Authentication required",
     });
   }
 
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // ✅ STANDARD user object (IMPORTANT)
-    req.user = {
-      id: decoded.id,       // used as user_id in DB
-      email: decoded.email, // optional
-      role: decoded.role,   // admin / customer
-    };
-
-    next();
-  } catch (err) {
-    return res.status(401).json({
-      ok: false,
-      message: "Invalid or expired token",
-    });
-  }
+  next();
 }
 
-/**
- * 🔐 Admin check middleware
- * - Must be used AFTER authRequired
- */
+/* ======================================================
+   3️⃣ ADMIN ONLY
+====================================================== */
 export function adminOnly(req, res, next) {
   if (!req.user) {
     return res.status(401).json({
@@ -63,3 +69,31 @@ export function adminOnly(req, res, next) {
   next();
 }
 
+/* ======================================================
+   4️⃣ CHECKOUT SESSION (industry standard)
+   - Used ONLY for guest checkout
+   - Secure, HTTP-only cookie
+====================================================== */
+export function checkoutSession(req, res, next) {
+  // Logged-in users do NOT need checkout session
+  if (req.user) {
+    req.checkoutSessionId = null;
+    return next();
+  }
+
+  let sessionId = req.cookies?.checkout_session_id;
+
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+
+    res.cookie("checkout_session_id", sessionId, {
+      httpOnly: true,
+      sameSite: "Lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+  }
+
+  req.checkoutSessionId = sessionId;
+  next();
+}

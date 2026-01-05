@@ -168,3 +168,5 @@ export const syncWishlist = async (req, res) => {
     conn.release();
   }
 };
+
+

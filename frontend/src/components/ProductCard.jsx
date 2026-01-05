@@ -1,5 +1,7 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useAuth } from "../context/AuthContext";
 import "./ProductCard.css";
 
 export default function ProductCard({
@@ -8,55 +10,65 @@ export default function ProductCard({
   isWishlisted = false,
   onToggleWishlist,
 }) {
-  // 🛑 Stop event bubbling (VERY IMPORTANT)
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  /* ================= WISHLIST ================= */
   const handleWishlistClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (typeof onToggleWishlist === "function") {
-      onToggleWishlist(product);
+    if (!isAuthenticated) {
+      toast.info("Please login to use wishlist");
+      navigate("/login");
+      return;
     }
+
+    onToggleWishlist?.(product);
   };
 
+  /* ================= ADD TO CART ================= */
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (typeof onAddToCart === "function") {
-      onAddToCart(product);
+    if (!isAuthenticated) {
+      toast.info("Please login to add items to cart");
+      navigate("/login");
+      return;
     }
+
+    onAddToCart?.(product);
   };
 
   return (
     <div className="product-card">
-      {/* ❤️ Wishlist Button */}
+      {/* ❤️ Wishlist */}
       <button
-        type="button"
         className={`wishlist-btn ${isWishlisted ? "active" : ""}`}
         onClick={handleWishlistClick}
-        aria-label="Add to wishlist"
       >
         ♥
       </button>
 
-      {/* 🖼 Product Image */}
+      {/* 🖼 Image */}
       <Link to={`/product/${product.id}`} className="product-img">
         <img
-          src={product.image_url || product.image || "/images/placeholder.png"}
+          src={product.image_url || "/images/placeholder.png"}
           alt={product.name}
-          loading="lazy"
         />
       </Link>
 
-      {/* ℹ Product Info */}
+      {/* ℹ Info */}
       <div className="product-info">
-        <h3 className="product-title">{product.name}</h3>
-        <p className="product-price">₹{product.price}</p>
+        <h3>{product.name}</h3>
+        <p>₹{product.price}</p>
 
         <button
-          type="button"
           className="btn-cart"
+          disabled={!isAuthenticated}
           onClick={handleAddToCart}
+          title={!isAuthenticated ? "Login required" : ""}
         >
           Add to cart
         </button>

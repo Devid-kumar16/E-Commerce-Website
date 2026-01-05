@@ -4,16 +4,14 @@ import "../styles/CartPage.css";
 
 export default function CartPage() {
   const { cart, updateQty, removeFromCart } = useCart();
-
-  // ✅ IMPORTANT: define navigate
   const navigate = useNavigate();
 
-  if (!cart.length) {
+  if (!cart || cart.length === 0) {
     return <h2 className="cart-empty">Your cart is empty</h2>;
   }
 
   const total = cart.reduce(
-    (sum, item) => sum + item.price * (item.qty || 1),
+    (sum, item) => sum + Number(item.price) * (item.qty || 1),
     0
   );
 
@@ -24,48 +22,58 @@ export default function CartPage() {
       <div className="cart-container">
         {/* CART ITEMS */}
         <div className="cart-items">
-          {cart.map((item) => (
-            <div key={item.id} className="cart-card">
-              <img
-                src={item.image_url || item.image}
-                alt={item.name}
-                className="cart-img"
-                onError={(e) => {
-                  e.target.src = "/images/placeholder.png";
-                }}
-              />
+          {cart.map((item) => {
+            const qty = item.qty || 1;
 
-              <div className="cart-info">
-                <h4>{item.name}</h4>
-                <p className="price">₹{item.price}</p>
+            return (
+              <div key={item.id} className="cart-card">
+                <img
+                  src={item.image_url || item.image || "/images/placeholder.png"}
+                  alt={item.name}
+                  className="cart-img"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "/images/placeholder.png";
+                  }}
+                />
 
-                <div className="qty-row">
+                <div className="cart-info">
+                  <h4>{item.name}</h4>
+                  <p className="price">₹{item.price}</p>
+
+                  <div className="qty-row">
+                    <button
+                      disabled={qty <= 1}
+                      onClick={() => updateQty(item.id, qty - 1)}
+                    >
+                      -
+                    </button>
+
+                    <span>{qty}</span>
+
+<button
+  onClick={() => {
+    if (item.qty < item.stock) {
+      updateQty(item.id, item.qty + 1);
+    }
+  }}
+  disabled={item.qty >= item.stock}
+>
+  +
+</button>
+
+                  </div>
+
                   <button
-                    onClick={() =>
-                      updateQty(item.id, Math.max(1, item.qty - 1))
-                    }
+                    className="remove-btn"
+                    onClick={() => removeFromCart(item.id)}
                   >
-                    -
-                  </button>
-
-                  <span>{item.qty}</span>
-
-                  <button
-                    onClick={() => updateQty(item.id, item.qty + 1)}
-                  >
-                    +
+                    Remove
                   </button>
                 </div>
-
-                <button
-                  className="remove-btn"
-                  onClick={() => removeFromCart(item.id)}
-                >
-                  Remove
-                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* CART SUMMARY */}
@@ -74,9 +82,7 @@ export default function CartPage() {
 
           <p>Total Items: {cart.length}</p>
 
-          <p className="total">
-            Total: ₹{total}
-          </p>
+          <p className="total">Total: ₹{total.toFixed(2)}</p>
 
           <button
             className="checkout-btn"

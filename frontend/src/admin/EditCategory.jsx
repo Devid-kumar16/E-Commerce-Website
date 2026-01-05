@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import api from "../api/axios";
+
+import api from "../api/client";
+import { useAuth } from "../context/AuthContext";
+
 import "../styles/admin-form.css";
 
 export default function EditCategory() {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const { user, loading: authLoading } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -18,32 +23,65 @@ export default function EditCategory() {
 
   /* ================= LOAD CATEGORY ================= */
   useEffect(() => {
+    if (authLoading) return;
+
+    // 🔐 ADMIN GUARD (frontend safety)
+    if (!user || user.role !== "admin") {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
     const loadCategory = async () => {
       try {
-        const res = await api.get(`/categories/${id}`);
-        const c = res.data.category;
+        setLoading(true);
 
-        setForm({
-          name: c.name ?? "",
-          image_url: c.image_url ?? "",
-          status: c.status ?? "active",
-        });
+        // ✅ CORRECT ADMIN API
+        const res = await api.get(`/admin/categories/${id}`);
+        const category = res.data?.category;
+
+        if (!category) {
+          toast.error("Category not found");
+          return;
+        }
+
+        if (!cancelled) {
+          setForm({
+            name: category.name || "",
+            image_url: category.image_url || "",
+            status: category.status || "active",
+          });
+        }
       } catch (err) {
-        toast.error("Failed to load category");
+        console.error(err);
+
+        if (err.response?.status === 401) {
+          toast.error("Authentication required");
+        } else if (err.response?.status === 404) {
+          toast.error("Category not found");
+        } else {
+          toast.error("Failed to load category");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     loadCategory();
-  }, [id]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user, authLoading]);
 
   /* ================= UPDATE CATEGORY ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      await api.put(`/categories/${id}`, {
+      // ✅ CORRECT UPDATE API
+      await api.put(`/admin/categories/${id}`, {
         name: form.name,
         image_url: form.image_url,
         status: form.status,
@@ -51,18 +89,30 @@ export default function EditCategory() {
 
       toast.success("Category updated successfully");
 
-      setTimeout(() => {
-        navigate("/admin/categories");
-      }, 1200);
+      navigate("/admin/categories");
     } catch (err) {
-      toast.error("Failed to update category");
+      console.error(err);
+
+      if (err.response?.status === 401) {
+        toast.error("Unauthorized");
+      } else if (err.response?.status === 404) {
+        toast.error("Update API not found");
+      } else {
+        toast.error("Failed to update category");
+      }
     }
   };
 
-  if (loading) {
+  /* ================= STATES ================= */
+  if (loading || authLoading) {
     return <p className="loading-text">Loading...</p>;
   }
 
+  if (!user || user.role !== "admin") {
+    return <p className="admin-error">Access denied</p>;
+  }
+
+  /* ================= UI ================= */
   return (
     <div className="admin-page">
       <div className="admin-header">
@@ -72,7 +122,7 @@ export default function EditCategory() {
 
       <form className="admin-card" onSubmit={handleSubmit}>
         <div className="admin-grid">
-          {/* LEFT SIDE */}
+          {/* LEFT */}
           <div>
             <div className="form-group">
               <label>Category Name</label>
@@ -112,7 +162,7 @@ export default function EditCategory() {
             </div>
           </div>
 
-          {/* RIGHT SIDE */}
+          {/* RIGHT */}
           <div className="image-preview-card">
             {form.image_url ? (
               <>
@@ -127,26 +177,19 @@ export default function EditCategory() {
           </div>
         </div>
 
-<div className="form-actions-left">
-  <button type="submit" className="btn-primary">
-    Update Category
-  </button>
+        <div className="form-actions-left">
+          <button type="submit" className="btn-primary">
+            Update Category
+          </button>
 
-  <button
-    type="button"
-    className="btn-outline"
-    onClick={() => navigate("/admin/categories")}
-  >
-    Cancel
-  </button>
-</div>
-
-
-
-
-
-
-
+          <button
+            type="button"
+            className="btn-outline"
+            onClick={() => navigate("/admin/categories")}
+          >
+            Cancel
+          </button>
+        </div>
       </form>
     </div>
   );

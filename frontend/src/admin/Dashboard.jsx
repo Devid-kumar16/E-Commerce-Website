@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
-import api from "../api/axios";
+import api from "../api/client";
+import { useAuth } from "../context/AuthContext";
 
 export default function Dashboard() {
+  const { user, loading: authLoading } = useAuth();
+
   const [stats, setStats] = useState({
     products: 0,
     categories: 0,
@@ -13,32 +16,47 @@ export default function Dashboard() {
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  /* ================= LOAD DASHBOARD ================= */
   useEffect(() => {
-    loadDashboard();
-  }, []);
+    if (authLoading) return;
 
-  const loadDashboard = async () => {
-    try {
-      const res = await api.get("/admin/dashboard");
-
-      setStats({
-        products: res.data.products,
-        categories: res.data.categories,
-        orders: res.data.orders,
-        customers: res.data.customers,
-        revenue: res.data.revenue,
-      });
-
-      setRecentOrders(res.data.recentOrders || []);
-    } catch (err) {
-      console.error("❌ Dashboard load failed:", err);
-    } finally {
+    // 🔐 Admin guard
+    if (!user || user.role !== "admin") {
       setLoading(false);
+      return;
     }
-  };
 
-  if (loading) {
+    const loadDashboard = async () => {
+      try {
+        const res = await api.get("/admin/dashboard");
+
+        setStats({
+          products: res.data?.counts?.products ?? 0,
+          categories: res.data?.counts?.categories ?? 0,
+          orders: res.data?.counts?.orders ?? 0,
+          customers: res.data?.counts?.customers ?? 0,
+          revenue: res.data?.revenue ?? 0,
+        });
+
+        setRecentOrders(res.data?.recentOrders || []);
+      } catch (err) {
+        console.error("❌ Dashboard load failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, [user, authLoading]);
+
+  /* ================= LOADING ================= */
+  if (loading || authLoading) {
     return <div className="admin-loading">Loading dashboard…</div>;
+  }
+
+  /* ================= ACCESS GUARD ================= */
+  if (!user || user.role !== "admin") {
+    return <div className="admin-error">Access denied</div>;
   }
 
   return (
@@ -54,7 +72,7 @@ export default function Dashboard() {
         <StatCard title="Customers" value={stats.customers} />
         <StatCard
           title="Revenue"
-          value={`₹${stats.revenue.toLocaleString()}`}
+          value={`₹${Number(stats.revenue).toLocaleString()}`}
           highlight
         />
       </div>
@@ -66,13 +84,14 @@ export default function Dashboard() {
         <table className="admin-table">
           <thead>
             <tr>
-              <th>S.No.</th> {/* ✅ SERIAL NUMBER */}
+              <th>S.No.</th>
               <th>Customer</th>
               <th>Total</th>
               <th>Payment</th>
               <th>Date</th>
             </tr>
           </thead>
+
           <tbody>
             {recentOrders.length === 0 && (
               <tr>
@@ -84,12 +103,12 @@ export default function Dashboard() {
 
             {recentOrders.map((o, index) => (
               <tr key={o.id}>
-                <td>{index + 1}</td> {/* ✅ FIXED SEQUENCE */}
+                <td>{index + 1}</td>
                 <td>{o.customer_name || "Guest"}</td>
                 <td>₹{Number(o.total_amount).toFixed(2)}</td>
                 <td>
                   <span
-                    className={`status ${o.payment_status.toLowerCase()}`}
+                    className={`status ${o.payment_status?.toLowerCase()}`}
                   >
                     {o.payment_status}
                   </span>
@@ -106,7 +125,7 @@ export default function Dashboard() {
   );
 }
 
-/* ===== SMALL COMPONENT ===== */
+/* ================= STAT CARD ================= */
 function StatCard({ title, value, highlight }) {
   return (
     <div className={`stat-card ${highlight ? "highlight" : ""}`}>
