@@ -14,19 +14,10 @@ export default function OrderDetails() {
   useEffect(() => {
     const loadOrder = async () => {
       try {
-        setLoading(true);
-        setError("");
-
         const res = await api.get(`/orders/${id}`);
-
-        if (!res.data?.order) {
-          throw new Error("Order not found");
-        }
-
         setOrder(res.data.order);
-        setItems(Array.isArray(res.data.items) ? res.data.items : []);
+        setItems(res.data.items || []);
       } catch (err) {
-        console.error("Order load failed:", err);
         setError("Order not found");
       } finally {
         setLoading(false);
@@ -36,75 +27,99 @@ export default function OrderDetails() {
     loadOrder();
   }, [id]);
 
-  if (loading) return <p className="center">Loading...</p>;
+  if (loading) return <p className="center">Loading…</p>;
   if (error) return <p className="center error">{error}</p>;
+  if (!order) return null;
+
+  const subtotal = Number(order.total_amount ?? 0);
+  const discount = Number(order.discount_amount ?? 0);
+  const total = Number(order.final_amount ?? subtotal - discount);
+
+  const paymentStatus = (order.payment_status || "Pending").toLowerCase();
+  const deliveryStatus = (order.delivery_status || "Pending").toLowerCase();
 
   return (
-    <div className="order-details-page">
-      <h2>Order {order.id}</h2>
+    <div className="order-page">
+      <h1 className="order-title">Order {order.id}</h1>
 
-      {/* ===== ORDER SUMMARY ===== */}
-      <div className="order-summary">
-        <div>
-          <strong>Total:</strong>{" "}
-          ₹{Number(order.total_amount ?? 0).toFixed(2)}
+      <div className="order-grid">
+        {/* ===== LEFT: ITEMS ===== */}
+        <div className="order-left">
+          <div className="card">
+            <h2 className="section-title">Items</h2>
+
+            <table className="items-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Price</th>
+                  <th>Qty</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, index) => {
+                  const price = Number(item.price ?? 0);
+                  const qty = Number(item.quantity ?? 0);
+
+                  return (
+                    <tr key={index}>
+                      <td className="product-name">
+                        {item.product_name}
+                      </td>
+                      <td>₹{price.toFixed(2)}</td>
+                      <td>{qty}</td>
+                      <td>₹{(price * qty).toFixed(2)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div>
-          <strong>Payment Method:</strong> {order.payment_method}
-        </div>
+        {/* ===== RIGHT: SUMMARY ===== */}
+        <div className="order-right">
+          <div className="card summary-card">
+            <div className="summary-row">
+              <span>Subtotal</span>
+              <span>₹{subtotal.toFixed(2)}</span>
+            </div>
 
-        <div>
-          <strong>Payment Status:</strong>{" "}
-          <span className={`status ${order.payment_status?.toLowerCase()}`}>
-            {order.payment_status}
-          </span>
-        </div>
+            <div className="summary-row discount">
+              <span>Discount</span>
+              <span>-₹{discount.toFixed(2)}</span>
+            </div>
 
-        <div>
-          <strong>Delivery Status:</strong>{" "}
-          <span className={`status ${order.delivery_status?.toLowerCase()}`}>
-            {order.delivery_status}
-          </span>
+            <div className="divider"></div>
+
+            <div className="summary-row total">
+              <span>Total</span>
+              <span>₹{total.toFixed(2)}</span>
+            </div>
+
+            <div className="divider"></div>
+
+            <div className="payment-section">
+              <p>
+                <strong>Payment Method:</strong> {order.payment_method}
+              </p>
+
+              <div className="badges">
+                <span className={`badge ${paymentStatus}`}>
+                  {order.payment_status}
+                </span>
+                <span className={`badge ${deliveryStatus}`}>
+                  {order.delivery_status}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ===== ITEMS ===== */}
-      <h3>Items</h3>
-
-      {items.length === 0 ? (
-        <p>No items found</p>
-      ) : (
-        <table className="items-table">
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Price</th>
-              <th>Qty</th>
-              <th>Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, idx) => {
-              const price = Number(item.price ?? 0);
-              const qty = Number(item.quantity ?? 0);
-              const subtotal = price * qty;
-
-              return (
-                <tr key={idx}>
-                  <td>{item.product_name}</td>
-                  <td>₹{price.toFixed(2)}</td>
-                  <td>{qty}</td>
-                  <td>₹{subtotal.toFixed(2)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-
       <Link to="/orders" className="back-link">
-        Back to My Orders
+         Back to My Orders
       </Link>
     </div>
   );

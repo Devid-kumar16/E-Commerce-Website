@@ -4,103 +4,163 @@ import bcrypt from "bcryptjs";
 /* ======================================================
    USER: CREATE ORDER (FROM CART)
 ====================================================== */
-// controllers/orderController.js
+import { calculateDiscount } from "../utils/couponUtils.js";
+
 export const createOrder = async (req, res) => {
   const conn = await pool.getConnection();
 
   try {
-    const { cart, phone, area, address, payment_method } = req.body;
+    const {
+      cart,
+      phone,
+      area,
+      address,
+      payment_method,
+      coupon_code,
+    } = req.body;
 
-    // ✅ FIX: safe user id (guest or logged-in)
-    const userId = req.user?.id ?? null;
+    const userId = req.user?.id || null;
+    const checkoutSessionId = req.sessionID || null;
 
-    /* ================= BASIC VALIDATION ================= */
-    if (
-      !Array.isArray(cart) ||
-      cart.length === 0 ||
-      !phone ||
-      !address ||
-      !payment_method
-    ) {
-      return res.status(400).json({
-        ok: false,
-        message: "Invalid order data",
-      });
+    /* ================= VALIDATION ================= */
+    if (!Array.isArray(cart) || cart.length === 0) {
+      return res.status(400).json({ message: "Cart is empty" });
+    }
+
+    if (!phone || !address || !payment_method) {
+      return res.status(400).json({ message: "Invalid order data" });
+    }
+
+    for (const item of cart) {
+      if (!item.product_id || !item.quantity || item.quantity <= 0) {
+        return res.status(400).json({ message: "Invalid cart item data" });
+      }
     }
 
     await conn.beginTransaction();
 
-    let totalAmount = 0;
+    let cartTotal = 0;
     const productsMap = new Map();
 
-    /* ================= STOCK CHECK + LOCK ================= */
+    /* ================= PRODUCT CHECK ================= */
     for (const item of cart) {
-      if (!item.product_id || item.quantity <= 0) {
-        await conn.rollback();
-        return res.status(400).json({
-          ok: false,
-          message: "Invalid cart item",
-        });
-      }
-
       const [[product]] = await conn.query(
         `
-        SELECT id, name, price, stock
+        SELECT id, name, price
         FROM products
         WHERE id = ? AND status = 'published'
-        FOR UPDATE
         `,
         [item.product_id]
       );
 
       if (!product) {
-        await conn.rollback();
-        return res.status(404).json({
-          ok: false,
-          message: "Product not found",
-        });
+        throw new Error("PRODUCT_NOT_FOUND");
       }
 
-      if (product.stock < item.quantity) {
-        await conn.rollback();
-        return res.status(400).json({
-          ok: false,
-          code: "INSUFFICIENT_STOCK",
-          product_id: product.id,
-          product_name: product.name,
-          available_stock: product.stock,
-          message: `Only ${product.stock} left for ${product.name}`,
-        });
-      }
-
-      totalAmount += product.price * item.quantity;
+      const itemTotal = Number(product.price) * Number(item.quantity);
+      cartTotal += itemTotal;
       productsMap.set(product.id, product);
     }
 
+    /* ================= APPLY COUPON ================= */
+    let discountAmount = 0;
+    let appliedCoupon = null;
+
+    if (coupon_code) {
+      const couponCode = coupon_code.trim().toUpperCase();
+
+      const [rows] = await conn.query(
+        `
+        SELECT *
+        FROM coupons
+        WHERE code = ?
+          AND is_active = 1
+          AND (starts_at IS NULL OR starts_at <= NOW())
+          AND (expires_at IS NULL OR expires_at >= NOW())
+          AND (usage_limit IS NULL OR used_count < usage_limit)
+        `,
+        [couponCode]
+      );
+
+      if (!rows.length) {
+        throw new Error("Invalid or expired coupon");
+      }
+
+      const coupon = rows[0];
+
+      if (cartTotal < Number(coupon.min_order)) {
+        throw new Error(`Minimum order ₹${coupon.min_order} required`);
+      }
+
+      if (coupon.type === "percentage") {
+        discountAmount = (cartTotal * Number(coupon.value)) / 100;
+
+        if (coupon.max_discount != null) {
+          discountAmount = Math.min(
+            discountAmount,
+            Number(coupon.max_discount)
+          );
+        }
+      } else {
+        discountAmount = Number(coupon.value);
+      }
+
+      discountAmount = Math.min(discountAmount, cartTotal);
+      appliedCoupon = coupon.code;
+
+      /* increment coupon usage */
+      await conn.query(
+        `UPDATE coupons SET used_count = used_count + 1 WHERE id = ?`,
+        [coupon.id]
+      );
+    }
+
+    const finalAmount = Math.max(cartTotal - discountAmount, 0);
+
     /* ================= PAYMENT STATUS ================= */
-    const payment_status = payment_method === "COD" ? "Pending" : "Paid";
+    const isOnline = ["UPI", "CARD"].includes(payment_method);
+    const payment_status = isOnline ? "Paid" : "Pending";
+    const delivery_status = "Pending";
 
     /* ================= CREATE ORDER ================= */
     const [orderRes] = await conn.query(
       `
       INSERT INTO orders
-      (user_id, phone, area, address, payment_method, payment_status, delivery_status, total_amount)
-      VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?)
-      `,
-      [
-        userId,                    // ✅ FIXED
-        phone.trim(),
-        area?.trim() || "",
-        address.trim(),
+      (
+        user_id,
+        checkout_session_id,
+        phone,
+        area,
+        address,
         payment_method,
         payment_status,
-        totalAmount,
+        delivery_status,
+        total_amount,
+        discount_amount,
+        final_amount,
+        coupon_code
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        userId,
+        checkoutSessionId,
+        phone,
+        area || "",
+        address,
+        payment_method,
+        payment_status,
+        delivery_status,
+        cartTotal,
+        discountAmount,
+        finalAmount,
+        appliedCoupon,
       ]
     );
 
     const orderId = orderRes.insertId;
 
-    /* ================= INSERT ITEMS + DEDUCT STOCK ================= */
+    /* ================= ORDER ITEMS ================= */
     for (const item of cart) {
       const product = productsMap.get(item.product_id);
 
@@ -110,31 +170,13 @@ export const createOrder = async (req, res) => {
         (order_id, product_id, product_name, price, quantity)
         VALUES (?, ?, ?, ?, ?)
         `,
-        [orderId, product.id, product.name, product.price, item.quantity]
-      );
-
-      // ✅ SINGLE SAFE STOCK UPDATE
-      const [updateRes] = await conn.query(
-        `
-        UPDATE products
-        SET stock = stock - ?
-        WHERE id = ? AND stock >= ?
-        `,
-        [item.quantity, product.id, item.quantity]
-      );
-
-      if (updateRes.affectedRows === 0) {
-        throw new Error("Stock update failed");
-      }
-
-      // ✅ STOCK LOG
-      await conn.query(
-        `
-        INSERT INTO stock_logs
-        (product_id, change_qty, reason, ref_id)
-        VALUES (?, ?, 'order', ?)
-        `,
-        [product.id, -item.quantity, orderId]
+        [
+          orderId,
+          product.id,
+          product.name,
+          product.price,
+          item.quantity,
+        ]
       );
     }
 
@@ -142,28 +184,26 @@ export const createOrder = async (req, res) => {
 
     return res.status(201).json({
       ok: true,
+      message: "Order placed successfully",
       order_id: orderId,
     });
   } catch (err) {
     await conn.rollback();
-    console.error("createOrder error:", err);
+    console.error("createOrder error:", err.message);
 
-    return res.status(500).json({
-      ok: false,
-      message: "Order failed",
+    if (err.message === "PRODUCT_NOT_FOUND") {
+      return res.status(400).json({
+        message: "Product not available",
+      });
+    }
+
+    return res.status(400).json({
+      message: err.message || "Order failed",
     });
   } finally {
     conn.release();
   }
 };
-
-
-
-
-
-
-
-
 
 
 /* ======================================================
@@ -558,41 +598,44 @@ export const getLowStockProducts = async (req, res) => {
 ====================================================== */
 export const listOrdersForSession = async (req, res) => {
   try {
-    let orders;
+    const userId = req.user?.id ?? null;
+    const sessionId = req.sessionID;
 
-    if (req.user) {
-      // ✅ Logged-in user
-      [orders] = await pool.query(
-        `SELECT id, total_amount, payment_status, delivery_status, created_at
-         FROM orders
-         WHERE user_id = ?
-         ORDER BY created_at DESC`,
-        [req.user.id]
-      );
-    } else {
-      // ✅ Guest user (checkout session)
-      if (!req.checkoutSessionId) {
-        return res.json({ ok: true, orders: [] });
-      }
+    const [orders] = await pool.query(
+      `
+      SELECT
+        id,
+        total_amount,
+        discount_amount,
+        final_amount,
+        payment_status,
+        delivery_status,
+        created_at
+      FROM orders
+      WHERE
+        (user_id = ?)
+        OR
+        (user_id IS NULL AND checkout_session_id = ?)
+      ORDER BY id DESC
+      `,
+      [userId, sessionId]
+    );
 
-      [orders] = await pool.query(
-        `SELECT id, total_amount, payment_status, delivery_status, created_at
-         FROM orders
-         WHERE checkout_session_id = ?
-         ORDER BY created_at DESC`,
-        [req.checkoutSessionId]
-      );
-    }
-
-    res.json({ ok: true, orders });
+    res.json({
+      ok: true,
+      orders,
+    });
   } catch (err) {
     console.error("listOrdersForSession error:", err);
     res.status(500).json({
       ok: false,
-      message: "Failed to fetch orders",
+      message: "Failed to load orders",
     });
   }
 };
+
+
+
 
 
 /* ======================================================
@@ -600,29 +643,37 @@ export const listOrdersForSession = async (req, res) => {
 ====================================================== */
 export const getOrderWithItemsForSession = async (req, res) => {
   try {
-    const orderId = req.params.id;
-    let order;
+    const { id } = req.params;
 
-    if (req.user) {
-      // ✅ Logged-in user
-      [[order]] = await pool.query(
-        "SELECT * FROM orders WHERE id = ? AND user_id = ?",
-        [orderId, req.user.id]
-      );
-    } else {
-      // ✅ Guest user
-      if (!req.checkoutSessionId) {
-        return res.status(404).json({
-          ok: false,
-          message: "Order not found",
-        });
-      }
+    // Logged-in user OR guest
+    const userId = req.user?.id ?? null;
+    const checkoutSessionId = req.sessionID;
 
-      [[order]] = await pool.query(
-        "SELECT * FROM orders WHERE id = ? AND checkout_session_id = ?",
-        [orderId, req.checkoutSessionId]
-      );
-    }
+    /* ================= FETCH ORDER ================= */
+    const [[order]] = await pool.query(
+      `
+      SELECT
+        id,
+        phone,
+        area,
+        address,
+        payment_method,
+        payment_status,
+        delivery_status,
+        CAST(total_amount AS DECIMAL(10,2)) AS total_amount,
+        CAST(discount_amount AS DECIMAL(10,2)) AS discount_amount,
+        CAST(final_amount AS DECIMAL(10,2)) AS final_amount,
+        coupon_code,
+        created_at
+      FROM orders
+      WHERE id = ?
+        AND (
+          user_id = ?
+          OR (user_id IS NULL AND checkout_session_id = ?)
+        )
+      `,
+      [id, userId, checkoutSessionId]
+    );
 
     if (!order) {
       return res.status(404).json({
@@ -631,18 +682,73 @@ export const getOrderWithItemsForSession = async (req, res) => {
       });
     }
 
+    /* ================= FETCH ITEMS ================= */
     const [items] = await pool.query(
-      "SELECT product_name, price, quantity FROM order_items WHERE order_id = ?",
-      [orderId]
+      `
+      SELECT
+        product_name,
+        CAST(price AS DECIMAL(10,2)) AS price,
+        quantity
+      FROM order_items
+      WHERE order_id = ?
+      `,
+      [id]
     );
 
-    res.json({ ok: true, order, items });
+    /* ================= RESPONSE ================= */
+    return res.json({
+      ok: true,
+      order,
+      items,
+    });
   } catch (err) {
     console.error("getOrderWithItemsForSession error:", err);
-    res.status(500).json({
+    return res.status(500).json({
       ok: false,
-      message: "Failed to load order details",
+      message: "Failed to fetch order",
     });
   }
 };
 
+
+
+export const getMyOrders = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        ok: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const [orders] = await pool.query(
+      `
+      SELECT
+        id,
+        final_amount AS total,
+        discount_amount,
+        coupon_code,
+        payment_status,
+        delivery_status,
+        created_at
+      FROM orders
+      WHERE user_id = ?
+      ORDER BY id DESC
+      `,
+      [userId]
+    );
+
+    res.json({
+      ok: true,
+      orders,
+    });
+  } catch (err) {
+    console.error("getMyOrders error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to fetch orders",
+    });
+  }
+};

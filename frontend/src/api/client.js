@@ -2,12 +2,13 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "http://localhost:5000/api",
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-/* ================= REQUEST ================= */
+/* ===== Attach JWT automatically ===== */
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
 
@@ -18,20 +19,16 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/* ================= RESPONSE ================= */
+/* ===== Handle auth expiry ===== */
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
+      window.location.href = "/login";
     }
-
-    return Promise.reject(error);
+    return Promise.reject(err);
   }
 );
 

@@ -1724,3 +1724,224 @@ input:focus, select:focus, textarea:focus {
 .stat-card.highlight strong {
   color: #ffffff;
 }
+
+/* ===== HEADER ACTIONS ===== */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ===== SEARCH WRAPPER ===== */
+.search-wrapper {
+  position: relative;
+  width: 260px;
+}
+
+/* Clear (×) button inside input */
+.search-clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+}
+
+.search-clear:hover {
+  color: #000;
+}
+
+
+/* ===== PAGE HEADER ===== */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+/* ===== HEADER ACTIONS ===== */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ===== SEARCH BAR ===== */
+.admin-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 320px;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  padding: 0 12px;
+  transition: all 0.2s ease;
+}
+
+.admin-search:focus-within {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+/* Search icon */
+.search-icon {
+  font-size: 16px;
+  color: #667085;
+  margin-right: 8px;
+}
+
+/* Input */
+.admin-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: #101828;
+  background: transparent;
+}
+
+/* Clear (×) button */
+.clear-btn {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  color: #667085;
+  cursor: pointer;
+  margin-left: 6px;
+}
+
+.clear-btn:hover {
+  color: #101828;
+}
+
+/* ===== BUTTON ===== */
+.btn-primary {
+  height: 44px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 10px;
+}
+
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.btn-primary {
+  background: #0ea5e9;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background: #e5e7eb;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal input,
+.modal select {
+  padding: 8px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+
+/* ===== MODAL ACTIONS ===== */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end; /* buttons aligned to right */
+  align-items: center;
+  gap: 12px;                /* space between Save & Cancel */
+  margin-top: 16px;
+}
+
+/* Primary button */
+.btn-primary {
+  background: #6366f1;      /* professional indigo */
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Secondary button */
+.btn-secondary {
+  background: #eef2ff;
+  color: #3730a3;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Prevent buttons from stretching */
+.modal-actions button {
+  width: auto;
+}
+
+
+/* ===== MODAL ACTIONS (FINAL FIX) ===== */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;   /* push buttons to right */
+  align-items: center;         /* same vertical alignment */
+  gap: 14px;                   /* spacing between buttons */
+  margin-top: 24px;
+}
+
+/* Ensure both buttons look identical in size */
+.modal-actions button {
+  min-width: 110px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

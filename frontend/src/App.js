@@ -38,6 +38,7 @@ import OrderDetailsPage from "./admin/OrderDetailsPage";
 import CustomersPage from "./admin/CustomersPage";
 import AddCustomerPage from "./admin/AddCustomerPage";
 import OrderDetails from "./pages/OrderDetails";
+import CouponsPage from "./admin/CouponsPage";
 
 
 /* ================= CMS ================= */
@@ -89,7 +90,8 @@ function AppRoutes() {
         <Route path="orders/:id" element={<OrderDetailsPage />} />
         <Route path="customers" element={<CustomersPage />} />
         <Route path="customers/new" element={<AddCustomerPage />} />
-
+        <Route path="coupons" element={<CouponsPage />} />
+        
         <Route path="cms">
           <Route index element={<CMSDashboard />} />
           <Route path="pages" element={<CMSPages />} />

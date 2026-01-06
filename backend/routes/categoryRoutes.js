@@ -6,20 +6,27 @@ import {
   getCategory,
   updateCategory,
 } from "../controllers/categoryController.js";
-import { authRequired,adminOnly  } from "../middleware/authMiddleware.js";
+import { authRequired, adminOnly } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/* ================= PUBLIC ================= */
+/* ================= ADMIN ROUTES ================= */
 
-// 🔹 Used by Add/Edit Product page
-router.get("/active", listActiveCategories);
+// 🔹 Admin: list ALL categories (FIXED)
+router.get("/admin", authRequired, adminOnly, listCategories);
 
-/* ================= ADMIN ================= */
-
-router.get("/", authRequired, adminOnly, listCategories);
+// 🔹 Admin: create category
 router.post("/", authRequired, adminOnly, createCategory);
+
+// 🔹 Admin: get single category
 router.get("/:id", authRequired, adminOnly, getCategory);
+
+// 🔹 Admin: update category
 router.put("/:id", authRequired, adminOnly, updateCategory);
+
+/* ================= PUBLIC ROUTES ================= */
+
+// 🔹 Public: active categories (navbar, public pages)
+router.get("/active", listActiveCategories);
 
 export default router;

@@ -55,6 +55,9 @@ export default function AdminLayout() {
           <NavLink to="/admin/customers">
             Customers
           </NavLink>
+          <NavLink to="/admin/coupons" className="sidebar-link">
+            Coupons
+          </NavLink>
           <NavLink to="/admin/cms">
             CMS
           </NavLink>

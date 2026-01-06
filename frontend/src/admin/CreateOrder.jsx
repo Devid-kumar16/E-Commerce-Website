@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import useAdminApi from "./useAdminApi";
+import api from "../api/client";
 import "./CreateOrder.css";
 
 const STATES = [
@@ -21,7 +21,6 @@ const STATES = [
 ];
 
 export default function CreateOrder() {
-  const api = useAdminApi();
   const navigate = useNavigate();
 
   /* ================= STATE ================= */
@@ -48,13 +47,23 @@ export default function CreateOrder() {
 
   const [loading, setLoading] = useState(false);
 
-  /* ================= LOAD PRODUCTS ================= */
+  /* ================= LOAD PRODUCTS (FIXED) ================= */
   useEffect(() => {
-    api
-      .get("/admin/products")
-      .then((res) => setProducts(res.data?.products || []))
-      .catch(() => toast.error("Failed to load products"));
-  }, [api]);
+    const loadProducts = async () => {
+      try {
+        const res = await api.get("/products/admin", {
+          params: { limit: 100 },
+        });
+
+        setProducts(res.data?.products || []);
+      } catch (err) {
+        console.error("Load products error:", err);
+        toast.error("Failed to load products");
+      }
+    };
+
+    loadProducts();
+  }, []);
 
   /* ================= CUSTOMER SEARCH ================= */
   useEffect(() => {
@@ -67,21 +76,22 @@ export default function CreateOrder() {
     const timer = setTimeout(async () => {
       try {
         setLoadingCustomers(true);
-        const res = await api.get("/admin/customers/search", {
+
+        const res = await api.get("/customers/search", {
           params: { q: form.phone },
         });
 
         setCustomers(res.data?.customers || []);
         setShowSuggestions(true);
-      } catch {
-        console.error("Customer search failed");
+      } catch (err) {
+        console.error("Customer search failed:", err);
       } finally {
         setLoadingCustomers(false);
       }
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [form.phone, lockPhone, api]);
+  }, [form.phone, lockPhone]);
 
   /* ================= SELECT CUSTOMER ================= */
   const selectCustomer = (c) => {
@@ -129,16 +139,18 @@ export default function CreateOrder() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.phone || !form.customer_name || !form.address)
+    if (!form.phone || !form.customer_name || !form.address) {
       return toast.error("Customer details required");
+    }
 
-    if (!items.length)
+    if (!items.length) {
       return toast.error("Add at least one product");
+    }
 
     try {
       setLoading(true);
 
-      await api.post("/admin/orders", {
+      await api.post("/orders/admin", {
         ...form,
         total_amount: totalAmount,
         items: items.map((i) => ({
@@ -150,7 +162,8 @@ export default function CreateOrder() {
 
       toast.success("Order created successfully");
       navigate("/admin/orders");
-    } catch {
+    } catch (err) {
+      console.error("Create order error:", err);
       toast.error("Order creation failed");
     } finally {
       setLoading(false);
@@ -243,50 +256,6 @@ export default function CreateOrder() {
           />
         </div>
 
-        {/* PAYMENT & DELIVERY */}
-        <div className="card">
-          <h3>Payment & Delivery</h3>
-
-          <label>Payment Method</label>
-          <select
-            value={form.payment_method}
-            onChange={(e) =>
-              setForm({ ...form, payment_method: e.target.value })
-            }
-          >
-            <option value="COD">Cash on Delivery</option>
-            <option value="ONLINE">Online</option>
-            <option value="UPI">UPI</option>
-          </select>
-
-          <label>Payment Status</label>
-          <select
-            value={form.payment_status}
-            onChange={(e) =>
-              setForm({ ...form, payment_status: e.target.value })
-            }
-          >
-            <option value="Pending">Pending</option>
-            <option value="Paid">Paid</option>
-            <option value="Failed">Failed</option>
-          </select>
-
-          <label>Delivery Status</label>
-          <select
-            value={form.delivery_status}
-            onChange={(e) =>
-              setForm({ ...form, delivery_status: e.target.value })
-            }
-          >
-            <option value="Pending">Pending</option>
-            <option value="Confirmed">Confirmed</option>
-            <option value="Shipped">Shipped</option>
-            <option value="Out for Delivery">Out for Delivery</option>
-            <option value="Delivered">Delivered</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
-        </div>
-
         {/* ORDER ITEMS */}
         <div className="card">
           <h3>Order Items</h3>
@@ -323,9 +292,7 @@ export default function CreateOrder() {
                     />
                     <div>
                       <strong>{product.name}</strong>
-                      <div className="muted">
-                        ₹{product.price}
-                      </div>
+                      <div className="muted">₹{product.price}</div>
                     </div>
                   </div>
                 )}

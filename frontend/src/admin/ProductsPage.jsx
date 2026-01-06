@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import AdminSearchBar from "../components/AdminSearchBar";
-
 import api from "../api/client";
 import { useAuth } from "../context/AuthContext";
 
@@ -10,23 +8,18 @@ const ITEMS_PER_PAGE = 8;
 export default function ProductsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [search, setSearch] = useState("");
-
   const { user, loading: authLoading } = useAuth();
 
-  // ✅ page from URL
-  const page = Math.max(
-    1,
-    Number(searchParams.get("page")) || 1
-  );
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
 
   const [products, setProducts] = useState([]);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
 
-  /* ================= LOAD PRODUCTS ================= */
+  /* ================= LOAD PRODUCTS (SERVER PAGINATION) ================= */
   useEffect(() => {
     if (authLoading) return;
-
     if (!user || user.role !== "admin") {
       setLoading(false);
       return;
@@ -38,55 +31,36 @@ export default function ProductsPage() {
       try {
         setLoading(true);
 
-        const res = await api.get("/admin/products");
-
-        const list =
-          res.data?.products ||
-          res.data?.data ||
-          res.data ||
-          [];
+        const res = await api.get("/products/admin", {
+          params: {
+            page,
+            limit: ITEMS_PER_PAGE,
+            search: search || undefined,
+          },
+        });
 
         if (!cancelled) {
-          setProducts(Array.isArray(list) ? list : []);
+          setProducts(res.data.products || []);
+          setTotalPages(res.data.meta?.totalPages || 1);
         }
       } catch (err) {
         console.error("❌ Failed to load products:", err);
-        if (!cancelled) setProducts([]);
+        if (!cancelled) {
+          setProducts([]);
+          setTotalPages(1);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
 
     loadProducts();
-
     return () => {
       cancelled = true;
     };
-  }, [user, authLoading]);
+  }, [page, search, user, authLoading]);
 
-  /* ================= SEARCH ================= */
-  const filteredProducts = products.filter((p) =>
-    `${p.name} ${p.category_name || ""}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
-
-  // 🔁 reset page when search changes
-  useEffect(() => {
-    setSearchParams({ page: 1 });
-  }, [search, setSearchParams]);
-
-  /* ================= PAGINATION ================= */
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredProducts.length / ITEMS_PER_PAGE)
-  );
-
-  const paginatedProducts = filteredProducts.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE
-  );
-
+  /* ================= PAGE CHANGE ================= */
   const goToPage = (newPage) => {
     setSearchParams({ page: newPage });
   };
@@ -104,25 +78,41 @@ export default function ProductsPage() {
   return (
     <div className="admin-page">
       {/* HEADER */}
-<div className="page-header">
-  <h2>Products</h2>
+      <div className="page-header">
+        <h2 className="page-title">Products</h2>
 
-  <div style={{ display: "flex", gap: 12 }}>
-    <AdminSearchBar
-      value={search}
-      onChange={setSearch}
-      placeholder="Search products..."
-    />
+        <div className="header-actions">
+          {/* SEARCH */}
+          <div className="admin-search">
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setSearchParams({ page: 1 });
+              }}
+              placeholder="Search by name, category or price"
+            />
+            {search && (
+              <button
+                className="clear-btn"
+                onClick={() => setSearch("")}
+              >
+                ×
+              </button>
+            )}
+          </div>
 
-    <button
-      className="btn btn-primary"
-      onClick={() => navigate("/admin/products/new")}
-    >
-      Add Product
-    </button>
-  </div>
-</div>
-
+          {/* ADD PRODUCT */}
+          <button
+            className="btn btn-primary"
+            onClick={() => navigate("/admin/products/new")}
+          >
+            Add Product
+          </button>
+        </div>
+      </div>
 
       {/* TABLE */}
       <table className="admin-table">
@@ -139,7 +129,7 @@ export default function ProductsPage() {
         </thead>
 
         <tbody>
-          {paginatedProducts.length === 0 && (
+          {products.length === 0 && (
             <tr>
               <td colSpan="7" style={{ textAlign: "center" }}>
                 No products found
@@ -147,12 +137,9 @@ export default function ProductsPage() {
             </tr>
           )}
 
-          {paginatedProducts.map((p, index) => (
+          {products.map((p, index) => (
             <tr key={p.id}>
-              <td>
-                {(page - 1) * ITEMS_PER_PAGE + index + 1}
-              </td>
-
+              <td>{(page - 1) * ITEMS_PER_PAGE + index + 1}</td>
               <td>{p.name}</td>
 
               <td>
@@ -162,10 +149,7 @@ export default function ProductsPage() {
                     alt={p.name}
                     width={40}
                     height={40}
-                    style={{
-                      objectFit: "cover",
-                      borderRadius: 6,
-                    }}
+                    style={{ objectFit: "cover", borderRadius: 6 }}
                   />
                 ) : (
                   <span className="text-muted">No Image</span>
@@ -186,15 +170,13 @@ export default function ProductsPage() {
                 </span>
               </td>
 
-              <td>{p.category_name || "-"}</td>
+              <td>{p.category || "-"}</td>
 
               <td>
                 <button
                   className="btn btn-primary"
                   onClick={() =>
-                    navigate(
-                      `/admin/products/${p.id}/edit?page=${page}`
-                    )
+                    navigate(`/admin/products/${p.id}/edit?page=${page}`)
                   }
                 >
                   Edit

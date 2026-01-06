@@ -25,43 +25,53 @@ export default function EditProduct() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /* ================= LOAD PRODUCT + CATEGORIES ================= */
+  /* ================= LOAD PRODUCT + CATEGORIES (SAFE) ================= */
   useEffect(() => {
-    const loadData = async () => {
+    let cancelled = false;
+
+    const loadProduct = async () => {
       try {
-        setLoading(true);
+        const res = await api.get(`/products/${id}`);
+        const p = res.data?.product;
 
-        // ✅ CORRECT: Admin product fetch
-        const productRes = await api.get(`/admin/products/${id}`);
-        const product = productRes.data?.product;
-
-        if (!product) {
-          toast.error("Product not found");
-          return;
+        if (!cancelled && p) {
+          setForm({
+            name: p.name ?? "",
+            price: p.price ?? "",
+            category_id: p.category_id ?? "",
+            status: p.status ?? "draft",
+            stock: p.stock ?? "",
+            image_url: p.image_url ?? "",
+            description: p.description ?? "",
+          });
         }
-
-        setForm({
-          name: product.name ?? "",
-          price: product.price ?? "",
-          category_id: product.category_id ?? "",
-          status: product.status ?? "draft",
-          stock: product.stock ?? "",
-          image_url: product.image_url ?? "",
-          description: product.description ?? "",
-        });
-
-        // ✅ CORRECT: Admin categories
-        const catRes = await api.get("/admin/categories");
-        setCategories(catRes.data?.categories || []);
       } catch (err) {
-        console.error(err);
-        toast.error("Failed to load product data");
-      } finally {
-        setLoading(false);
+        if (!cancelled) {
+          console.error("Product load error:", err);
+          toast.error("Failed to load product data");
+        }
       }
     };
 
-    loadData();
+    const loadCategories = async () => {
+      try {
+        const res = await api.get("/categories/admin");
+        if (!cancelled) {
+          setCategories(res.data?.categories || []);
+        }
+      } catch (err) {
+        // ❌ Do NOT show toast here (not critical)
+        console.error("Category load error:", err);
+      }
+    };
+
+    Promise.all([loadProduct(), loadCategories()]).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   /* ================= UPDATE PRODUCT ================= */
@@ -69,21 +79,20 @@ export default function EditProduct() {
     e.preventDefault();
 
     try {
-      // ✅ CORRECT: Admin update endpoint
-      await api.put(`/admin/products/${id}`, {
-        name: form.name,
+      await api.put(`/products/${id}`, {
+        name: form.name.trim(),
         price: Number(form.price),
-        category_id: form.category_id,
+        category_id: Number(form.category_id),
         status: form.status,
         stock: Number(form.stock),
-        image_url: form.image_url,
-        description: form.description,
+        image_url: form.image_url.trim(),
+        description: form.description.trim(),
       });
 
       toast.success("Product updated successfully");
       navigate(`/admin/products?page=${page}`);
     } catch (err) {
-      console.error(err);
+      console.error("Update product error:", err);
       toast.error("Failed to update product");
     }
   };
@@ -118,6 +127,8 @@ export default function EditProduct() {
               <label>Price (₹)</label>
               <input
                 type="number"
+                min="0"
+                step="0.01"
                 value={form.price}
                 onChange={(e) =>
                   setForm({ ...form, price: e.target.value })
@@ -154,6 +165,7 @@ export default function EditProduct() {
               >
                 <option value="draft">Draft</option>
                 <option value="published">Published</option>
+                <option value="inactive">Inactive</option>
               </select>
             </div>
 
@@ -161,10 +173,12 @@ export default function EditProduct() {
               <label>Stock Quantity</label>
               <input
                 type="number"
+                min="0"
                 value={form.stock}
                 onChange={(e) =>
                   setForm({ ...form, stock: e.target.value })
                 }
+                required
               />
             </div>
 

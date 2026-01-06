@@ -12,11 +12,13 @@ import {
 } from "./middleware/authMiddleware.js";
 
 /* ROUTES */
+import couponRoutes from "./routes/couponRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import adminProductRoutes from "./routes/adminProductRoutes.js";
 import adminCategoryRoutes from "./routes/adminCategoryRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
+import adminCouponRoutes from "./routes/adminCouponRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import adminOrderRoutes from "./routes/adminOrderRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
@@ -28,6 +30,8 @@ import adminUserRoutes from "./routes/adminUserRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
 import adminCustomerRoutes from "./routes/adminCustomerRoutes.js";
+
+
 /* DEBUG */
 console.log("🔥 INDEX SERVER FILE LOADED");
 console.log("✅ BACKEND DB NAME:", process.env.DB_NAME);
@@ -63,6 +67,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/admin/dashboard", dashboardRoutes);
+app.use("/api/coupons", couponRoutes);
 /* CART & WISHLIST */
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
@@ -73,9 +78,12 @@ app.use("/api/admin/products", adminProductRoutes);
 app.use("/api/admin/cms", cmsRoutes);
 app.use("/api/admin/customers", customerRoutes);
 app.use("/api/admin/categories", adminCategoryRoutes);
+app.use("/api/admin/coupons", adminCouponRoutes);
 app.use("/api/admin/orders", adminOrderRoutes);
 app.use("/api/admin/", adminCustomerRoutes);
 app.use("/api/admin", orderRoutes);
+
+
 /* CMS */
 app.use("/api/cms", cmsRoutes);
 app.use("/api/pages", publicCmsRoutes);

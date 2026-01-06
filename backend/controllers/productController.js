@@ -1,37 +1,23 @@
-import { pool } from "../config/db.js";
+import pool from "../config/db.js";
 import ProductModel from "../models/Product.js";
+import slugify from "slugify";
+
 
 /* ================= PUBLIC PRODUCTS ================= */
-export async function listPublicProducts(req, res) {
-  try {
-    const [rows] = await pool.query(`
-      SELECT 
-        id,
-        name,
-        slug,
-        price,
-        image_url,
-        category_id
-      FROM products
-      WHERE status = 'published'
-        AND (active = 1 OR active IS NULL)
-      ORDER BY id DESC
-      LIMIT 20
-    `);
+export const listPublicProducts = async (req, res) => {
+  const [products] = await pool.query(
+    `
+    SELECT *
+    FROM products
+    WHERE status = 'published'
+    ORDER BY id DESC
+    `
+  );
 
-    res.json({
-      ok: true,
-      products: rows,
-    });
-  } catch (err) {
-    console.error("listPublicProducts error:", err);
-    res.status(500).json({
-      ok: false,
-      products: [],
-      message: "Failed to load products",
-    });
-  }
-}
+  res.json({ products });
+};
+
+
 
 
 
@@ -60,30 +46,28 @@ export async function listAdminProducts(req, res) {
 }
 
 /* ================= SINGLE PRODUCT ================= */
-export async function getProduct(req, res) {
+export const getProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const [rows] = await pool.query(
+    const [[product]] = await pool.query(
       `
-      SELECT 
-        id,
-        name,
-        price,
-        status,
-        stock,
-        image_url,
-        description,
-        category
-      FROM products
-      WHERE id = ?
-        AND status = 'published'
-        AND active = 1
+      SELECT
+        p.id,
+        p.name,
+        p.price,
+        p.stock,
+        p.status,
+        p.image_url,
+        p.description,
+        p.category_id
+      FROM products p
+      WHERE p.id = ?
       `,
       [id]
     );
 
-    if (!rows.length) {
+    if (!product) {
       return res.status(404).json({
         ok: false,
         message: "Product not found",
@@ -92,90 +76,136 @@ export async function getProduct(req, res) {
 
     res.json({
       ok: true,
-      product: rows[0],
+      product,
     });
   } catch (err) {
-    console.error("GET PRODUCT ERROR:", err);
+    console.error("getProduct error:", err);
     res.status(500).json({
       ok: false,
       message: "Failed to load product",
     });
   }
-}
+};
+
+
+
+
 
 
 /* ================= CREATE PRODUCT ================= */
-export async function createProduct(req, res) {
+export const createProduct = async (req, res) => {
   try {
-    const { name, price, status, category_id, image_url } = req.body;
-
-    await pool.query(
-      `INSERT INTO products (name, price, status, category_id, image_url)
-       VALUES (?, ?, ?, ?, ?)`,
-      [name, price, status, category_id, image_url || null]
-    );
-
-    res.json({ message: "Product created" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to create product" });
-  }
-}
-
-/* ================= UPDATE PRODUCT ================= */
-export async function updateProduct(req, res) {
-  try {
-    const { id } = req.params;
-
     const {
       name,
       price,
-      status,
       category_id,
-      stock,          // ✅ READ STOCK
+      status,
+      stock,
       image_url,
       description,
     } = req.body;
 
-    /* ================= VALIDATION ================= */
-    if (stock === undefined || Number(stock) < 0) {
-      return res.status(400).json({
-        ok: false,
-        message: "Invalid stock value",
-      });
+    if (!name || !price || !category_id) {
+      return res.status(400).json({ message: "Required fields missing" });
     }
 
-    const [result] = await pool.query(
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+
+    await pool.query(
+      `
+      INSERT INTO products (
+        name,
+        slug,
+        description,
+        price,
+        stock,
+        image_url,
+        status,
+        category_id,
+        admin_id
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        name,
+        slug,
+        description || "",
+        price,
+        stock,
+        image_url || null,
+        status || "draft",
+        category_id,
+        req.user.id,
+      ]
+    );
+
+    res.json({
+      ok: true,
+      message: "Product created successfully",
+    });
+  } catch (err) {
+    console.error("createProduct error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to add product",
+    });
+  }
+};
+
+
+
+/* ================= UPDATE PRODUCT ================= */
+export const updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      price,
+      category_id,
+      status,
+      stock,
+      image_url,
+      description,
+    } = req.body;
+
+    if (!name || !price || !category_id) {
+      return res.status(400).json({ message: "Required fields missing" });
+    }
+
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+
+    await pool.query(
       `
       UPDATE products
       SET
         name = ?,
+        slug = ?,
+        description = ?,
         price = ?,
-        status = ?,
-        category_id = ?,
-        stock = ?,          -- ✅ CRITICAL FIX
+        stock = ?,
         image_url = ?,
-        description = ?
+        status = ?,
+        category_id = ?
       WHERE id = ?
       `,
       [
         name,
+        slug,
+        description || "",
         price,
+        stock,
+        image_url || null,
         status,
         category_id,
-        Number(stock),
-        image_url || null,
-        description || "",
         id,
       ]
     );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        ok: false,
-        message: "Product not found",
-      });
-    }
 
     res.json({
       ok: true,
@@ -188,7 +218,9 @@ export async function updateProduct(req, res) {
       message: "Failed to update product",
     });
   }
-}
+};
+
+
 
 
 /* ================= DELETE PRODUCT ================= */
@@ -239,75 +271,32 @@ export async function deleteProduct(req, res, next) {
    ✅ CATEGORY PRODUCTS (FIXED & FINAL)
    URL: /api/products/category/:slug
 =================================================== */
-export async function getProductsByCategory(req, res) {
-  try {
-    let { slug } = req.params;
+export const getProductsByCategory = async (req, res) => {
+  const { slug } = req.params;
 
-    // normalize URL slug
-    const normalizedSlug = slug
-      .toLowerCase()
-      .replace(/&/g, "and")
-      .replace(/[^a-z0-9]+/g, "")
-      .trim();
+  const [[category]] = await pool.query(
+    `SELECT id, name FROM categories WHERE slug = ?`,
+    [slug]
+  );
 
-    // 1️⃣ Find category using SQL normalization
-    const [categories] = await pool.query(
-      `
-      SELECT id, name
-      FROM categories
-      WHERE REPLACE(
-              REPLACE(
-                REPLACE(LOWER(name), '&', 'and'),
-              ' ', ''),
-            's', ''
-          ) =
-          REPLACE(?, 's', '')
-      `,
-      [normalizedSlug]
-    );
-
-    if (!categories.length) {
-      return res.json({
-        ok: true,
-        category: null,
-        products: [],
-      });
-    }
-
-    const category = categories[0];
-
-    // 2️⃣ Fetch products using category_id
-    const [products] = await pool.query(
-      `
-      SELECT 
-        id,
-        name,
-        price,
-        image_url,
-        stock,
-        slug
-      FROM products
-      WHERE category_id = ?
-        AND status = 'published'
-        AND active = 1
-      ORDER BY id DESC
-      `,
-      [category.id]
-    );
-
-    res.json({
-      ok: true,
-      category,
-      products,
-    });
-  } catch (err) {
-    console.error("getProductsByCategory error:", err);
-    res.status(500).json({
-      ok: false,
-      message: "Failed to load category products",
-    });
+  if (!category) {
+    return res.json({ category: null, products: [] });
   }
-}
+
+  const [products] = await pool.query(
+    `
+    SELECT *
+    FROM products
+    WHERE category_id = ?
+      AND status = 'published'
+    `,
+    [category.id]
+  );
+
+  res.json({ category, products });
+};
+
+
 
 
 
@@ -373,3 +362,50 @@ export async function getProductAdmin(req, res) {
     });
   }
 }
+
+export const getAdminProducts = async (req, res) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const [[{ total }]] = await pool.query(
+      "SELECT COUNT(*) AS total FROM products"
+    );
+
+    const [products] = await pool.query(
+      `
+      SELECT 
+        p.id,
+        p.name,
+        p.price,
+        p.status,
+        p.image_url,
+        p.stock,
+        c.name AS category
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      ORDER BY p.created_at DESC
+      LIMIT ? OFFSET ?
+      `,
+      [limit, offset]
+    );
+
+    res.json({
+      ok: true,
+      products,
+      meta: {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (err) {
+    console.error("Admin products error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load products",
+    });
+  }
+};
+

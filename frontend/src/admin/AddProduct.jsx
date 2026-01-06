@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import api from "../api/axios";
+import api from "../api/client";
 import "./AddProduct.css";
 
 export default function AddProduct() {
@@ -19,13 +19,36 @@ export default function AddProduct() {
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
+  /* ================= LOAD CATEGORIES (ADMIN SAFE) ================= */
   useEffect(() => {
-    api.get("/categories/active")
-      .then(res => setCategories(res.data.categories || []))
-      .catch(() => toast.error("Failed to load categories"));
+    let cancelled = false;
+
+    const loadCategories = async () => {
+      try {
+        const res = await api.get("/categories/admin");
+        if (!cancelled) {
+          setCategories(res.data?.categories || []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Load categories error:", err);
+          toast.error("Failed to load categories");
+        }
+      } finally {
+        if (!cancelled) setLoadingCategories(false);
+      }
+    };
+
+    loadCategories();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  /* ================= SUBMIT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -34,27 +57,30 @@ export default function AddProduct() {
       return;
     }
 
-    setLoading(true);
     try {
+      setLoading(true);
+
       await api.post("/products/admin", {
         name: form.name.trim(),
         price: Number(form.price),
         category_id: Number(form.category_id),
         status: form.status,
-        stock: Number(form.stock), // ✅ REQUIRED
+        stock: Number(form.stock),
         image_url: form.image_url.trim(),
         description: form.description.trim(),
       });
 
       toast.success("Product added successfully");
-      setTimeout(() => navigate("/admin/products"), 1000);
-    } catch {
+      navigate("/admin/products");
+    } catch (err) {
+      console.error("Add product error:", err);
       toast.error("Failed to add product");
     } finally {
       setLoading(false);
     }
   };
 
+  /* ================= UI ================= */
   return (
     <div className="admin-page">
       <div className="page-header">
@@ -66,29 +92,37 @@ export default function AddProduct() {
         <label>Product Name</label>
         <input
           value={form.name}
-          onChange={e => setForm({ ...form, name: e.target.value })}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
           required
         />
 
         <label>Category</label>
         <select
           value={form.category_id}
-          onChange={e => setForm({ ...form, category_id: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, category_id: e.target.value })
+          }
           required
+          disabled={loadingCategories}
         >
-          <option value="">Select category</option>
-          {categories.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+          <option value="">
+            {loadingCategories ? "Loading categories..." : "Select category"}
+          </option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
           ))}
         </select>
 
         <label>Status</label>
         <select
           value={form.status}
-          onChange={e => setForm({ ...form, status: e.target.value })}
+          onChange={(e) => setForm({ ...form, status: e.target.value })}
         >
           <option value="draft">Draft</option>
           <option value="published">Published</option>
+          <option value="inactive">Inactive</option>
         </select>
 
         <label>Stock Quantity</label>
@@ -96,7 +130,7 @@ export default function AddProduct() {
           type="number"
           min="0"
           value={form.stock}
-          onChange={e => setForm({ ...form, stock: e.target.value })}
+          onChange={(e) => setForm({ ...form, stock: e.target.value })}
           required
         />
 
@@ -104,22 +138,27 @@ export default function AddProduct() {
         <input
           type="number"
           min="0"
+          step="0.01"
           value={form.price}
-          onChange={e => setForm({ ...form, price: e.target.value })}
+          onChange={(e) => setForm({ ...form, price: e.target.value })}
           required
         />
 
         <label>Image URL</label>
         <input
           value={form.image_url}
-          onChange={e => setForm({ ...form, image_url: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, image_url: e.target.value })
+          }
         />
 
         <label>Description</label>
         <textarea
           rows="4"
           value={form.description}
-          onChange={e => setForm({ ...form, description: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, description: e.target.value })
+          }
         />
 
         <div className="add-product-actions">

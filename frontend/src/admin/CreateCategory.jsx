@@ -6,6 +6,7 @@ import api from "../api/axios";
 export default function CreateCategory() {
   const navigate = useNavigate();
 
+  /* ================= STATE ================= */
   const [name, setName] = useState("");
   const [status, setStatus] = useState("active");
   const [imageUrl, setImageUrl] = useState("");
@@ -14,13 +15,19 @@ export default function CreateCategory() {
   /* ================= CREATE CATEGORY ================= */
   const submit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+
+    if (!name.trim()) {
+      toast.error("Category name is required");
+      return;
+    }
 
     try {
+      setLoading(true);
+
       await api.post("/categories", {
-        name,
-        status,
-        image_url: imageUrl || null,
+        name: name.trim(),                 // ✅ FIXED
+        image_url: imageUrl.trim() || null,
+        status,                            // "active" | "inactive"
       });
 
       toast.success("Category added successfully");
@@ -37,13 +44,12 @@ export default function CreateCategory() {
     }
   };
 
+  /* ================= UI ================= */
   return (
     <div className="admin-page">
       <div className="page-header">
         <h2>Add Category</h2>
-        <p className="page-subtitle">
-          Create a new product category
-        </p>
+        <p className="page-subtitle">Create a new product category</p>
       </div>
 
       <form onSubmit={submit} className="product-card">

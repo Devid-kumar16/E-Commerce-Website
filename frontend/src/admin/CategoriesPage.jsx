@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/client";
-import AdminSearchBar from "../components/AdminSearchBar";
 
 /* ===== PAGINATION CONFIG ===== */
 const ITEMS_PER_PAGE = 10;
@@ -15,13 +14,14 @@ export default function CategoriesPage() {
 
   const navigate = useNavigate();
 
-  /* ================= LOAD CATEGORIES ================= */
+  /* ================= LOAD CATEGORIES (ADMIN) ================= */
   const loadCategories = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const res = await api.get("/categories");
+      // ✅ CORRECT: ADMIN CATEGORIES API
+      const res = await api.get("/categories/admin");
       setItems(res.data?.categories || []);
     } catch (err) {
       console.error("Load categories error:", err);
@@ -35,11 +35,15 @@ export default function CategoriesPage() {
     loadCategories();
   }, []);
 
-  /* ================= SEARCH ================= */
-  const filteredItems = items.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
-  
+  /* ================= SEARCH (NAME + STATUS) ================= */
+  const filteredItems = items.filter((c) => {
+    const searchableText = `
+      ${c.name}
+      ${c.status}
+    `.toLowerCase();
+
+    return searchableText.includes(search.toLowerCase());
+  });
 
   // reset page on search
   useEffect(() => {
@@ -61,22 +65,38 @@ export default function CategoriesPage() {
   return (
     <div className="admin-page">
       {/* HEADER */}
-<div className="page-header">
-  <h2>Categories</h2>
+      <div className="page-header">
+        <h2 className="page-title">Categories</h2>
 
-  <div style={{ display: "flex", gap: 12 }}>
-    <AdminSearchBar
-      value={search}
-      onChange={setSearch}
-      placeholder="Search categories..."
-    />
+        <div className="header-actions">
+          {/* SEARCH BAR */}
+          <div className="admin-search">
+            <span className="search-icon">🔍</span>
 
-    <Link to="/admin/categories/new" className="btn btn-primary">
-      Add Category
-    </Link>
-  </div>
-</div>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name or status..."
+            />
 
+            {search && (
+              <button
+                className="clear-btn"
+                onClick={() => setSearch("")}
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          {/* ADD CATEGORY */}
+          <Link to="/admin/categories/new" className="btn btn-primary">
+            Add Category
+          </Link>
+        </div>
+      </div>
 
       {error && <p className="admin-error">{error}</p>}
       {loading && <p className="admin-loading">Loading...</p>}
@@ -105,7 +125,6 @@ export default function CategoriesPage() {
 
             {paginatedItems.map((c, index) => (
               <tr key={c.id}>
-                {/* Serial number */}
                 <td>
                   {(page - 1) * ITEMS_PER_PAGE + index + 1}
                 </td>

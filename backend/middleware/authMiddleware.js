@@ -5,14 +5,14 @@ import crypto from "crypto";
 dotenv.config();
 
 /* ======================================================
-   1️⃣ SOFT AUTH (attach user if token exists)
-   - Does NOT block guest users
-   - Industry standard for checkout, cart, wishlist
+   1️⃣ SOFT AUTH (OPTIONAL USER)
+   - Safe for checkout, cart, wishlist
+   - NEVER blocks request
 ====================================================== */
 export function attachUserIfExists(req, res, next) {
   const authHeader = req.headers.authorization;
 
-  if (authHeader?.startsWith("Bearer ")) {
+  if (authHeader && authHeader.startsWith("Bearer ")) {
     try {
       const token = authHeader.split(" ")[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -22,8 +22,8 @@ export function attachUserIfExists(req, res, next) {
         email: decoded.email,
         role: decoded.role,
       };
-    } catch {
-      // ❌ Invalid token → ignore silently
+    } catch (err) {
+      // Invalid token → treat as guest
       req.user = null;
     }
   } else {
@@ -34,22 +34,40 @@ export function attachUserIfExists(req, res, next) {
 }
 
 /* ======================================================
-   2️⃣ HARD AUTH (protected routes only)
-   - Admin, profile, dashboard, etc.
+   2️⃣ HARD AUTH (PROTECTED ROUTES)
+   - ALWAYS validates token itself
 ====================================================== */
 export function authRequired(req, res, next) {
-  if (!req.user) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({
       ok: false,
       message: "Authentication required",
     });
   }
 
-  next();
+  try {
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      role: decoded.role,
+    };
+
+    next();
+  } catch (err) {
+    return res.status(401).json({
+      ok: false,
+      message: "Invalid or expired token",
+    });
+  }
 }
 
 /* ======================================================
-   3️⃣ ADMIN ONLY
+   3️⃣ ADMIN ONLY (ROLE CHECK)
 ====================================================== */
 export function adminOnly(req, res, next) {
   if (!req.user) {
@@ -70,12 +88,10 @@ export function adminOnly(req, res, next) {
 }
 
 /* ======================================================
-   4️⃣ CHECKOUT SESSION (industry standard)
-   - Used ONLY for guest checkout
-   - Secure, HTTP-only cookie
+   4️⃣ CHECKOUT SESSION (GUEST USERS)
 ====================================================== */
 export function checkoutSession(req, res, next) {
-  // Logged-in users do NOT need checkout session
+  // Logged-in users don't need guest session
   if (req.user) {
     req.checkoutSessionId = null;
     return next();

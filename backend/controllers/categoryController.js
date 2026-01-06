@@ -1,4 +1,5 @@
 ﻿import { pool } from "../config/db.js";
+import slugify from "slugify";
 
 /* ================= SLUG ================= */
 const makeSlug = (text) =>
@@ -44,32 +45,63 @@ export async function getCategory(req, res) {
 }
 
 /* ================= CREATE ================= */
-export async function createCategory(req, res) {
-  let { name, image_url } = req.body;
+export const createCategory = async (req, res) => {
+  try {
+    const { name, image_url, status } = req.body;
 
-  if (!name?.trim()) {
-    return res.status(400).json({ ok: false, message: "Name required" });
+    /* ===== Validation ===== */
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        ok: false,
+        message: "Category name is required",
+      });
+    }
+
+    const finalStatus =
+      status === "inactive" ? "inactive" : "active";
+
+    /* ===== Generate unique slug ===== */
+    let baseSlug = slugify(name, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
+
+    let slug = baseSlug;
+    let counter = 1;
+
+    while (true) {
+      const [[exists]] = await pool.query(
+        "SELECT id FROM categories WHERE slug = ?",
+        [slug]
+      );
+
+      if (!exists) break;
+      slug = `${baseSlug}-${counter++}`;
+    }
+
+    /* ===== Insert ===== */
+    const [result] = await pool.query(
+      `
+      INSERT INTO categories (name, slug, image_url, status)
+      VALUES (?, ?, ?, ?)
+      `,
+      [name.trim(), slug, image_url || null, finalStatus]
+    );
+
+    res.status(201).json({
+      ok: true,
+      message: "Category created successfully",
+      category_id: result.insertId,
+    });
+  } catch (err) {
+    console.error("createCategory error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to create category",
+    });
   }
-
-  const slug = makeSlug(name);
-
-  const [[exists]] = await pool.query(
-    "SELECT id FROM categories WHERE slug = ?",
-    [slug]
-  );
-
-  if (exists) {
-    return res.status(400).json({ ok: false, message: "Category already exists" });
-  }
-
-  await pool.query(
-    `INSERT INTO categories (name, slug, image_url, status, active, created_at)
-     VALUES (?, ?, ?, 'active', 1, NOW())`,
-    [name.trim(), slug, image_url || null]
-  );
-
-  res.status(201).json({ ok: true, message: "Category created" });
-}
+};
 
 /* ================= UPDATE ================= */
 export async function updateCategory(req, res) {
@@ -203,6 +235,33 @@ export const updateCategoryAdmin = async (req, res) => {
     res.status(500).json({
       ok: false,
       message: "Failed to update category",
+    });
+  }
+};
+
+export const getAdminCategories = async (req, res) => {
+  try {
+    const [categories] = await pool.query(`
+      SELECT
+        id,
+        name,
+        slug,
+        status,
+        image_url,
+        created_at
+      FROM categories
+      ORDER BY created_at DESC
+    `);
+
+    res.json({
+      ok: true,
+      categories,
+    });
+  } catch (err) {
+    console.error("Admin categories error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load categories",
     });
   }
 };

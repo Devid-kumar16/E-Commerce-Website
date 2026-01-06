@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-
 import api from "../api/client";
 import { useAuth } from "../context/AuthContext";
+
+const PAGE_SIZE = 10;
 
 export default function CustomersPage() {
   const { user, loading: authLoading } = useAuth();
@@ -14,32 +15,58 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const PAGE_SIZE = 10;
+  /* ================= DATE VARIANTS ================= */
+  const getDateVariants = (dateStr) => {
+    if (!dateStr) return [];
+    const d = new Date(dateStr);
+    if (isNaN(d)) return [];
+
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+
+    return [
+      `${dd}/${mm}/${yyyy}`,
+      `${mm}/${dd}/${yyyy}`,
+      `${yyyy}-${mm}-${dd}`,
+    ];
+  };
 
   /* ================= LOAD CUSTOMERS ================= */
   const load = useCallback(
     async (pageToLoad = 1) => {
-      // ⛔ wait for auth
       if (authLoading) return;
-
-      // 🔐 admin guard
-      if (!user || user.role !== "admin") {
-        return;
-      }
+      if (!user || user.role !== "admin") return;
 
       try {
         setLoading(true);
         setError("");
 
+        // 🔥 SEARCH MODE → LOAD ALL
+        if (search.trim()) {
+          const res = await api.get("/admin/customers", {
+            params: { limit: 10000 },
+          });
+
+          const customers =
+            res.data?.customers ||
+            res.data?.data ||
+            [];
+
+          setItems(customers);
+          setTotalPages(1);
+          setPage(1);
+          return;
+        }
+
+        // 🔹 NORMAL PAGINATION
         const res = await api.get("/admin/customers", {
           params: {
             page: pageToLoad,
             limit: PAGE_SIZE,
-            q: search || undefined,
           },
         });
 
-        // ✅ normalize response (industry standard)
         const customers =
           res.data?.customers ||
           res.data?.data ||
@@ -57,15 +84,12 @@ export default function CustomersPage() {
           Math.max(1, Math.ceil(total / PAGE_SIZE))
         );
       } catch (err) {
-        // ✅ 401 handled by interceptor
-        if (err.response?.status === 401) {
-          return;
+        if (err.response?.status !== 401) {
+          setError(
+            err.response?.data?.message ||
+              "Failed to load customers"
+          );
         }
-
-        setError(
-          err.response?.data?.message ||
-            "Failed to load customers"
-        );
       } finally {
         setLoading(false);
       }
@@ -77,6 +101,20 @@ export default function CustomersPage() {
   useEffect(() => {
     load(1);
   }, [load]);
+
+  /* ================= SEARCH FILTER ================= */
+  const filteredItems = items.filter((c) => {
+    const dateVariants = getDateVariants(c.created_at);
+
+    const searchableText = `
+      ${c.name}
+      ${c.email}
+      ${c.orders ?? 0}
+      ${dateVariants.join(" ")}
+    `.toLowerCase();
+
+    return searchableText.includes(search.toLowerCase());
+  });
 
   /* ================= STATES ================= */
   if (authLoading) {
@@ -90,34 +128,50 @@ export default function CustomersPage() {
   /* ================= UI ================= */
   return (
     <div className="admin-page">
-      {/* ================= HEADER ================= */}
-      <div className="page-header">
-        <div>
-          <h2 className="page-title">Customers</h2>
-          <p className="page-subtitle">
-            View and manage registered customers
-          </p>
-        </div>
+{/* ================= HEADER ================= */}
+<div className="page-header">
+  <div>
+    <h2 className="page-title">Customers</h2>
+    <p className="page-subtitle">
+      View and manage registered customers
+    </p>
+  </div>
 
-        <Link to="/admin/customers/new" className="btn-primary">
-          Add Customer
-        </Link>
-      </div>
+  <div className="header-actions">
+    {/* SEARCH BAR */}
+    <div className="admin-search">
+      <span className="search-icon">🔍</span>
 
-      {/* ================= FILTER ================= */}
-      <div className="admin-filters-row">
-        <input
-          type="text"
-          placeholder="Search by name or email"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
+      <input
+        type="text"
+        placeholder="Search by name, email, orders or date..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
+      {search && (
+        <button
+          className="clear-btn"
+          onClick={() => setSearch("")}
+        >
+          ×
+        </button>
+      )}
+    </div>
+
+    {/* ADD CUSTOMER */}
+    <Link to="/admin/customers/new" className="btn btn-primary">
+      Add Customer
+    </Link>
+  </div>
+</div>
+
+
 
       {error && <div className="admin-error">{error}</div>}
       {loading && <div className="admin-loading">Loading…</div>}
 
-      {/* ================= TABLE ================= */}
+      {/* TABLE */}
       <div className="admin-card">
         <table className="admin-table">
           <thead>
@@ -131,7 +185,7 @@ export default function CustomersPage() {
           </thead>
 
           <tbody>
-            {!loading && items.length === 0 && (
+            {!loading && filteredItems.length === 0 && (
               <tr>
                 <td colSpan="5" style={{ textAlign: "center" }}>
                   No customers found
@@ -139,46 +193,50 @@ export default function CustomersPage() {
               </tr>
             )}
 
-            {items.map((c, index) => (
+            {filteredItems.map((c, index) => (
               <tr key={c.id}>
-                {/* ✅ SERIAL NUMBER (pagination-safe) */}
                 <td>
-                  {(page - 1) * PAGE_SIZE + index + 1}
+                  {!search
+                    ? (page - 1) * PAGE_SIZE + index + 1
+                    : index + 1}
                 </td>
-
                 <td>{c.name}</td>
                 <td>{c.email}</td>
                 <td>{c.orders ?? 0}</td>
                 <td>
-                  {String(c.created_at).slice(0, 10)}
+                  {c.created_at
+                    ? new Date(c.created_at).toLocaleDateString()
+                    : "—"}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* ================= PAGINATION ================= */}
-        <div className="pagination-bar">
-          <button
-            className="pagination-btn"
-            disabled={page <= 1}
-            onClick={() => load(page - 1)}
-          >
-            Prev
-          </button>
+        {/* PAGINATION (ONLY WHEN NOT SEARCHING) */}
+        {!search && totalPages > 1 && (
+          <div className="pagination-bar">
+            <button
+              className="pagination-btn"
+              disabled={page <= 1}
+              onClick={() => load(page - 1)}
+            >
+              Prev
+            </button>
 
-          <span className="pagination-info">
-            Page <strong>{page}</strong> of {totalPages}
-          </span>
+            <span className="pagination-info">
+              Page <strong>{page}</strong> of {totalPages}
+            </span>
 
-          <button
-            className="pagination-btn"
-            disabled={page >= totalPages}
-            onClick={() => load(page + 1)}
-          >
-            Next
-          </button>
-        </div>
+            <button
+              className="pagination-btn"
+              disabled={page >= totalPages}
+              onClick={() => load(page + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

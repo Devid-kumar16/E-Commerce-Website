@@ -20,9 +20,9 @@ export default function CategoryPage() {
         // ✅ IMPORTANT FIX (THIS WAS MISSING)
         const encodedSlug = encodeURIComponent(slug);
 
-        const res = await api.get(
-          `/products/category/${encodedSlug}`
-        );
+        const res = await api.get(`/products/category/${slug}`);
+        setProducts(res.data.products || []);
+
 
         // ✅ SAFE & CORRECT
         setItems(res.data?.products || []);
