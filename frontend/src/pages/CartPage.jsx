@@ -10,25 +10,30 @@ export default function CartPage() {
     return <h2 className="cart-empty">Your cart is empty</h2>;
   }
 
+  // Calculate total price
   const total = cart.reduce(
     (sum, item) => sum + Number(item.price) * (item.qty || 1),
     0
   );
+
+  // Calculate total items
+  const totalItems = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
 
   return (
     <div className="cart-page">
       <h2 className="cart-title">My Cart</h2>
 
       <div className="cart-container">
-        {/* CART ITEMS */}
+        {/* LEFT — CART ITEMS */}
         <div className="cart-items">
           {cart.map((item) => {
             const qty = item.qty || 1;
+            const stock = item.stock || 50; // fallback stock to avoid crash
 
             return (
               <div key={item.id} className="cart-card">
                 <img
-                  src={item.image_url || item.image || "/images/placeholder.png"}
+                  src={item.image_url || "/images/placeholder.png"}
                   alt={item.name}
                   className="cart-img"
                   onError={(e) => {
@@ -41,7 +46,10 @@ export default function CartPage() {
                   <h4>{item.name}</h4>
                   <p className="price">₹{item.price}</p>
 
+                  {/* QUANTITY CONTROL */}
                   <div className="qty-row">
+
+                    {/* Decrease */}
                     <button
                       disabled={qty <= 1}
                       onClick={() => updateQty(item.id, qty - 1)}
@@ -51,19 +59,17 @@ export default function CartPage() {
 
                     <span>{qty}</span>
 
-<button
-  onClick={() => {
-    if (item.qty < item.stock) {
-      updateQty(item.id, item.qty + 1);
-    }
-  }}
-  disabled={item.qty >= item.stock}
->
-  +
-</button>
+                    {/* Increase */}
+                    <button
+                      onClick={() => updateQty(item.id, qty + 1)}
+                      disabled={qty >= stock}
+                    >
+                      +
+                    </button>
 
                   </div>
 
+                  {/* Remove button */}
                   <button
                     className="remove-btn"
                     onClick={() => removeFromCart(item.id)}
@@ -76,11 +82,11 @@ export default function CartPage() {
           })}
         </div>
 
-        {/* CART SUMMARY */}
+        {/* RIGHT — PRICE SUMMARY */}
         <div className="cart-summary">
           <h3>Price Details</h3>
 
-          <p>Total Items: {cart.length}</p>
+          <p>Total Items: {totalItems}</p>
 
           <p className="total">Total: ₹{total.toFixed(2)}</p>
 

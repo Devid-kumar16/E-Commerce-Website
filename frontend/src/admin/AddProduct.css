@@ -1,275 +1,165 @@
-.admin-page {
-  padding: 32px;
+/* =============================
+   WRAPPER
+============================= */
+.add-wrapper {
+  padding: 40px 50px;
   background: #f5f7fb;
   min-height: 100vh;
 }
 
-.page-header h1 {
+.add-wrapper h2 {
   font-size: 26px;
-  font-weight: 600;
+  font-weight: 700;
+  margin-bottom: 25px;
+  color: #222;
 }
 
-.page-header p {
-  color: #6b7280;
-  margin-top: 4px;
-}
-
-.product-card {
+/* =============================
+   MAIN CARD
+============================= */
+.add-card {
   background: #fff;
-  padding: 28px;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  max-width: 1000px;
-  margin-top: 24px;
-}
+  padding: 40px 50px;
+  border-radius: 18px;
+  max-width: 1150px;
+  margin: 0 auto;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.07);
 
-.section-title {
-  font-size: 15px;
-  font-weight: 600;
-  margin: 24px 0 14px;
-  color: #111827;
-}
-
-.form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  grid-template-columns: 58% 42%;
+  gap: 40px;
 }
 
-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: #374151;
+/* =============================
+   LEFT COLUMN
+============================= */
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
   margin-bottom: 6px;
-  display: block;
+  color: #444;
 }
 
-input,
-select,
-textarea {
+.add-card input,
+.add-card select,
+.add-card textarea {
   width: 100%;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid #d1d5db;
-  font-size: 14px;
+  border: 1px solid #dedede;
+  background: #fafafa;
+  font-size: 15px;
+  transition: 0.2s;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-  outline: none;
+.add-card input:focus,
+.add-card select:focus,
+.add-card textarea:focus {
+  background: #fff;
+  border-color: #6b4eff;
+  box-shadow: 0 0 0 3px rgba(107, 78, 255, 0.15);
 }
 
 textarea {
-  resize: none;
+  height: 120px;
 }
 
-.image-preview {
-  margin: 16px 0;
-}
-
-.image-preview img {
-  max-width: 180px;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 30px;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  color: #fff;
-  padding: 12px 26px;
-  border-radius: 10px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btn-primary:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-  padding: 12px 22px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-}
-
-
-/* ensure form fields align perfectly */
-.form-field {
-  display: flex;
-  flex-direction: column;
-}
-
-/* grid fix for same-row inputs */
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  align-items: end;
-}
-
-/* action buttons alignment */
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 14px;
-  margin-top: 32px;
-}
-
-/* make buttons same height */
-.btn-primary,
-.btn-secondary {
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-
-/* GRID – strict 2 column layout */
-.form-grid {
+/* TWO SMALL INPUTS IN ONE ROW */
+.two-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 22px;
 }
 
-/* ensure labels + inputs align */
-.form-field {
+/* =============================
+   RIGHT COLUMN (IMAGE PREVIEW)
+============================= */
+.right-column {
   display: flex;
-  flex-direction: column;
-}
-
-/* BUTTONS – professional alignment */
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 16px;
-
-  /* 🔥 THIS IS THE FIX */
-  flex-wrap: nowrap;
-  width: 100%;
-  margin-top: 40px;
-}
-
-
-/* SAME HEIGHT BUTTONS */
-.btn-primary,
-.btn-secondary {
-  height: 44px;
-  padding: 0 24px;
-  border-radius: 10px;
-  white-space: nowrap; /* 🔥 prevents text wrap */
-}
-
-/* ===== FORCE BUTTON ALIGNMENT (FINAL FIX) ===== */
-.form-actions {
-  display: flex !important;
-  flex-direction: row !important;
-  justify-content: flex-end !important;
-  align-items: center !important;
-  gap: 16px !important;
-  width: 100% !important;
-  margin-top: 40px !important;
-}
-
-/* FORCE BUTTONS INLINE */
-.form-actions button {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  white-space: nowrap !important;
-}
-
-/* SAME HEIGHT */
-.btn-primary,
-.btn-secondary {
-  height: 44px !important;
-  padding: 0 24px !important;
-  border-radius: 10px !important;
-}
-
-
-/* ===== ACTION BAR ===== */
-.form-actions {
-  width: 100%;
-  margin-top: 40px;
-}
-
-/* GRID FIX – NEVER BREAKS */
-.actions-right {
-  display: grid;
-  grid-auto-flow: column;   /* forces same row */
-  grid-auto-columns: max-content;
-  justify-content: end;
-  gap: 16px;
-}
-
-/* BUTTON CONSISTENCY */
-.btn-primary,
-.btn-secondary {
-  height: 44px;
-  padding: 0 24px;
-  border-radius: 10px;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
 }
 
+.preview-box {
+  width: 100%;
+  height: 330px;
+  border-radius: 14px;
+  background: #fafafa;
+  border: 1px dashed #bbb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
 
-/* ===== FIXED ACTION BAR (PRODUCTION PATTERN) ===== */
-.action-bar {
+.preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* =============================
+   ACTION BUTTONS
+============================= */
+.form-actions {
+  grid-column: span 2;
   display: flex;
   justify-content: flex-end;
-  align-items: center;
-  gap: 16px;
-
-  margin-top: 40px;
-  padding-top: 20px;
-
-  /* subtle separation */
-  border-top: 1px solid #e5e7eb;
+  gap: 15px;
+  padding-top: 22px;
+  border-top: 1px solid #eee;
 }
 
-/* FORCE SAME HEIGHT & BASELINE */
-.action-bar button {
-  height: 44px;
-  padding: 0 24px;
-  border-radius: 10px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  white-space: nowrap;
-}
-
-/* secondary button cleanup */
+/* CANCEL BUTTON */
 .btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-  border: none;
+  padding: 10px 22px;
+  border-radius: 8px;
+  background: #efefef;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  font-size: 15px;
 }
 
-/* primary button emphasis */
+/* SAVE BUTTON */
 .btn-primary {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  padding: 12px 30px;
+  background: linear-gradient(90deg, #6b4eff, #8a68ff);
   color: #fff;
   border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  min-width: 160px; /* FIXED SIZE */
+  width: auto !important; /* FIX width issue */
+  display: inline-block;  /* FIX flex stretch */
+  box-shadow: 0 4px 14px rgba(107, 78, 255, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(107, 78, 255, 0.35);
+}
+
+/* =============================
+   RESPONSIVE
+============================= */
+@media (max-width: 900px) {
+  .add-card {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-box {
+    height: 260px;
+  }
+
+  .form-actions {
+    justify-content: center;
+  }
 }

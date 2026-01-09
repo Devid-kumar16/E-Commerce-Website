@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../api/client";
 
-import "../styles/admin-form.css";
+import "./EditProduct.css";
 
 export default function EditProduct() {
   const { id } = useParams();
@@ -25,42 +25,38 @@ export default function EditProduct() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /* ================= LOAD PRODUCT + CATEGORIES (SAFE) ================= */
+  /* ================= LOAD PRODUCT + CATEGORIES ================= */
   useEffect(() => {
     let cancelled = false;
 
     const loadProduct = async () => {
       try {
+        // ✅ This is correct (DO NOT CHANGE)
         const res = await api.get(`/products/${id}`);
         const p = res.data?.product;
 
         if (!cancelled && p) {
           setForm({
-            name: p.name ?? "",
-            price: p.price ?? "",
-            category_id: p.category_id ?? "",
-            status: p.status ?? "draft",
-            stock: p.stock ?? "",
-            image_url: p.image_url ?? "",
-            description: p.description ?? "",
+            name: p.name || "",
+            price: p.price || "",
+            category_id: p.category_id || "",
+            status: p.status || "draft",
+            stock: p.stock || "",
+            image_url: p.image_url || "",
+            description: p.description || "",
           });
         }
       } catch (err) {
-        if (!cancelled) {
-          console.error("Product load error:", err);
-          toast.error("Failed to load product data");
-        }
+        console.error("Product load error:", err);
+        if (!cancelled) toast.error("Failed to load product");
       }
     };
 
     const loadCategories = async () => {
       try {
         const res = await api.get("/categories/admin");
-        if (!cancelled) {
-          setCategories(res.data?.categories || []);
-        }
+        if (!cancelled) setCategories(res.data?.categories || []);
       } catch (err) {
-        // ❌ Do NOT show toast here (not critical)
         console.error("Category load error:", err);
       }
     };
@@ -69,17 +65,16 @@ export default function EditProduct() {
       if (!cancelled) setLoading(false);
     });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => (cancelled = true);
   }, [id]);
 
-  /* ================= UPDATE PRODUCT ================= */
+  /* ================= SUBMIT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      await api.put(`/products/${id}`, {
+      // 🚀 FIXED — correct route for UPDATE:
+      await api.put(`/products/admin/${id}`, {
         name: form.name.trim(),
         price: Number(form.price),
         category_id: Number(form.category_id),
@@ -97,28 +92,24 @@ export default function EditProduct() {
     }
   };
 
-  if (loading) {
-    return <div className="admin-loading">Loading product…</div>;
-  }
+  if (loading) return <div className="admin-loading">Loading…</div>;
 
-  /* ================= UI ================= */
   return (
     <div className="admin-page">
-      <div className="admin-header">
-        <h1>Edit Product</h1>
+      <div className="page-header">
+        <h2>Edit Product</h2>
         <p>Update product details and stock</p>
       </div>
 
       <form className="admin-card" onSubmit={handleSubmit}>
-        <div className="admin-grid">
-          <div>
+        <div className="edit-grid">
+          <div className="form-left">
+
             <div className="form-group">
               <label>Product Name</label>
               <input
                 value={form.name}
-                onChange={(e) =>
-                  setForm({ ...form, name: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required
               />
             </div>
@@ -130,9 +121,7 @@ export default function EditProduct() {
                 min="0"
                 step="0.01"
                 value={form.price}
-                onChange={(e) =>
-                  setForm({ ...form, price: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
                 required
               />
             </div>
@@ -141,9 +130,7 @@ export default function EditProduct() {
               <label>Category</label>
               <select
                 value={form.category_id}
-                onChange={(e) =>
-                  setForm({ ...form, category_id: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, category_id: e.target.value })}
                 required
               >
                 <option value="">Select category</option>
@@ -159,9 +146,7 @@ export default function EditProduct() {
               <label>Status</label>
               <select
                 value={form.status}
-                onChange={(e) =>
-                  setForm({ ...form, status: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
               >
                 <option value="draft">Draft</option>
                 <option value="published">Published</option>
@@ -175,9 +160,7 @@ export default function EditProduct() {
                 type="number"
                 min="0"
                 value={form.stock}
-                onChange={(e) =>
-                  setForm({ ...form, stock: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, stock: e.target.value })}
                 required
               />
             </div>
@@ -186,9 +169,7 @@ export default function EditProduct() {
               <label>Image URL</label>
               <input
                 value={form.image_url}
-                onChange={(e) =>
-                  setForm({ ...form, image_url: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, image_url: e.target.value })}
               />
             </div>
 
@@ -197,20 +178,17 @@ export default function EditProduct() {
               <textarea
                 rows={4}
                 value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
             </div>
+
           </div>
 
           <div className="image-preview-card">
             {form.image_url ? (
               <img src={form.image_url} alt="Preview" />
             ) : (
-              <div className="image-placeholder">
-                No Image Preview
-              </div>
+              <div className="image-placeholder">No Image Preview</div>
             )}
           </div>
         </div>
@@ -219,12 +197,11 @@ export default function EditProduct() {
           <button type="submit" className="btn-primary">
             Update Product
           </button>
+
           <button
             type="button"
             className="btn-outline"
-            onClick={() =>
-              navigate(`/admin/products?page=${page}`)
-            }
+            onClick={() => navigate(`/admin/products?page=${page}`)}
           >
             Cancel
           </button>

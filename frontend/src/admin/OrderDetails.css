@@ -1,104 +1,193 @@
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-bottom: 20px;
+/* =============================
+   PAGE BASE
+============================= */
+.admin-page {
+  padding: 40px 60px;
+  background: #f4f6fb;
+  min-height: 100vh;
 }
 
-.summary-box {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+/* =============================
+   HEADER
+============================= */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
 }
 
-.summary-box h4 {
-  margin-bottom: 6px;
-  color: #666;
-}
-
-.summary-box p {
-  font-size: 20px;
+.page-header h2 {
+  font-size: 28px;
   font-weight: 700;
 }
 
+/* Header Buttons */
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
 
+.btn-outline {
+  padding: 10px 22px;
+  border-radius: 8px;
+  border: 2px dashed #6b4eff;
+  background: #f7f1ff;
+  color: #6b4eff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  padding: 10px 22px;
+  background: #efefef;
+  border: 1px solid #d2d2d2;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* =============================
+   ORDER STATS  (3 TOP CARDS)
+============================= */
 .order-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-bottom: 30px;
+  display: flex;
+  gap: 22px;
+  margin-bottom: 32px;
 }
 
 .stat-card {
-  padding: 22px;
+  flex: 1;
+  padding: 32px 22px;
   border-radius: 14px;
-  color: #fff;
+  color: white;
   text-align: center;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
 }
 
 .stat-card h4 {
-  font-size: 14px;
+  margin: 0;
+  font-size: 15px;
   opacity: 0.9;
-  margin-bottom: 8px;
 }
 
 .stat-card p {
-  font-size: 22px;
+  margin-top: 10px;
+  font-size: 26px;
   font-weight: 700;
 }
 
-/* COLORS */
+/* INDIVIDUAL CARD COLORS */
 .stat-card.total {
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  background: linear-gradient(135deg, #6a5cff, #806eff);
 }
 
 .stat-card.payment {
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  background: linear-gradient(135deg, #1bbf63, #169c4f);
 }
 
-.stat-card.status.pending {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+.stat-card.status {
+  background: linear-gradient(135deg, #f2c94c, #e6b000);
 }
 
-.stat-card.status.paid {
-  background: linear-gradient(135deg, #16a34a, #22c55e);
+/* STATUS COLORS FOR TEXT (Optional) */
+.status.pending p { color: #9a6b00; }
+.status.delivered p { color: #0e8b4c; }
+.status.shipped p { color: #0d57d2; }
+
+/* =============================
+   WHITE CARDS BELOW
+============================= */
+.admin-card {
+  background: #fff;
+  padding: 28px 32px;
+  border-radius: 14px;
+  margin-bottom: 28px;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.06);
 }
 
-.stat-card.status.cancelled {
-  background: linear-gradient(135deg, #dc2626, #ef4444);
+.admin-card h3 {
+  font-size: 20px;
+  margin-bottom: 14px;
 }
 
-.stat-card.payment {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-  color: #ffffff;
+/* =============================
+   ORDER ITEMS TABLE
+============================= */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.admin-table th {
+  padding: 12px;
+  background: #eef1ff;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 600;
+  border-bottom: 1px solid #ddd;
+}
+
+.admin-table td {
+  padding: 12px;
+  border-bottom: 1px solid #ececec;
+  font-size: 14px;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* =============================
+   RESPONSIVE
+============================= */
+@media (max-width: 900px) {
+  .order-stats {
+    flex-direction: column;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
 }
 
 
 /* ===== STATUS COLORS ===== */
-.stat-card.status {
-  color: #ffffff;
+
+.status-delivered {
+  background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+  color: #0c6b2d;
 }
 
-.stat-card.status.paid {
-  background: linear-gradient(135deg, #22c55e, #16a34a); /* Green */
+.status-pending {
+  background: linear-gradient(135deg, #fff1a8 0%, #ffe083 100%);
+  color: #9a6b00;
 }
 
-.stat-card.status.pending {
-  background: linear-gradient(135deg, #facc15, #eab308); /* Yellow */
-  color: #78350f;
+.status-cancelled {
+  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+  color: #8a0020;
 }
 
-.stat-card.status.cancelled {
-  background: linear-gradient(135deg, #ef4444, #dc2626); /* Red */
+.status-shipped {
+  background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+  color: #004d99;
 }
 
-.stat-card.status.shipped {
-  background: linear-gradient(135deg, #0ea5e9, #0284c7); /* Blue */
+.status-processing {
+  background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+  color: #8b3a00;
 }
 
-.stat-card.status.delivered {
-  background: linear-gradient(135deg, #16a34a, #15803d); /* Dark Green */
+.status-returned {
+  background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
+  color: #6a1b9a;
+}
+
+/* Making text bold & centered */
+.stat-card.status p {
+  font-weight: 700;
+  font-size: 22px;
 }

@@ -1,0 +1,134 @@
+/* HEADER BASE */
+.header {
+  background: #fff;
+  padding: 14px 22px;
+  border-bottom: 1px solid #ececec;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  justify-content: space-between;
+}
+
+/* LOGO */
+.logo {
+  font-size: 28px;
+  font-weight: 700;
+  color: #009688;
+  text-decoration: none;
+}
+
+/* SEARCH BAR */
+.search-bar {
+  display: flex;
+  flex: 1;
+  max-width: 600px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 12px;
+  font-size: 15px;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+.search-bar button {
+  background: #009688;
+  color: #fff;
+  padding: 0 22px;
+  border: none;
+  cursor: pointer;
+}
+
+/* HEADER ACTION BUTTONS */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-chip {
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  color: #333;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.nav-chip span {
+  margin-left: 6px;
+  padding: 2px 7px;
+  background: #009688;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+/* ACCOUNT DROPDOWN */
+.account-menu-wrapper {
+  position: relative;
+}
+
+.account-dropdown {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  background: white;
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.account-dropdown a,
+.account-dropdown button {
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  padding: 6px 4px;
+  font-size: 14px;
+  color: #333;
+}
+
+
+.header {
+  background: white;
+  border-bottom: 1px solid #eee;
+  padding: 16px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+/* 🔥 MOST IMPORTANT FIX */
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 12px;  /* <--- Add this spacing */
+}
+
+/* to push content below header */
+body {
+  padding-top: 20px;
+}
+
+

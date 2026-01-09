@@ -2,17 +2,16 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../api/axios";
+import "./CreateCategory.css";
 
 export default function CreateCategory() {
   const navigate = useNavigate();
 
-  /* ================= STATE ================= */
   const [name, setName] = useState("");
   const [status, setStatus] = useState("active");
   const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /* ================= CREATE CATEGORY ================= */
   const submit = async (e) => {
     e.preventDefault();
 
@@ -25,85 +24,81 @@ export default function CreateCategory() {
       setLoading(true);
 
       await api.post("/categories", {
-        name: name.trim(),                 // ✅ FIXED
+        name: name.trim(),
         image_url: imageUrl.trim() || null,
-        status,                            // "active" | "inactive"
+        status,
       });
 
       toast.success("Category added successfully");
-
-      setTimeout(() => {
-        navigate("/admin/categories");
-      }, 1200);
+      navigate("/admin/categories");
     } catch (err) {
-      toast.error(
-        err.response?.data?.message || "Failed to create category"
-      );
+      toast.error(err.response?.data?.message || "Failed to create category");
     } finally {
       setLoading(false);
     }
   };
 
-  /* ================= UI ================= */
   return (
-    <div className="admin-page">
+    <div className="admin-page create-category-page">
+      
+
       <div className="page-header">
         <h2>Add Category</h2>
         <p className="page-subtitle">Create a new product category</p>
       </div>
 
-      <form onSubmit={submit} className="product-card">
-        <div className="form-grid">
-          {/* LEFT */}
-          <div className="form-section">
-            <label>Category Name</label>
-            <input
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter category name"
-            />
+      <form className="create-category-card" onSubmit={submit}>
+        <div className="create-grid">
 
-            <label>Status</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+          <div className="left-panel">
+            <div className="form-group">
+              <label>Category Name</label>
+              <input
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter category name"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Status</label>
+              <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Image URL</label>
+              <input
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
           </div>
 
-          {/* RIGHT */}
-          <div className="form-section">
-            <label>Image URL</label>
-            <input
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://example.com/image.jpg"
-            />
-
-            {imageUrl && (
-              <div className="image-preview">
-                <img src={imageUrl} alt="Preview" />
-              </div>
+          <div className="preview-panel">
+            {imageUrl ? (
+              <>
+                <img src={imageUrl} alt="Preview" className="preview-image" />
+                <p className="preview-text">Image Preview</p>
+              </>
+            ) : (
+              <div className="preview-placeholder">No Image Preview</div>
             )}
           </div>
         </div>
 
-        {/* ACTIONS */}
-        <div className="form-actions">
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={loading}
-          >
+        <div className="create-actions">
+          <button type="submit" className="btn-save" disabled={loading}>
             {loading ? "Saving..." : "Save Category"}
           </button>
 
           <button
             type="button"
-            className="btn-secondary"
+            className="btn-cancel"
             onClick={() => navigate("/admin/categories")}
           >
             Cancel

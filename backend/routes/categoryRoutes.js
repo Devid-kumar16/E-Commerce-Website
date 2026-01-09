@@ -6,27 +6,27 @@ import {
   getCategory,
   updateCategory,
 } from "../controllers/categoryController.js";
+
 import { authRequired, adminOnly } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/* ================= ADMIN ROUTES ================= */
-
-// 🔹 Admin: list ALL categories (FIXED)
-router.get("/admin", authRequired, adminOnly, listCategories);
-
-// 🔹 Admin: create category
-router.post("/", authRequired, adminOnly, createCategory);
-
-// 🔹 Admin: get single category
-router.get("/:id", authRequired, adminOnly, getCategory);
-
-// 🔹 Admin: update category
-router.put("/:id", authRequired, adminOnly, updateCategory);
-
 /* ================= PUBLIC ROUTES ================= */
 
-// 🔹 Public: active categories (navbar, public pages)
+// ✅ MUST BE FIRST
 router.get("/active", listActiveCategories);
+
+/* ================= ADMIN ROUTES ================= */
+
+router.get("/admin", authRequired, adminOnly, listCategories);
+router.post("/", authRequired, adminOnly, createCategory);
+
+/* ================= ID ROUTES (keep last) ================= */
+
+// GET one category
+router.get("/:id", authRequired, adminOnly, getCategory);
+
+// UPDATE category
+router.put("/:id", authRequired, adminOnly, updateCategory);
 
 export default router;

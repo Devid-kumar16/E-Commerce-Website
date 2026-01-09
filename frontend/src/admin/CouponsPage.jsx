@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
-import "./AdminStyles.css";
+import "./CouponsAdmin.css";
+
+const PAGE_SIZE = 10;
 
 export default function CouponsPage() {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const [showForm, setShowForm] = useState(false);
 
   const [form, setForm] = useState({
@@ -16,21 +22,40 @@ export default function CouponsPage() {
     expires_at: "",
   });
 
-  const loadCoupons = async () => {
-    const res = await api.get("/admin/coupons");
-    setCoupons(res.data.coupons || []);
-    setLoading(false);
+  /* ================= LOAD COUPONS WITH PAGINATION ================= */
+  const loadCoupons = async (pageToLoad = 1) => {
+    try {
+      setLoading(true);
+
+      const res = await api.get("/admin/coupons", {
+        params: { page: pageToLoad, limit: PAGE_SIZE },
+      });
+
+      setCoupons(res.data?.coupons || res.data?.data || []);
+
+      const meta = res.data?.meta || {};
+      const total = meta.total ?? (res.data?.coupons?.length || 0);
+
+      setPage(meta.page || pageToLoad);
+      setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
+    } catch (err) {
+      console.error("Failed to load coupons:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    loadCoupons();
+    loadCoupons(1);
   }, []);
 
+  /* ================= TOGGLE STATUS ================= */
   const toggleStatus = async (id) => {
     await api.patch(`/admin/coupons/${id}/toggle`);
-    loadCoupons();
+    loadCoupons(page);
   };
 
+  /* ================= ADD COUPON ================= */
   const submitCoupon = async (e) => {
     e.preventDefault();
 
@@ -38,9 +63,7 @@ export default function CouponsPage() {
       ...form,
       value: Number(form.value),
       min_order: Number(form.min_order || 0),
-      max_discount: form.max_discount
-        ? Number(form.max_discount)
-        : null,
+      max_discount: form.max_discount ? Number(form.max_discount) : null,
     });
 
     setShowForm(false);
@@ -53,129 +76,191 @@ export default function CouponsPage() {
       expires_at: "",
     });
 
-    loadCoupons();
+    loadCoupons(1);
   };
 
-  if (loading) return <p className="center">Loading...</p>;
+  if (loading) return <p className="loading-center">Loading...</p>;
 
   return (
     <div className="admin-page">
+
       {/* HEADER */}
-      <div className="admin-header">
-        <h2>Coupons</h2>
-        <button className="btn-primary" onClick={() => setShowForm(true)}>
+      <div className="page-header">
+        <h2 className="page-title">Coupons</h2>
+
+        <button className="btn-primary add-btn" onClick={() => setShowForm(true)}>
           + Add Coupon
         </button>
       </div>
 
       {/* TABLE */}
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>Code</th>
-            <th>Type</th>
-            <th>Value</th>
-            <th>Used</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {coupons.map((c) => (
-            <tr key={c.id}>
-              <td>{c.code}</td>
-              <td>{c.type}</td>
-              <td>
-                {c.type === "percentage" ? `${c.value}%` : `₹${c.value}`}
-              </td>
-              <td>{c.used_count}</td>
-              <td>
-                <button
-                  className={c.is_active ? "btn-green" : "btn-red"}
-                  onClick={() => toggleStatus(c.id)}
-                >
-                  {c.is_active ? "Active" : "Inactive"}
-                </button>
-              </td>
+      <div className="admin-card">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Type</th>
+              <th>Value</th>
+              <th>Used</th>
+              <th>Status</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody>
+            {coupons.length === 0 && (
+              <tr>
+                <td colSpan="5" style={{ textAlign: "center" }}>
+                  No coupons found
+                </td>
+              </tr>
+            )}
+
+            {coupons.map((c) => (
+              <tr key={c.id}>
+                <td>{c.code}</td>
+                <td>{c.type}</td>
+                <td>{c.type === "percentage" ? `${c.value}%` : `₹${c.value}`}</td>
+                <td>{c.used_count}</td>
+
+                <td>
+                  <button
+                    className={`status-badge ${c.is_active ? "badge-active" : "badge-inactive"}`}
+                    onClick={() => toggleStatus(c.id)}
+                  >
+                    {c.is_active ? "Active" : "Inactive"}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* ================= PAGINATION ================= */}
+        {totalPages > 1 && (
+          <div className="pagination-wrapper">
+
+            <button
+              className="pagination-btn left-btn"
+              disabled={page <= 1}
+              onClick={() => loadCoupons(page - 1)}
+            >
+              Prev
+            </button>
+
+            <span className="pagination-center">
+              Page <strong>{page}</strong> of {totalPages}
+            </span>
+
+            <button
+              className="pagination-btn right-btn"
+              disabled={page >= totalPages}
+              onClick={() => loadCoupons(page + 1)}
+            >
+              Next
+            </button>
+
+          </div>
+        )}
+
+      </div>
 
       {/* ADD COUPON MODAL */}
       {showForm && (
         <div className="modal-backdrop">
           <form className="modal" onSubmit={submitCoupon}>
-            <h3>Add Coupon</h3>
+            <h3 className="modal-title">Add Coupon</h3>
 
-            <input
-              placeholder="Coupon Code"
-              value={form.code}
-              onChange={(e) => setForm({ ...form, code: e.target.value })}
-              required
-            />
+            <div className="modal-group">
+              <label>Coupon Code</label>
+              <input
+                placeholder="Enter coupon code"
+                value={form.code}
+                onChange={(e) =>
+                  setForm({ ...form, code: e.target.value })
+                }
+                required
+              />
+            </div>
 
-            <select
-              value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value })}
-            >
-              <option value="flat">Flat</option>
-              <option value="percentage">Percentage</option>
-            </select>
+            <div className="modal-group">
+              <label>Type</label>
+              <select
+                value={form.type}
+                onChange={(e) =>
+                  setForm({ ...form, type: e.target.value })
+                }
+              >
+                <option value="flat">Flat</option>
+                <option value="percentage">Percentage</option>
+              </select>
+            </div>
 
-            <input
-              type="number"
-              placeholder="Value"
-              value={form.value}
-              onChange={(e) => setForm({ ...form, value: e.target.value })}
-              required
-            />
-
-            <input
-              type="number"
-              placeholder="Min Order"
-              value={form.min_order}
-              onChange={(e) =>
-                setForm({ ...form, min_order: e.target.value })
-              }
-            />
-
-            {form.type === "percentage" && (
+            <div className="modal-group">
+              <label>Value</label>
               <input
                 type="number"
-                placeholder="Max Discount"
-                value={form.max_discount}
+                placeholder="Enter value"
+                value={form.value}
                 onChange={(e) =>
-                  setForm({ ...form, max_discount: e.target.value })
+                  setForm({ ...form, value: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="modal-group">
+              <label>Minimum Order</label>
+              <input
+                type="number"
+                placeholder="Enter minimum order"
+                value={form.min_order}
+                onChange={(e) =>
+                  setForm({ ...form, min_order: e.target.value })
                 }
               />
+            </div>
+
+            {form.type === "percentage" && (
+              <div className="modal-group">
+                <label>Max Discount</label>
+                <input
+                  type="number"
+                  placeholder="Enter max discount"
+                  value={form.max_discount}
+                  onChange={(e) =>
+                    setForm({ ...form, max_discount: e.target.value })
+                  }
+                />
+              </div>
             )}
 
-            <input
-              type="date"
-              value={form.expires_at}
-              onChange={(e) =>
-                setForm({ ...form, expires_at: e.target.value })
-              }
-            />
+            <div className="modal-group">
+              <label>Expires At</label>
+              <input
+                type="date"
+                value={form.expires_at}
+                onChange={(e) =>
+                  setForm({ ...form, expires_at: e.target.value })
+                }
+              />
+            </div>
 
-<div className="modal-actions">
-  <button type="submit" className="btn-primary">
-    Save
-  </button>
-
-  <button
-    type="button"
-    className="btn-secondary"
-    onClick={() => setShowForm(false)}
-  >
-    Cancel
-  </button>
-</div>
-
-
+            <div className="modal-actions">
+              <button type="submit" className="btn-primary">
+                Save
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowForm(false)}
+              >
+                Cancel
+              </button>
+            </div>
           </form>
         </div>
       )}
+
     </div>
   );
 }

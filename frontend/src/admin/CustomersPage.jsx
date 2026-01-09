@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import "./CustomersAdmin.css";
 
 const PAGE_SIZE = 10;
 
@@ -15,7 +16,7 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /* ================= DATE VARIANTS ================= */
+  /* ============= DATE VARIANTS FOR SEARCH ============= */
   const getDateVariants = (dateStr) => {
     if (!dateStr) return [];
     const d = new Date(dateStr);
@@ -25,71 +26,43 @@ export default function CustomersPage() {
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const yyyy = d.getFullYear();
 
-    return [
-      `${dd}/${mm}/${yyyy}`,
-      `${mm}/${dd}/${yyyy}`,
-      `${yyyy}-${mm}-${dd}`,
-    ];
+    return [`${dd}/${mm}/${yyyy}`, `${mm}/${dd}/${yyyy}`, `${yyyy}-${mm}-${dd}`];
   };
 
-  /* ================= LOAD CUSTOMERS ================= */
+  /* ============= LOAD CUSTOMERS ============= */
   const load = useCallback(
     async (pageToLoad = 1) => {
-      if (authLoading) return;
-      if (!user || user.role !== "admin") return;
+      if (authLoading || !user || user.role !== "admin") return;
 
       try {
         setLoading(true);
         setError("");
 
-        // 🔥 SEARCH MODE → LOAD ALL
+        // SEARCH → Load all customers
         if (search.trim()) {
-          const res = await api.get("/admin/customers", {
-            params: { limit: 10000 },
-          });
-
-          const customers =
-            res.data?.customers ||
-            res.data?.data ||
-            [];
-
+          const res = await api.get("/admin/customers", { params: { limit: 10000 } });
+          const customers = res.data?.customers || res.data?.data || [];
           setItems(customers);
           setTotalPages(1);
           setPage(1);
           return;
         }
 
-        // 🔹 NORMAL PAGINATION
+        // PAGINATION → Load per page
         const res = await api.get("/admin/customers", {
-          params: {
-            page: pageToLoad,
-            limit: PAGE_SIZE,
-          },
+          params: { page: pageToLoad, limit: PAGE_SIZE },
         });
 
-        const customers =
-          res.data?.customers ||
-          res.data?.data ||
-          [];
-
+        const customers = res.data?.customers || res.data?.data || [];
         const meta = res.data?.meta || {};
 
         setItems(customers);
         setPage(meta.page || pageToLoad);
 
-        const total =
-          meta.total ?? customers.length;
-
-        setTotalPages(
-          Math.max(1, Math.ceil(total / PAGE_SIZE))
-        );
+        const total = meta.total ?? customers.length;
+        setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
       } catch (err) {
-        if (err.response?.status !== 401) {
-          setError(
-            err.response?.data?.message ||
-              "Failed to load customers"
-          );
-        }
+        setError(err.response?.data?.message || "Failed to load customers");
       } finally {
         setLoading(false);
       }
@@ -97,76 +70,62 @@ export default function CustomersPage() {
     [user, authLoading, search]
   );
 
-  /* ================= INITIAL + SEARCH LOAD ================= */
   useEffect(() => {
     load(1);
   }, [load]);
 
-  /* ================= SEARCH FILTER ================= */
+  /* ============= SEARCH FILTER ============= */
   const filteredItems = items.filter((c) => {
     const dateVariants = getDateVariants(c.created_at);
 
-    const searchableText = `
+    const searchText = `
       ${c.name}
       ${c.email}
-      ${c.orders ?? 0}
+      ${c.orders}
       ${dateVariants.join(" ")}
     `.toLowerCase();
 
-    return searchableText.includes(search.toLowerCase());
+    return searchText.includes(search.toLowerCase());
   });
 
-  /* ================= STATES ================= */
-  if (authLoading) {
-    return <div className="admin-loading">Loading…</div>;
-  }
+  /* ============= AUTH CHECK ============= */
+  if (authLoading) return <div className="admin-loading">Loading…</div>;
+  if (!user || user.role !== "admin") return <div className="admin-error">Access denied</div>;
 
-  if (!user || user.role !== "admin") {
-    return <div className="admin-error">Access denied</div>;
-  }
-
-  /* ================= UI ================= */
+  /* ============= UI ============= */
   return (
     <div className="admin-page">
-{/* ================= HEADER ================= */}
-<div className="page-header">
-  <div>
-    <h2 className="page-title">Customers</h2>
-    <p className="page-subtitle">
-      View and manage registered customers
-    </p>
-  </div>
 
-  <div className="header-actions">
-    {/* SEARCH BAR */}
-    <div className="admin-search">
-      <span className="search-icon">🔍</span>
+      {/* HEADER */}
+      <div className="page-header">
+        <div>
+          <h2 className="page-title">Customers</h2>
+          <p className="page-subtitle">View and manage registered customers</p>
+        </div>
 
-      <input
-        type="text"
-        placeholder="Search by name, email, orders or date..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+        <div className="header-actions">
+          <div className="admin-search">
+            <span className="search-icon">🔍</span>
 
-      {search && (
-        <button
-          className="clear-btn"
-          onClick={() => setSearch("")}
-        >
-          ×
-        </button>
-      )}
-    </div>
+            <input
+              type="text"
+              placeholder="Search by name, email, orders or date..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
 
-    {/* ADD CUSTOMER */}
-    <Link to="/admin/customers/new" className="btn btn-primary">
-      Add Customer
-    </Link>
-  </div>
-</div>
+            {search && (
+              <button className="clear-btn" onClick={() => setSearch("")}>
+                ×
+              </button>
+            )}
+          </div>
 
-
+          <Link to="/admin/customers/new" className="btn-primary">
+            Add Customer
+          </Link>
+        </div>
+      </div>
 
       {error && <div className="admin-error">{error}</div>}
       {loading && <div className="admin-loading">Loading…</div>}
@@ -195,46 +154,40 @@ export default function CustomersPage() {
 
             {filteredItems.map((c, index) => (
               <tr key={c.id}>
-                <td>
-                  {!search
-                    ? (page - 1) * PAGE_SIZE + index + 1
-                    : index + 1}
-                </td>
+                <td>{!search ? (page - 1) * PAGE_SIZE + index + 1 : index + 1}</td>
                 <td>{c.name}</td>
                 <td>{c.email}</td>
                 <td>{c.orders ?? 0}</td>
-                <td>
-                  {c.created_at
-                    ? new Date(c.created_at).toLocaleDateString()
-                    : "—"}
-                </td>
+                <td>{c.created_at ? new Date(c.created_at).toLocaleDateString() : "—"}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* PAGINATION (ONLY WHEN NOT SEARCHING) */}
+        {/* PAGINATION - FIXED (Left–Center–Right) */}
         {!search && totalPages > 1 && (
-          <div className="pagination-bar">
+          <div className="pagination-wrapper">
+
             <button
-              className="pagination-btn"
+              className="pagination-btn left-btn"
               disabled={page <= 1}
               onClick={() => load(page - 1)}
             >
               Prev
             </button>
 
-            <span className="pagination-info">
+            <span className="pagination-center">
               Page <strong>{page}</strong> of {totalPages}
             </span>
 
             <button
-              className="pagination-btn"
+              className="pagination-btn right-btn"
               disabled={page >= totalPages}
               onClick={() => load(page + 1)}
             >
               Next
             </button>
+
           </div>
         )}
       </div>

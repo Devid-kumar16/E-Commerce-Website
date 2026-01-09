@@ -17,17 +17,22 @@ export async function listCategories(req, res) {
   }
 }
 
+/* ================= LIST ACTIVE (PUBLIC NAVBAR) ================= */
 /* ================= LIST ACTIVE (PRODUCT PAGE) ================= */
 export async function listActiveCategories(req, res) {
   try {
     const [rows] = await pool.query(
-      "SELECT id, name FROM categories WHERE status = 'active'"
+      "SELECT id, name, slug, image_url FROM categories WHERE status = 'active'"
     );
+
     res.json({ ok: true, categories: rows });
   } catch (err) {
+    console.error("Active categories error:", err);
     res.status(500).json({ ok: false, message: "Failed to load active categories" });
   }
 }
+
+
 
 /* ================= GET ONE ================= */
 export async function getCategory(req, res) {

@@ -3,21 +3,19 @@ import { authRequired, adminOnly } from "../middleware/authMiddleware.js";
 import {
   getProfile,
   listCustomersAdmin,
+  searchCustomers
 } from "../controllers/customerController.js";
 
 const router = express.Router();
 
-/* ================= USER ROUTES ================= */
-
-// ✅ Logged-in user profile
+// USER — profile
 router.get("/profile", authRequired, getProfile);
 
-/* ================= ADMIN ROUTES ================= */
-/* Base path: /api/admin/customers */
-
-// ✅ Admin: list all customers (pagination + search)
+// ADMIN — list customers
 router.get("/", authRequired, adminOnly, listCustomersAdmin);
 
-export default router;
+// ADMIN — search (auto-fill)
+router.get("/search", authRequired, adminOnly, searchCustomers);
 
+export default router;
 

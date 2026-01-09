@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import "./AddCustomerPage.css";
 
 export default function AddCustomerPage() {
   const navigate = useNavigate();
@@ -14,15 +15,10 @@ export default function AddCustomerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /* ---------- INPUT CHANGE ---------- */
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  /* ---------- SUBMIT ---------- */
   const submit = async (e) => {
     e.preventDefault();
 
@@ -35,17 +31,11 @@ export default function AddCustomerPage() {
       setLoading(true);
       setError("");
 
-      await api.post("/admin/customers", {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        password: form.password,
-      });
+      await api.post("/admin/customers", form);
 
       navigate("/admin/customers");
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Failed to create customer"
-      );
+      setError(err.response?.data?.message || "Failed to create customer");
     } finally {
       setLoading(false);
     }
@@ -53,16 +43,16 @@ export default function AddCustomerPage() {
 
   return (
     <div className="admin-page">
+
+      {/* Page Header */}
       <div className="page-header">
-        <h2>Add Customer</h2>
+        <h2 className="page-title">Add Customer</h2>
       </div>
 
       {error && <div className="admin-error">{error}</div>}
 
-      <form
-        className="admin-card add-customer-card"
-        onSubmit={submit}
-      >
+      <form className="form-card" onSubmit={submit}>
+
         <div className="form-group">
           <label>Name</label>
           <input
@@ -98,25 +88,22 @@ export default function AddCustomerPage() {
           />
         </div>
 
-        {/* ✅ BUTTONS PROPER PLACE */}
+        {/* Action buttons */}
         <div className="form-actions">
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={loading}
-          >
+          <button className="btn-primary" type="submit" disabled={loading}>
             {loading ? "Saving..." : "Save"}
           </button>
 
           <button
+            className="btn-secondary"
             type="button"
-            className="btn btn-secondary"
             onClick={() => navigate("/admin/customers")}
             disabled={loading}
           >
             Cancel
           </button>
         </div>
+
       </form>
     </div>
   );

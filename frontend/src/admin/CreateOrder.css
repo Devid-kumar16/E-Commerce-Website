@@ -1,594 +1,21 @@
-.order-card {
-  background: #fff;
-  padding: 24px;
-  border-radius: 14px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.05);
-}
-
-.card-section {
-  margin-bottom: 30px;
-}
-
-.card-section h3 {
-  margin-bottom: 16px;
-  font-size: 18px;
-}
-
-.grid-4 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-}
-
-.grid-4 input,
-.grid-4 textarea,
-select {
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-}
-
-.customer-dropdown {
-  background: #fff;
-  border: 1px solid #ddd;
-  margin-top: 6px;
-  border-radius: 8px;
-}
-
-.customer-dropdown div {
-  padding: 10px;
-  cursor: pointer;
-}
-
-.customer-dropdown div:hover {
-  background: #f3f6ff;
-}
-
-.item-row {
-  display: grid;
-  grid-template-columns: 60px 1fr 80px 120px 40px;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.item-row img {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
-  border-radius: 6px;
-}
-
-.item-row input,
-.item-row select {
-  padding: 8px;
-}
-
-.btn-outline {
-  padding: 8px 14px;
-  border: 1px dashed #6c6cff;
-  background: transparent;
-  color: #6c6cff;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.summary {
-  font-size: 18px;
-  margin-bottom: 20px;
-}
-
-.actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
-.btn-primary {
-  background: #6c6cff;
-  color: #fff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-/* ================= PAGE ================= */
+/* ============================================================
+   GLOBAL PAGE STYLE
+============================================================ */
 .admin-page {
-  padding: 28px;
-  background: #f5f7fb;
-  min-height: 100vh;
-}
-
-.admin-page h2 {
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 20px;
-}
-
-/* ================= CARD ================= */
-.order-card {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 26px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
-}
-
-/* ================= SECTIONS ================= */
-.card-section {
-  margin-bottom: 28px;
-}
-
-.card-section h3 {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: #1f2937;
-}
-
-/* ================= GRID ================= */
-.grid-4 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-}
-
-.grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-
-.mt-12 {
-  margin-top: 12px;
-}
-
-/* ================= INPUTS ================= */
-input,
-select,
-textarea {
-  width: 100%;
-  padding: 12px 14px;
-  font-size: 14px;
-  border-radius: 10px;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-}
-
-textarea {
-  resize: none;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
-}
-
-/* ================= ORDER ITEMS ================= */
-.item-row {
-  display: grid;
-  grid-template-columns: 60px 1fr 90px 100px 40px;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.item-row img {
-  width: 52px;
-  height: 52px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-}
-
-.item-row span {
-  font-weight: 500;
-}
-
-/* ================= BUTTONS ================= */
-.btn-outline {
-  margin-top: 10px;
-  padding: 10px 18px;
-  border-radius: 10px;
-  background: #ffffff;
-  border: 1px dashed #6366f1;
-  color: #6366f1;
-  cursor: pointer;
-}
-
-.btn-outline:hover {
-  background: #eef2ff;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  color: #ffffff;
-  padding: 12px 28px;
-  border-radius: 12px;
-  border: none;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.btn-primary:hover {
-  opacity: 0.9;
-}
-
-/* ================= SUMMARY ================= */
-.summary {
-  font-size: 18px;
-  font-weight: 600;
-  margin-top: 10px;
-}
-
-/* ================= ACTION BAR ================= */
-.actions {
-  position: sticky;
-  bottom: 0;
-  background: #ffffff;
-  padding: 16px;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  align-items: center;
-  border-radius: 0 0 14px 14px;
-  margin-top: 20px;
-}
-
-.actions select {
-  min-width: 180px;
-}
-
-/* ================= CUSTOMER SEARCH ================= */
-.customer-dropdown {
-  margin-top: 8px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #ffffff;
-  max-height: 180px;
-  overflow-y: auto;
-}
-
-.customer-dropdown div {
-  padding: 10px 14px;
-  cursor: pointer;
-}
-
-.customer-dropdown div:hover {
-  background: #f3f4f6;
-}
-
-/* ================= RESPONSIVE ================= */
-@media (max-width: 1100px) {
-  .grid-4 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .grid-3 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-
-.item-row {
-  display: grid;
-  grid-template-columns: 60px 1fr 90px 100px 90px;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-
-.btn-remove {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #ef4444;
-  background: #ffffff;
-  color: #ef4444;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-remove:hover {
-  background: #fee2e2;
-}
-
-
-/* ================= PAGE ================= */
-.admin-page {
-  padding: 24px 32px;
+  padding: 32px 40px;
   background: #f6f8fb;
   min-height: 100vh;
+  font-family: "Inter", sans-serif;
 }
 
-.admin-page h2 {
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 18px;
-  color: #1f2937;
-}
-
-/* ================= CARD ================= */
-.order-card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-}
-
-/* ================= SECTIONS ================= */
-.card-section {
-  margin-bottom: 28px;
-}
-
-.card-section h3 {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 14px;
-  color: #111827;
-}
-
-/* ================= GRIDS ================= */
-.grid-4 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-.grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.mt-12 {
-  margin-top: 12px;
-}
-
-/* ================= INPUTS ================= */
-input,
-select,
-textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  font-size: 14px;
-  background: #fff;
-  transition: all 0.2s ease;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-}
-
-textarea {
-  resize: none;
-}
-
-/* ================= CUSTOMER DROPDOWN ================= */
-.customer-dropdown {
-  margin-top: 8px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.customer-dropdown div {
-  padding: 10px 12px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.customer-dropdown div:hover {
-  background: #f3f4f6;
-}
-
-/* ================= ORDER ITEMS ================= */
-.item-row {
-  display: grid;
-  grid-template-columns: 60px 1.5fr 80px 100px auto;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.item-row img {
-  width: 56px;
-  height: 56px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-}
-
-.item-row span {
-  font-weight: 600;
-  color: #111827;
-}
-
-/* ================= BUTTONS ================= */
-button {
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.btn-outline {
-  margin-top: 10px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  background: transparent;
-  border: 1px dashed #6366f1;
-  color: #6366f1;
-  font-weight: 500;
-}
-
-.btn-outline:hover {
-  background: rgba(99, 102, 241, 0.08);
-}
-
-.btn-remove {
-  background: #fee2e2;
-  color: #b91c1c;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 13px;
-}
-
-.btn-remove:hover {
-  background: #fecaca;
-}
-
-/* ================= SUMMARY ================= */
-.summary {
-  display: flex;
-  justify-content: flex-end;
-  font-size: 18px;
-  margin: 18px 0;
-  color: #111827;
-}
-
-/* ================= ACTIONS ================= */
-.actions {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  align-items: center;
-}
-
-.btn-primary {
-  background: #6366f1;
-  color: #ffffff;
-  font-weight: 600;
-  padding: 10px 16px;
-  border-radius: 10px;
-}
-
-.btn-primary:hover {
-  background: #4f46e5;
-}
-
-.btn-primary:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-/* ================= HINT ================= */
-.hint {
-  margin-top: 8px;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-/* ================= RESPONSIVE ================= */
-@media (max-width: 1024px) {
-  .grid-4 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .grid-3 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .actions {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .item-row {
-    grid-template-columns: 50px 1fr 70px auto;
-  }
-}
-
-@media (max-width: 640px) {
-  .grid-4,
-  .grid-3,
-  .actions {
-    grid-template-columns: 1fr;
-  }
-
-  .item-row {
-    grid-template-columns: 1fr;
-    align-items: flex-start;
-  }
-
-  .item-row img {
-    margin-bottom: 6px;
-  }
-}
-
-
-.card-section {
-  max-width: 1100px;   /* 👈 controls box width */
-  margin: 0 auto;
-  padding: 24px 28px; /* reduced padding */
-}
-
-.form-group label {
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 4px;   /* reduced */
-  color: #374151;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  padding: 9px 12px;    /* reduced height */
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  font-size: 14px;
-}
-
-/* ===== ORDER SUMMARY ===== */
-
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-}
-
-.summary-row span {
-  font-size: 14px;
-  color: #555;
-}
-
-.summary-row strong {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-
-/* ================= PAGE LAYOUT ================= */
-.admin-page {
-  padding: 24px 32px;
-  background: #f5f7fb;
-  min-height: 100vh;
-  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
+/* Page Header */
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .page-header h2 {
-  font-size: 22px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 700;
   color: #111827;
 }
 
@@ -597,39 +24,50 @@ button {
   font-size: 14px;
 }
 
-/* ================= FORM GRID ================= */
+/* ============================================================
+   MAIN LAYOUT (2 Columns)
+============================================================ */
 .order-layout {
   display: grid;
-  grid-template-columns: 2fr 1.2fr;
-  gap: 24px;
+  grid-template-columns: 2fr 1fr;
+  gap: 28px;
 }
 
-/* ================= CARD ================= */
+@media (max-width: 1100px) {
+  .order-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   CARD COMPONENT
+============================================================ */
 .card {
   background: #ffffff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-  position: relative;
+  padding: 26px;
+  border-radius: 14px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
 }
 
 .card h3 {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #111827;
-  margin-bottom: 16px;
   border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
 }
 
-/* ================= INPUTS ================= */
+/* ============================================================
+   INPUT + SELECT + TEXTAREA
+============================================================ */
 .card label {
   display: block;
   font-size: 13px;
-  font-weight: 500;
   color: #374151;
-  margin-top: 14px;
+  font-weight: 500;
   margin-bottom: 6px;
+  margin-top: 14px;
 }
 
 .card input,
@@ -637,12 +75,24 @@ button {
 .card textarea {
   width: 100%;
   padding: 11px 12px;
-  font-size: 14px;
-  border-radius: 8px;
   border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
   outline: none;
-  transition: border 0.2s ease, box-shadow 0.2s ease;
   background: #ffffff;
+  transition: 0.15s all ease;
+}
+
+.card input:focus,
+.card select:focus,
+.card textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
+
+.card input[readonly] {
+  background: #f3f4f6;
+  cursor: not-allowed;
 }
 
 .card textarea {
@@ -650,34 +100,26 @@ button {
   resize: vertical;
 }
 
-.card input:focus,
-.card select:focus,
-.card textarea:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-}
-
-.card input[readonly] {
-  background: #f9fafb;
-  cursor: not-allowed;
-}
-
-/* ================= AUTOCOMPLETE ================= */
+/* ============================================================
+   AUTOCOMPLETE (Customer Search)
+============================================================ */
 .autocomplete-box {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #ffffff;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.1);
   margin-top: 6px;
   max-height: 200px;
   overflow-y: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-  z-index: 10;
+  position: absolute;
+  z-index: 50;
+  width: 92%;
 }
 
 .autocomplete-item {
   padding: 10px 12px;
+  font-size: 13px;
   cursor: pointer;
-  font-size: 14px;
 }
 
 .autocomplete-item:hover {
@@ -686,7 +128,7 @@ button {
 
 .autocomplete-item strong {
   display: block;
-  color: #111827;
+  color: #1f2937;
 }
 
 .autocomplete-item .muted {
@@ -694,94 +136,17 @@ button {
   color: #6b7280;
 }
 
-/* ================= ORDER ITEMS ================= */
+/* ============================================================
+   ORDER ITEMS LIST
+============================================================ */
 .item-row {
   display: grid;
-  grid-template-columns: 2fr 1fr auto;
+  grid-template-columns: 1.8fr 1fr 0.8fr 0.8fr auto;
   gap: 12px;
   align-items: center;
-  margin-bottom: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f1f1;
 }
-
-.item-row span {
-  font-weight: 600;
-  color: #111827;
-}
-
-/* ================= BUTTONS ================= */
-button {
-  border: none;
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-button[type="submit"] {
-  background: #6366f1;
-  color: #ffffff;
-  font-weight: 500;
-}
-
-button[type="submit"]:hover {
-  background: #4f46e5;
-}
-
-button[type="button"] {
-  background: #eef2ff;
-  color: #4338ca;
-  font-weight: 500;
-}
-
-button[type="button"]:hover {
-  background: #e0e7ff;
-}
-
-/* ================= ORDER SUMMARY ================= */
-.card.summary {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 12px;
-  margin-bottom: 18px;
-  font-size: 15px;
-}
-
-.summary-row span {
-  color: #374151;
-}
-
-.summary-row strong {
-  font-size: 18px;
-  color: #111827;
-}
-
-/* ================= SMALL TEXT ================= */
-.hint {
-  font-size: 12px;
-  color: #6b7280;
-  margin-top: 4px;
-}
-
-/* ================= RESPONSIVE ================= */
-@media (max-width: 1024px) {
-  .order-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
 
 .product-preview {
   display: flex;
@@ -790,14 +155,108 @@ button[type="button"]:hover {
 }
 
 .product-preview img {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid #e5e7eb;
 }
 
-.price {
+.item-row .price {
   font-weight: 600;
   color: #111827;
+}
+
+/* Remove Button */
+.btn-remove {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 13px;
+  border: 1px solid #ef4444;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-remove:hover {
+  background: #fecaca;
+}
+
+/* Add Product */
+.add-btn {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 500;
+  border: 1px dashed #6366f1;
+  cursor: pointer;
+}
+
+.add-btn:hover {
+  background: #e2e7ff;
+}
+
+/* ============================================================
+   ORDER SUMMARY CARD
+============================================================ */
+.summary {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  font-size: 15px;
+}
+
+.summary-row span {
+  color: #374151;
+}
+
+.summary-row strong {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+/* Submit order */
+.summary button {
+  padding: 14px 16px;
+  background: #6366f1;
+  border-radius: 10px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  border: none;
+}
+
+.summary button:hover {
+  background: #4f46e5;
+}
+
+/* ============================================================
+   RESPONSIVENESS
+============================================================ */
+@media (max-width: 768px) {
+  .item-row {
+    grid-template-columns: 1fr;
+  }
+
+  .product-preview img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .summary {
+    position: relative;
+    top: 0;
+  }
 }

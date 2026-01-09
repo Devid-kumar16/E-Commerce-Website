@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import "./AdminProducts.css";
 
 const ITEMS_PER_PAGE = 8;
 
@@ -17,9 +18,10 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
 
-  /* ================= LOAD PRODUCTS (SERVER PAGINATION) ================= */
+  /* ================= LOAD PRODUCTS ================= */
   useEffect(() => {
     if (authLoading) return;
+
     if (!user || user.role !== "admin") {
       setLoading(false);
       return;
@@ -55,15 +57,10 @@ export default function ProductsPage() {
     };
 
     loadProducts();
-    return () => {
-      cancelled = true;
-    };
+    return () => (cancelled = true);
   }, [page, search, user, authLoading]);
 
-  /* ================= PAGE CHANGE ================= */
-  const goToPage = (newPage) => {
-    setSearchParams({ page: newPage });
-  };
+  const goToPage = (newPage) => setSearchParams({ page: newPage });
 
   /* ================= STATES ================= */
   if (loading || authLoading) {
@@ -79,34 +76,30 @@ export default function ProductsPage() {
     <div className="admin-page">
       {/* HEADER */}
       <div className="page-header">
-        <h2 className="page-title">Products</h2>
+        <h2>Products</h2>
 
         <div className="header-actions">
-          {/* SEARCH */}
-          <div className="admin-search">
-            <span className="search-icon">🔍</span>
+          {/* SEARCH BAR */}
+          <div className="search-box">
+            <i className="fa fa-search"></i>
             <input
               type="text"
+              placeholder="Search products…"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setSearchParams({ page: 1 });
               }}
-              placeholder="Search by name, category or price"
             />
             {search && (
-              <button
-                className="clear-btn"
-                onClick={() => setSearch("")}
-              >
+              <button className="clear-btn" onClick={() => setSearch("")}>
                 ×
               </button>
             )}
           </div>
 
-          {/* ADD PRODUCT */}
           <button
-            className="btn btn-primary"
+            className="btn-primary"
             onClick={() => navigate("/admin/products/new")}
           >
             Add Product
@@ -115,85 +108,82 @@ export default function ProductsPage() {
       </div>
 
       {/* TABLE */}
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>S. no.</th>
-            <th>Name</th>
-            <th>Image</th>
-            <th>Price</th>
-            <th>Status</th>
-            <th>Category</th>
-            <th>Edit</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {products.length === 0 && (
+      <div className="table-wrapper">
+        <table className="admin-table">
+          <thead>
             <tr>
-              <td colSpan="7" style={{ textAlign: "center" }}>
-                No products found
-              </td>
+              <th>S. No.</th>
+              <th>Name</th>
+              <th>Image</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Category</th>
+              <th>Edit</th>
             </tr>
-          )}
+          </thead>
 
-          {products.map((p, index) => (
-            <tr key={p.id}>
-              <td>{(page - 1) * ITEMS_PER_PAGE + index + 1}</td>
-              <td>{p.name}</td>
+          <tbody>
+            {products.length === 0 && (
+              <tr>
+                <td colSpan="7" style={{ textAlign: "center", padding: "20px" }}>
+                  No products found
+                </td>
+              </tr>
+            )}
 
-              <td>
-                {p.image_url ? (
-                  <img
-                    src={p.image_url}
-                    alt={p.name}
-                    width={40}
-                    height={40}
-                    style={{ objectFit: "cover", borderRadius: 6 }}
-                  />
-                ) : (
-                  <span className="text-muted">No Image</span>
-                )}
-              </td>
+            {products.map((p, index) => (
+              <tr key={p.id}>
+                <td>{(page - 1) * ITEMS_PER_PAGE + index + 1}</td>
+                <td>{p.name}</td>
 
-              <td>₹{Number(p.price).toFixed(2)}</td>
+                <td>
+                  {p.image_url ? (
+                    <img
+                      src={p.image_url}
+                      alt={p.name}
+                      className="product-img"
+                    />
+                  ) : (
+                    <span className="text-muted">No Image</span>
+                  )}
+                </td>
 
-              <td>
-                <span
-                  className={
-                    p.status === "published"
-                      ? "badge badge-success"
-                      : "badge badge-warning"
-                  }
-                >
-                  {p.status}
-                </span>
-              </td>
+                <td>₹{Number(p.price).toFixed(2)}</td>
 
-              <td>{p.category || "-"}</td>
+                <td>
+                  <span
+                    className={
+                      p.status === "published"
+                        ? "status-badge status-published"
+                        : "status-badge status-draft"
+                    }
+                  >
+                    {p.status}
+                  </span>
+                </td>
 
-              <td>
-                <button
-                  className="btn btn-primary"
-                  onClick={() =>
-                    navigate(`/admin/products/${p.id}/edit?page=${page}`)
-                  }
-                >
-                  Edit
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                <td>{p.category || "-"}</td>
+
+                <td>
+                  <button
+                    className="btn-edit"
+                    onClick={() =>
+                      navigate(`/admin/products/${p.id}/edit?page=${page}`)
+                    }
+                  >
+                    Edit
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* PAGINATION */}
       {totalPages > 1 && (
         <div className="admin-pagination">
-          <button
-            disabled={page === 1}
-            onClick={() => goToPage(page - 1)}
-          >
+          <button disabled={page === 1} onClick={() => goToPage(page - 1)}>
             Prev
           </button>
 

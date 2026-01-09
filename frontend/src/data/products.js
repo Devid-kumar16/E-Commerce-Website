@@ -1,5 +1,3 @@
-// src/data/products.js
-
 const PRODUCTS = [
   // ---------- Electronics ----------
   { id: 1, title: "Wireless Headphones", price: 1499, category: "Electronics", image: "/images/product 1.jpg" },

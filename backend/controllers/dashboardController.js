@@ -19,6 +19,11 @@ export const adminDashboard = async (req, res) => {
       "SELECT COUNT(*) AS total FROM users WHERE role = 'customer'"
     );
 
+    const [[couponCount]] = await pool.query(
+      "SELECT COUNT(*) AS total FROM coupons"
+    );
+
+
     /* ================== REVENUE ================== */
     const [[revenue]] = await pool.query(
       `
@@ -53,6 +58,7 @@ export const adminDashboard = async (req, res) => {
         categories: categories.total,
         orders: orders.total,
         customers: customers.total,
+        coupons: couponCount.total,
       },
       revenue: revenue.total,
       recentOrders,

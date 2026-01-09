@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/client";
+import "./CategoriesAdmin.css";
 
-/* ===== PAGINATION CONFIG ===== */
 const ITEMS_PER_PAGE = 10;
 
 export default function CategoriesPage() {
@@ -14,13 +14,11 @@ export default function CategoriesPage() {
 
   const navigate = useNavigate();
 
-  /* ================= LOAD CATEGORIES (ADMIN) ================= */
   const loadCategories = async () => {
     try {
       setLoading(true);
       setError("");
 
-      // ✅ CORRECT: ADMIN CATEGORIES API
       const res = await api.get("/categories/admin");
       setItems(res.data?.categories || []);
     } catch (err) {
@@ -35,33 +33,24 @@ export default function CategoriesPage() {
     loadCategories();
   }, []);
 
-  /* ================= SEARCH (NAME + STATUS) ================= */
+  /* SEARCH */
   const filteredItems = items.filter((c) => {
-    const searchableText = `
-      ${c.name}
-      ${c.status}
-    `.toLowerCase();
-
+    const searchableText = `${c.name} ${c.status}`.toLowerCase();
     return searchableText.includes(search.toLowerCase());
   });
 
-  // reset page on search
   useEffect(() => {
     setPage(1);
   }, [search]);
 
-  /* ================= PAGINATION ================= */
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredItems.length / ITEMS_PER_PAGE)
-  );
+  /* PAGINATION */
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
 
   const paginatedItems = filteredItems.slice(
     (page - 1) * ITEMS_PER_PAGE,
     page * ITEMS_PER_PAGE
   );
 
-  /* ================= UI ================= */
   return (
     <div className="admin-page">
       {/* HEADER */}
@@ -69,7 +58,6 @@ export default function CategoriesPage() {
         <h2 className="page-title">Categories</h2>
 
         <div className="header-actions">
-          {/* SEARCH BAR */}
           <div className="admin-search">
             <span className="search-icon">🔍</span>
 
@@ -81,18 +69,13 @@ export default function CategoriesPage() {
             />
 
             {search && (
-              <button
-                className="clear-btn"
-                onClick={() => setSearch("")}
-                aria-label="Clear search"
-              >
+              <button className="clear-btn" onClick={() => setSearch("")}>
                 ×
               </button>
             )}
           </div>
 
-          {/* ADD CATEGORY */}
-          <Link to="/admin/categories/new" className="btn btn-primary">
+          <Link to="/admin/categories/new" className="btn-primary">
             Add Category
           </Link>
         </div>
@@ -125,18 +108,14 @@ export default function CategoriesPage() {
 
             {paginatedItems.map((c, index) => (
               <tr key={c.id}>
-                <td>
-                  {(page - 1) * ITEMS_PER_PAGE + index + 1}
-                </td>
+                <td>{(page - 1) * ITEMS_PER_PAGE + index + 1}</td>
 
                 <td>{c.name}</td>
 
                 <td>
                   <span
-                    className={`badge ${
-                      c.status === "active"
-                        ? "badge-success"
-                        : "badge-danger"
+                    className={`status-badge ${
+                      c.status === "active" ? "badge-active" : "badge-inactive"
                     }`}
                   >
                     {c.status}
@@ -148,24 +127,17 @@ export default function CategoriesPage() {
                     <img
                       src={c.image_url}
                       alt={c.name}
-                      style={{
-                        width: 40,
-                        height: 40,
-                        objectFit: "cover",
-                        borderRadius: 4,
-                      }}
+                      className="category-img"
                     />
                   ) : (
-                    <span className="text-muted">No Image</span>
+                    <span className="muted">No Image</span>
                   )}
                 </td>
 
                 <td>
                   <button
-                    className="btn btn-sm btn-primary"
-                    onClick={() =>
-                      navigate(`/admin/categories/${c.id}/edit`)
-                    }
+                    className="btn-edit"
+                    onClick={() => navigate(`/admin/categories/${c.id}/edit`)}
                   >
                     Edit
                   </button>
@@ -177,23 +149,23 @@ export default function CategoriesPage() {
 
         {/* PAGINATION */}
         {totalPages > 1 && (
-          <div className="admin-pagination">
+          <div className="pagination-wrapper">
             <button
-              className="btn btn-secondary"
-              disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
+              className="pagination-btn left-btn"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
             >
               Prev
             </button>
 
-            <span className="pagination-info">
+            <span className="pagination-center">
               Page <strong>{page}</strong> of {totalPages}
             </span>
 
             <button
-              className="btn btn-secondary"
-              disabled={page === totalPages}
-              onClick={() => setPage((p) => p + 1)}
+              className="pagination-btn right-btn"
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
             >
               Next
             </button>

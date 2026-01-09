@@ -1,21 +1,16 @@
-// src/admin/components/BestSellers.jsx
 import React from "react";
-import { PRODUCTS } from "../../data/products";
+import products from "../data/products";
+import ProductCard from "./ProductCard";
+import "../styles/Home.css";
 
-export default function BestSellers(){
-  const top = [...PRODUCTS].sort((a,b)=>b.price-a.price).slice(0,10);
+export default function BestSellers() {
+  const best = products.slice(0, 8);
+
   return (
-    <div>
-      <h2>Best Sellers</h2>
-      <div className="card">
-        <ul style={{listStyle:"none",margin:0,padding:0}}>
-          {top.map(p=>(
-            <li key={p.id} style={{padding:"8px 0",borderBottom:"1px solid #f1f5f9"}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}><div>{p.title}</div><div>₹{p.price}</div></div>
-            </li>
-          ))}
-        </ul>
-      </div>
+    <div className="product-grid">
+      {best.map((p) => (
+        <ProductCard key={p.id} product={p} />
+      ))}
     </div>
   );
 }

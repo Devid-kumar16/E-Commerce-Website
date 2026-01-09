@@ -1,64 +1,52 @@
-import React, { useEffect, useState } from "react";
-import api from "../api/axios";
-import ProductCard from "../components/ProductCard";
-import { useCart } from "../context/CartContext";
+import { useEffect, useState } from "react";
+import { getProducts } from "../api/product";
+
+import CategoryNavbar from "../components/CategoryNavbar";
+import BannerSlider from "../components/BannerSlider";
+import ProductGrid from "../components/ProductGrid";
+
 import "../styles/Home.css";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
+  const [banners] = useState(["/images/hero.jpg"]);
   const [loading, setLoading] = useState(true);
 
-  const { wishlist, toggleWishlist, addToCart } = useCart();
-
+  /* ================= LOAD PRODUCTS ================= */
   useEffect(() => {
-    loadProducts();
+    const load = async () => {
+      try {
+        const list = await getProducts();
+        setProducts(Array.isArray(list) ? list : []);
+      } catch (err) {
+        console.error("Failed to load products:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
   }, []);
 
-const loadProducts = async () => {
-  try {
-    const res = await api.get("/products");
-
-    // ✅ DIRECTLY USE products
-    setProducts(res.data.products || []);
-  } catch (err) {
-    console.error("Home products error:", err);
-    setProducts([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
-  const topDeals = products.slice(0, 20);
-
   return (
-    <div className="home-page">
-      {/* ===== HERO ===== */}
-      <section className="home-hero">
-        <img src="/images/hero.jpg" alt="Sale Banner" />
-      </section>
+    <div className="home-layout">
 
-      {/* ===== TOP DEALS ===== */}
-      <section className="home-section">
-        <h2 className="section-title">Top Deals</h2>
+      {/* CATEGORY NAVBAR */}
+      <CategoryNavbar />
+
+      {/* BANNER */}
+      <div className="banner-wrapper">
+        <BannerSlider images={banners} />
+      </div>
+
+      {/* PRODUCTS */}
+      <section className="section">
+        <h2>All Products</h2>
 
         {loading ? (
-          <p className="loading-text">Loading...</p>
-        ) : topDeals.length === 0 ? (
-          <p className="loading-text">No products found.</p>
+          <p className="loading-text">Loading products...</p>
         ) : (
-          <div className="product-grid">
-            {topDeals.map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                onAddToCart={() => addToCart(p)}
-                isWishlisted={wishlist.some((i) => i.id === p.id)}
-                onToggleWishlist={() => toggleWishlist(p)}
-              />
-            ))}
-          </div>
+          <ProductGrid products={products} />
         )}
       </section>
     </div>

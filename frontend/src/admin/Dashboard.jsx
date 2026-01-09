@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import "./Dashboard.css";
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -10,17 +11,15 @@ export default function Dashboard() {
     categories: 0,
     orders: 0,
     customers: 0,
+    coupons: 0,
     revenue: 0,
   });
 
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /* ================= LOAD DASHBOARD ================= */
   useEffect(() => {
     if (authLoading) return;
-
-    // 🔐 Admin guard
     if (!user || user.role !== "admin") {
       setLoading(false);
       return;
@@ -35,12 +34,13 @@ export default function Dashboard() {
           categories: res.data?.counts?.categories ?? 0,
           orders: res.data?.counts?.orders ?? 0,
           customers: res.data?.counts?.customers ?? 0,
+          coupons: res.data?.counts?.coupons ?? 0,
           revenue: res.data?.revenue ?? 0,
         });
 
         setRecentOrders(res.data?.recentOrders || []);
       } catch (err) {
-        console.error("❌ Dashboard load failed:", err);
+        console.error("Dashboard load failed:", err);
       } finally {
         setLoading(false);
       }
@@ -49,15 +49,7 @@ export default function Dashboard() {
     loadDashboard();
   }, [user, authLoading]);
 
-  /* ================= LOADING ================= */
-  if (loading || authLoading) {
-    return <div className="admin-loading">Loading dashboard…</div>;
-  }
-
-  /* ================= ACCESS GUARD ================= */
-  if (!user || user.role !== "admin") {
-    return <div className="admin-error">Access denied</div>;
-  }
+  if (loading || authLoading) return <div className="admin-loading">Loading…</div>;
 
   return (
     <div className="admin-dashboard">
@@ -70,6 +62,9 @@ export default function Dashboard() {
         <StatCard title="Categories" value={stats.categories} />
         <StatCard title="Orders" value={stats.orders} />
         <StatCard title="Customers" value={stats.customers} />
+        <StatCard title="Coupons" value={stats.coupons} />
+
+        {/* ⭐ Revenue inside the SAME ROW */}
         <StatCard
           title="Revenue"
           value={`₹${Number(stats.revenue).toLocaleString()}`}
@@ -91,14 +86,9 @@ export default function Dashboard() {
               <th>Date</th>
             </tr>
           </thead>
-
           <tbody>
             {recentOrders.length === 0 && (
-              <tr>
-                <td colSpan="5" className="center">
-                  No recent orders
-                </td>
-              </tr>
+              <tr><td colSpan="5" className="center">No recent orders</td></tr>
             )}
 
             {recentOrders.map((o, index) => (
@@ -107,15 +97,11 @@ export default function Dashboard() {
                 <td>{o.customer_name || "Guest"}</td>
                 <td>₹{Number(o.total_amount).toFixed(2)}</td>
                 <td>
-                  <span
-                    className={`status ${o.payment_status?.toLowerCase()}`}
-                  >
+                  <span className={`status ${o.payment_status?.toLowerCase()}`}>
                     {o.payment_status}
                   </span>
                 </td>
-                <td>
-                  {new Date(o.created_at).toLocaleDateString()}
-                </td>
+                <td>{new Date(o.created_at).toLocaleDateString()}</td>
               </tr>
             ))}
           </tbody>
@@ -125,7 +111,7 @@ export default function Dashboard() {
   );
 }
 
-/* ================= STAT CARD ================= */
+/* Stat Card */
 function StatCard({ title, value, highlight }) {
   return (
     <div className={`stat-card ${highlight ? "highlight" : ""}`}>

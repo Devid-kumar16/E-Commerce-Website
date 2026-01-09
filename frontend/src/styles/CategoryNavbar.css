@@ -1,0 +1,72 @@
+/* --- Navbar Wrapper --- */
+.category-navbar-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 10px 0;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+}
+
+/* --- Actual Navbar --- */
+.category-navbar {
+  width: 100%;
+  max-width: 1500px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 10px 0;
+}
+
+/* Hide scrollbar */
+.category-navbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* --- Category Item --- */
+.category-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;   /* FIX: Ensures text aligns */
+  text-decoration: none;
+  color: #333;
+  min-width: 100px;           /* FIX: consistent width */
+}
+
+/* --- Category Icons --- */
+.category-icon {
+  width: 75px;                /* FIX: bigger consistent size */
+  height: 75px;
+  border-radius: 50%;
+  object-fit: cover;          /* FIX: perfect circle image */
+  border: 3px solid #ddd;
+  display: block;
+  margin-bottom: 8px;         /* FIX: even spacing */
+  transition: 0.2s ease-in-out;
+}
+
+/* Hover effect */
+.category-item:hover .category-icon {
+  transform: scale(1.08);
+  border-color: #00b894;
+}
+
+.category-item span {
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.category-navbar-wrapper {
+  overflow-x: auto;
+  padding: 15px 0;
+}
+
+.category-item {
+  margin: 0 8px;
+}

@@ -46,7 +46,7 @@ const normalizedOrder = {
   createdAt: o.created_at,
 
   customerName: o.customer_name,
-  customerEmail: o.customer_email,
+  customerEmail: o.email || o.customer_email || "",
   phone: o.phone,
   address: o.address,
   area: o.area,
@@ -71,28 +71,33 @@ const normalizedOrder = {
   }, [id, api]);
 
   /* ================= INVOICE ================= */
-  const printInvoice = () => {
-    const win = window.open("", "_blank");
+const printInvoice = () => {
+  const win = window.open("", "_blank");
 
-    win.document.write(`
+  win.document.write(`
 <!DOCTYPE html>
 <html>
 <head>
   <title>Invoice ${order.id}</title>
   <style>
+    @page {
+      margin: 0;
+    }
+
     body {
       font-family: "Segoe UI", Arial, sans-serif;
       background: #f4f6f8;
       padding: 30px;
+      margin: 0;
     }
 
     .invoice {
-      max-width: 800px;
+      max-width: 820px;
       margin: auto;
       background: #fff;
       padding: 40px;
-      border-radius: 8px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.1);
+      border-radius: 10px;
+      box-shadow: 0 15px 40px rgba(0,0,0,.1);
     }
 
     .header {
@@ -100,36 +105,37 @@ const normalizedOrder = {
       justify-content: space-between;
       align-items: center;
       border-bottom: 2px solid #eee;
-      padding-bottom: 15px;
-      margin-bottom: 25px;
+      padding-bottom: 12px;
+      margin-bottom: 30px;
     }
 
     .brand {
-      font-size: 26px;
-      font-weight: bold;
+      font-size: 30px;
+      font-weight: 700;
       color: #4f46e5;
     }
 
-    .invoice-id {
+    .invoice-info {
       text-align: right;
       font-size: 14px;
-      color: #555;
+      color: #444;
     }
 
     .section {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 25px;
+      margin-bottom: 35px;
+      gap: 25px;
     }
 
     .box {
-      width: 48%;
+      width: 50%;
       font-size: 14px;
       line-height: 1.6;
     }
 
     h3 {
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       font-size: 16px;
       border-bottom: 1px solid #ddd;
       padding-bottom: 5px;
@@ -142,10 +148,11 @@ const normalizedOrder = {
     }
 
     th {
-      background: #f1f5f9;
+      background: #eef1ff;
       text-align: left;
       padding: 10px;
       font-size: 14px;
+      font-weight: 600;
     }
 
     td {
@@ -158,15 +165,11 @@ const normalizedOrder = {
       text-align: right;
     }
 
-    .total-box {
+    .total-section {
       margin-top: 30px;
-      padding: 20px;
-      background: #f9fafb;
-      border-radius: 6px;
-      display: flex;
-      justify-content: flex-end;
-      font-size: 18px;
-      font-weight: bold;
+      text-align: right;
+      font-size: 20px;
+      font-weight: 700;
     }
 
     .status {
@@ -180,8 +183,12 @@ const normalizedOrder = {
     }
 
     @media print {
-      body { background: #fff; }
-      .invoice { box-shadow: none; }
+      body {
+        background: #fff;
+      }
+      .invoice {
+        box-shadow: none;
+      }
     }
   </style>
 </head>
@@ -191,26 +198,29 @@ const normalizedOrder = {
 
     <div class="header">
       <div class="brand">E-Store</div>
-      <div class="invoice-id">
-        <div><b>Invoice ${order.id}</b></div>
-        <div>${new Date(order.createdAt).toLocaleDateString()}</div>
-        <div class="status">${order.status}</div>
+
+      <div class="invoice-info">
+        <b>Invoice ${order.id}</b><br>
+        ${new Date(order.createdAt).toLocaleDateString()}<br>
+        <span class="status">${order.deliveryStatus}</span>
       </div>
     </div>
 
     <div class="section">
       <div class="box">
         <h3>Bill To</h3>
-        ${order.customerName}<br/>
-        ${order.customerEmail}<br/>
-        ${order.phone}<br/>
-        ${order.address}
+        ${order.customerName || "N/A"}<br/>
+        ${order.customerEmail || "N/A"}<br/>
+        ${order.phone || "N/A"}<br/>
+        ${order.address || "N/A"}<br/>
+        ${order.area || ""}
       </div>
 
       <div class="box">
         <h3>Order Info</h3>
-        Payment Method: <b>${order.paymentMethod}</b><br/>
-        Area: ${order.area || "-"}
+        Payment: <b>${order.paymentMethod}</b><br/>
+        Status: <b>${order.deliveryStatus}</b><br/>
+        Date: ${new Date(order.createdAt).toLocaleString()}
       </div>
     </div>
 
@@ -224,18 +234,22 @@ const normalizedOrder = {
         </tr>
       </thead>
       <tbody>
-        ${items.map(i => `
+        ${items
+          .map(
+            (i) => `
           <tr>
             <td>${i.product_name}</td>
             <td class="right">₹${Number(i.price).toFixed(2)}</td>
             <td class="right">${i.quantity}</td>
             <td class="right">₹${Number(i.subtotal).toFixed(2)}</td>
           </tr>
-        `).join("")}
+        `
+          )
+          .join("")}
       </tbody>
     </table>
 
-    <div class="total-box">
+    <div class="total-section">
       Total: ₹${order.totalAmount.toFixed(2)}
     </div>
 
@@ -248,8 +262,9 @@ const normalizedOrder = {
 </html>
 `);
 
-    win.document.close();
-  };
+  win.document.close();
+};
+
 
 
   /* ================= SAFE RENDER ================= */
@@ -286,9 +301,7 @@ const normalizedOrder = {
     <p>{order.paymentMethod}</p>
   </div>
 
-  <div
-    className={`stat-card status ${order.deliveryStatus.toLowerCase()}`}
-  >
+   <div className={`stat-card status status-${order.deliveryStatus.toLowerCase()}`}>
     <h4>Status</h4>
     <p>{order.deliveryStatus}</p>
   </div>
@@ -300,7 +313,7 @@ const normalizedOrder = {
       <div className="admin-card">
         <h3>Customer Details</h3>
         <p><b>Name:</b> {order.customerName}</p>
-        <p><b>Email:</b> {order.customerEmail}</p>
+        <p><b>Email:</b> {order.customerEmail || "Not provided"}</p>
         <p><b>Phone:</b> {order.phone || "Not provided"}</p>
         <p><b>Address:</b> {order.address}</p>
       </div>

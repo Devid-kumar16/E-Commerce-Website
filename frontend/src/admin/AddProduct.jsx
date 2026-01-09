@@ -18,48 +18,24 @@ export default function AddProduct() {
   });
 
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingCategories, setLoadingCategories] = useState(true);
 
-  /* ================= LOAD CATEGORIES (ADMIN SAFE) ================= */
   useEffect(() => {
-    let cancelled = false;
-
     const loadCategories = async () => {
       try {
         const res = await api.get("/categories/admin");
-        if (!cancelled) {
-          setCategories(res.data?.categories || []);
-        }
+        setCategories(res.data.categories || []);
       } catch (err) {
-        if (!cancelled) {
-          console.error("Load categories error:", err);
-          toast.error("Failed to load categories");
-        }
-      } finally {
-        if (!cancelled) setLoadingCategories(false);
+        toast.error("Failed to load categories");
       }
     };
 
     loadCategories();
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
-  /* ================= SUBMIT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (form.stock === "" || Number(form.stock) < 0) {
-      toast.error("Stock must be 0 or greater");
-      return;
-    }
-
     try {
-      setLoading(true);
-
       await api.post("/products/admin", {
         name: form.name.trim(),
         price: Number(form.price),
@@ -72,96 +48,114 @@ export default function AddProduct() {
 
       toast.success("Product added successfully");
       navigate("/admin/products");
-    } catch (err) {
-      console.error("Add product error:", err);
+    } catch {
       toast.error("Failed to add product");
-    } finally {
-      setLoading(false);
     }
   };
 
-  /* ================= UI ================= */
   return (
-    <div className="admin-page">
-      <div className="page-header">
-        <h1>Add Product</h1>
-        <p>Create a new product</p>
-      </div>
+    <div className="add-wrapper">
+      <h2>Add Product</h2>
 
-      <form className="product-card" onSubmit={handleSubmit}>
-        <label>Product Name</label>
-        <input
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          required
-        />
+      <form className="add-card" onSubmit={handleSubmit}>
+        
+        {/* LEFT COLUMN */}
+        <div className="left-column">
 
-        <label>Category</label>
-        <select
-          value={form.category_id}
-          onChange={(e) =>
-            setForm({ ...form, category_id: e.target.value })
-          }
-          required
-          disabled={loadingCategories}
-        >
-          <option value="">
-            {loadingCategories ? "Loading categories..." : "Select category"}
-          </option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+          <div className="form-group">
+            <label>Product Name</label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+          </div>
 
-        <label>Status</label>
-        <select
-          value={form.status}
-          onChange={(e) => setForm({ ...form, status: e.target.value })}
-        >
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
-          <option value="inactive">Inactive</option>
-        </select>
+          <div className="form-group">
+            <label>Category</label>
+            <select
+              value={form.category_id}
+              onChange={(e) =>
+                setForm({ ...form, category_id: e.target.value })
+              }
+            >
+              <option value="">Select category</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <label>Stock Quantity</label>
-        <input
-          type="number"
-          min="0"
-          value={form.stock}
-          onChange={(e) => setForm({ ...form, stock: e.target.value })}
-          required
-        />
+          <div className="form-group">
+            <label>Status</label>
+            <select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
 
-        <label>Price (₹)</label>
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          value={form.price}
-          onChange={(e) => setForm({ ...form, price: e.target.value })}
-          required
-        />
+          <div className="two-grid">
+            <div>
+              <label>Stock Quantity</label>
+              <input
+                type="number"
+                min="0"
+                value={form.stock}
+                onChange={(e) => setForm({ ...form, stock: e.target.value })}
+              />
+            </div>
 
-        <label>Image URL</label>
-        <input
-          value={form.image_url}
-          onChange={(e) =>
-            setForm({ ...form, image_url: e.target.value })
-          }
-        />
+            <div>
+              <label>Price (₹)</label>
+              <input
+                type="number"
+                min="0"
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
+              />
+            </div>
+          </div>
 
-        <label>Description</label>
-        <textarea
-          rows="4"
-          value={form.description}
-          onChange={(e) =>
-            setForm({ ...form, description: e.target.value })
-          }
-        />
+          <div className="form-group">
+            <label>Image URL</label>
+            <input
+              value={form.image_url}
+              onChange={(e) =>
+                setForm({ ...form, image_url: e.target.value })
+              }
+            />
+          </div>
 
-        <div className="add-product-actions">
+          <div className="form-group">
+            <label>Description</label>
+            <textarea
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+            ></textarea>
+          </div>
+
+        </div>
+
+        {/* RIGHT COLUMN - IMAGE PREVIEW */}
+        <div className="right-column">
+          <div className="preview-box">
+            {form.image_url ? (
+              <img src={form.image_url} alt="Preview" />
+            ) : (
+              <p>No Image Preview</p>
+            )}
+          </div>
+        </div>
+
+        {/* BUTTONS */}
+        <div className="form-actions">
           <button
             type="button"
             className="btn-secondary"
@@ -170,10 +164,11 @@ export default function AddProduct() {
             Cancel
           </button>
 
-          <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? "Saving..." : "Save Product"}
+          <button type="submit" className="btn-primary">
+            Save Product
           </button>
         </div>
+
       </form>
     </div>
   );

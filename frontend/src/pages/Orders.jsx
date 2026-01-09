@@ -52,7 +52,7 @@ export default function Orders() {
           return (
             <div className="order-card" key={order.id}>
               <div className="order-info">
-                <strong>Order #{order.id}</strong>
+                <strong>Order {order.id}</strong>
 
                 <div>
                   <strong>Total:</strong> ₹{finalAmount.toFixed(2)}

@@ -1,17 +1,15 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
-import "./ProductCard.css";
+import { useCart } from "../context/CartContext";
+import "../styles/ProductCard.css";
 
-export default function ProductCard({
-  product,
-  onAddToCart,
-  isWishlisted = false,
-  onToggleWishlist,
-}) {
-  const { isAuthenticated } = useAuth();
+export default function ProductCard({ product }) {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { addToCart, wishlist, toggleWishlist } = useCart();
+
+  const isWishlisted = wishlist?.some((w) => w.id === product.id);
 
   /* ================= WISHLIST ================= */
   const handleWishlistClick = (e) => {
@@ -19,12 +17,11 @@ export default function ProductCard({
     e.stopPropagation();
 
     if (!isAuthenticated) {
-      toast.info("Please login to use wishlist");
       navigate("/login");
       return;
     }
 
-    onToggleWishlist?.(product);
+    toggleWishlist(product);
   };
 
   /* ================= ADD TO CART ================= */
@@ -33,17 +30,17 @@ export default function ProductCard({
     e.stopPropagation();
 
     if (!isAuthenticated) {
-      toast.info("Please login to add items to cart");
       navigate("/login");
       return;
     }
 
-    onAddToCart?.(product);
+    addToCart(product); // 🚫 NO TOAST
   };
 
   return (
     <div className="product-card">
-      {/* ❤️ Wishlist */}
+      
+      {/* ❤️ Wishlist Button */}
       <button
         className={`wishlist-btn ${isWishlisted ? "active" : ""}`}
         onClick={handleWishlistClick}
@@ -51,26 +48,24 @@ export default function ProductCard({
         ♥
       </button>
 
-      {/* 🖼 Image */}
-      <Link to={`/product/${product.id}`} className="product-img">
+      {/* Product Image */}
+      <Link to={`/product/${product.id}`} className="img-container">
         <img
           src={product.image_url || "/images/placeholder.png"}
           alt={product.name}
+          className="product-image"
         />
       </Link>
 
-      {/* ℹ Info */}
+      {/* Info */}
       <div className="product-info">
-        <h3>{product.name}</h3>
-        <p>₹{product.price}</p>
+        <h3 className="product-title">{product.name}</h3>
 
-        <button
-          className="btn-cart"
-          disabled={!isAuthenticated}
-          onClick={handleAddToCart}
-          title={!isAuthenticated ? "Login required" : ""}
-        >
-          Add to cart
+        <p className="product-price">₹{product.price}</p>
+
+        {/* Add to Cart */}
+        <button className="btn-add-cart" onClick={handleAddToCart}>
+          Add to Cart
         </button>
       </div>
     </div>

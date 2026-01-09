@@ -13,26 +13,28 @@ import { authRequired, adminOnly } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/**
- * ================= ADMIN PRODUCT ROUTES
- * Base path: /api/products
- */
+/* =====================================================
+   ✅ ADMIN PRODUCT ROUTES
+   Base path: /api/products/admin
+===================================================== */
 
 // ➕ Create product (ADMIN)
-router.post("/", authRequired, adminOnly, createProduct);
+router.post("/admin", authRequired, adminOnly, createProduct);
 
-// 📦 Admin product list (ALL products)
+// 📦 Admin product list (ALL products with pagination)
 router.get("/admin", authRequired, adminOnly, getAdminProducts);
 
 // ✏️ Update product (ADMIN)
-router.put("/:id", authRequired, adminOnly, updateProduct);
+router.put("/admin/:id", authRequired, adminOnly, updateProduct);
 
 // 🗑️ Delete product (ADMIN)
-router.delete("/:id", authRequired, adminOnly, deleteProduct);
+router.delete("/admin/:id", authRequired, adminOnly, deleteProduct);
 
-/**
- * ================= PUBLIC PRODUCT ROUTES
- */
+
+/* =====================================================
+   ✅ PUBLIC PRODUCT ROUTES
+   Base path: /api/products
+===================================================== */
 
 // 🌍 Public product list (ONLY published)
 router.get("/", listPublicProducts);
@@ -43,12 +45,4 @@ router.get("/category/:slug", getProductsByCategory);
 // 🔍 Public single product
 router.get("/:id(\\d+)", getProduct);
 
-router.post(
-  "/admin",
-  authRequired,
-  adminOnly,
-  createProduct
-);
-
 export default router;
-

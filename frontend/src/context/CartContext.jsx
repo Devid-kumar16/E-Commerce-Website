@@ -1,4 +1,3 @@
-// src/context/CartContext.js
 import { createContext, useContext, useEffect, useState } from "react";
 import api from "../api/client";
 import { useAuth } from "./AuthContext";
@@ -12,7 +11,7 @@ export const CartProvider = ({ children }) => {
   const [wishlist, setWishlist] = useState([]);
 
   /* ======================================================
-     LOAD CART & WISHLIST ON LOGIN / LOGOUT
+     LOAD CART + WISHLIST WHEN USER LOGS IN OR OUT
   ====================================================== */
   useEffect(() => {
     if (!isAuthenticated) {
@@ -23,12 +22,12 @@ export const CartProvider = ({ children }) => {
       return;
     }
 
-    fetchCart();
-    fetchWishlist();
+    loadCart();
+    loadWishlist();
   }, [isAuthenticated]);
 
   /* ================= LOAD CART ================= */
-  const fetchCart = async () => {
+  const loadCart = async () => {
     try {
       const res = await api.get("/cart");
       const dbCart = res.data?.cart || [];
@@ -40,7 +39,7 @@ export const CartProvider = ({ children }) => {
   };
 
   /* ================= LOAD WISHLIST ================= */
-  const fetchWishlist = async () => {
+  const loadWishlist = async () => {
     try {
       const res = await api.get("/wishlist");
       const dbWishlist = res.data?.wishlist || [];
@@ -54,64 +53,62 @@ export const CartProvider = ({ children }) => {
   /* ======================================================
      ADD TO CART
   ====================================================== */
-const addToCart = async (product) => {
-  if (product.stock === 0) {
-    alert("This product is out of stock");
-    return;
-  }
+  const addToCart = async (product) => {
+    if (!product?.id) return;
 
-  let updated = [...cart];
-  const idx = updated.findIndex(p => p.id === product.id);
+    if (product.stock === 0) {
+      alert("This product is out of stock");
+      return;
+    }
 
-  if (idx >= 0) {
-    updated[idx] = {
-      ...updated[idx],
-      qty: updated[idx].qty + 1,
-    };
-  } else {
-    updated.push({
-      ...product,
-      qty: 1,
-      stock: product.stock, // ✅ CRITICAL
-    });
-  }
+    let updated = [...cart];
+    const index = updated.findIndex((p) => p.id === product.id);
 
-  setCart(updated);
-  localStorage.setItem("cart", JSON.stringify(updated));
-  await api.post("/cart/sync", { cart: updated });
-};
+    if (index >= 0) {
+      updated[index] = {
+        ...updated[index],
+        qty: Math.min(updated[index].qty + 1, product.stock),
+      };
+    } else {
+      updated.push({
+        ...product,
+        qty: 1,
+        stock: product.stock,
+      });
+    }
 
+    setCart(updated);
+    localStorage.setItem("cart", JSON.stringify(updated));
 
-
+    // Sync to backend
+    api.post("/cart/sync", { cart: updated }).catch(() => {});
+  };
 
   /* ======================================================
-     UPDATE QUANTITY (🔥 FIXED & SAFE)
+     UPDATE QUANTITY  (🔥 industry-standard)
   ====================================================== */
-const updateQty = async (productId, qty) => {
-  const product = cart.find((i) => i.id === productId);
-  if (!product) return;
+  const updateQty = async (productId, qty) => {
+    const product = cart.find((item) => item.id === productId);
+    if (!product) return;
 
-  if (product.stock === 0) {
-    alert(`${product.name} is out of stock`);
-    removeFromCart(productId);
-    return;
-  }
+    // Prevent negative or zero qty
+    if (qty < 1) qty = 1;
 
-  if (qty > product.stock) {
-    alert(`Only ${product.stock} left`);
-    return;
-  }
+    // Stock check
+    if (qty > product.stock) {
+      alert(`Only ${product.stock} available`);
+      return;
+    }
 
-  const updated = cart.map((item) =>
-    item.id === productId ? { ...item, qty } : item
-  );
+    const updated = cart.map((item) =>
+      item.id === productId ? { ...item, qty } : item
+    );
 
-  setCart(updated);
-  localStorage.setItem("cart", JSON.stringify(updated));
+    setCart(updated);
+    localStorage.setItem("cart", JSON.stringify(updated));
 
-  await api.post("/cart/sync", { cart: updated }).catch(() => {});
-};
-
+    api.post("/cart/sync", { cart: updated }).catch(() => {});
+  };
 
   /* ======================================================
      REMOVE FROM CART
@@ -122,11 +119,7 @@ const updateQty = async (productId, qty) => {
     setCart(updated);
     localStorage.setItem("cart", JSON.stringify(updated));
 
-    try {
-      await api.post("/cart/sync", { cart: updated });
-    } catch (err) {
-      console.error("Cart sync failed", err);
-    }
+    api.post("/cart/sync", { cart: updated }).catch(() => {});
   };
 
   /* ======================================================
@@ -136,28 +129,25 @@ const updateQty = async (productId, qty) => {
     setCart([]);
     localStorage.removeItem("cart");
 
-    try {
-      await api.post("/cart/sync", { cart: [] });
-    } catch {
-      /* silent */
-    }
+    api.post("/cart/sync", { cart: [] }).catch(() => {});
   };
 
   /* ======================================================
-     WISHLIST TOGGLE
+     TOGGLE WISHLIST
   ====================================================== */
   const toggleWishlist = async (product) => {
     if (!product?.id) return;
 
-    const exists = wishlist.some((p) => p.id === product.id);
+    const exists = wishlist.some((i) => i.id === product.id);
+
     let updated;
 
     if (exists) {
-      updated = wishlist.filter((p) => p.id !== product.id);
-      await api.delete(`/wishlist/${product.id}`).catch(() => {});
+      updated = wishlist.filter((i) => i.id !== product.id);
+      api.delete(`/wishlist/${product.id}`).catch(() => {});
     } else {
       updated = [...wishlist, product];
-      await api.post("/wishlist", { productId: product.id }).catch(() => {});
+      api.post("/wishlist", { productId: product.id }).catch(() => {});
     }
 
     setWishlist(updated);
@@ -165,17 +155,19 @@ const updateQty = async (productId, qty) => {
   };
 
   /* ======================================================
-     CONTEXT PROVIDER
+     PROVIDER EXPORT
   ====================================================== */
   return (
     <CartContext.Provider
       value={{
         cart,
         wishlist,
+
         addToCart,
-        updateQty,      // ✅ exists
+        updateQty,
         removeFromCart,
         clearCart,
+
         toggleWishlist,
       }}
     >
@@ -184,11 +176,9 @@ const updateQty = async (productId, qty) => {
   );
 };
 
-/* ================= USE CART HOOK ================= */
+/* ================= CUSTOM HOOK ================= */
 export const useCart = () => {
   const ctx = useContext(CartContext);
-  if (!ctx) {
-    throw new Error("useCart must be used inside CartProvider");
-  }
+  if (!ctx) throw new Error("useCart must be used inside CartProvider");
   return ctx;
 };
