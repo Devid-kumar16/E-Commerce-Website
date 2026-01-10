@@ -1,22 +1,24 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function AdminGuard({ children }) {
-  const { user, isAuthenticated, loading } = useAuth();
+export default function AdminGuard() {
+  const { loading, isAuthenticated, isAdmin } = useAuth();
+  const location = useLocation();
 
-  if (loading) {
-    return <div style={{ padding: 20 }}>Checking admin access…</div>;
-  }
+  // Wait for auth to initialize
+  if (loading) return null;
 
-  // Not logged in
+  // Not logged in → login
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  // Logged in but not admin
-  if (user?.role !== "admin") {
+  // Logged in but NOT admin → home
+  if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
 
-  return children;
+  // Admin → allow nested routes
+  return <Outlet />;
 }
+

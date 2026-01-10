@@ -43,7 +43,6 @@ app.use("/api/orders", orderRoutes);
 
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
-
 app.get("/", (req, res) => {
   res.json({ status: "Backend is running" });
 });

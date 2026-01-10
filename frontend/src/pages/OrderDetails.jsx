@@ -11,39 +11,50 @@ export default function OrderDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const loadOrder = async () => {
-      try {
-        const res = await api.get(`/orders/${id}`);
-        setOrder(res.data.order);
-        setItems(res.data.items || []);
-      } catch (err) {
-        setError("Order not found");
-      } finally {
-        setLoading(false);
-      }
-    };
+  /* ================= LOAD ORDER ================= */
+useEffect(() => {
+  const loadOrder = async () => {
+    try {
+      const res = await api.get(`/orders/details/${id}`);
 
-    loadOrder();
-  }, [id]);
+      if (!res.data?.order) {
+        setError("Order not found");
+        return;
+      }
+
+      setOrder(res.data.order);
+      setItems(res.data.items || []);
+    } catch (err) {
+      console.error(err);
+      setError("Order not found");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadOrder();
+}, [id]);
+
 
   if (loading) return <p className="center">Loading…</p>;
   if (error) return <p className="center error">{error}</p>;
   if (!order) return null;
 
-  const subtotal = Number(order.total_amount ?? 0);
-  const discount = Number(order.discount_amount ?? 0);
-  const total = Number(order.final_amount ?? subtotal - discount);
+  /* ================= NORMALIZE VALUES ================= */
+  const subtotal = Number(order.total_amount || 0);
+  const discount = Number(order.discount_amount || 0);
+  const total = Number(order.final_amount || subtotal - discount);
 
   const paymentStatus = (order.payment_status || "Pending").toLowerCase();
   const deliveryStatus = (order.delivery_status || "Pending").toLowerCase();
 
   return (
     <div className="order-page">
-      <h1 className="order-title">Order {order.id}</h1>
+      <h1 className="order-title">Order #{order.id}</h1>
 
       <div className="order-grid">
-        {/* ===== LEFT: ITEMS ===== */}
+        
+        {/* ================= LEFT: ORDER ITEMS ================= */}
         <div className="order-left">
           <div className="card">
             <h2 className="section-title">Items</h2>
@@ -57,16 +68,15 @@ export default function OrderDetails() {
                   <th>Total</th>
                 </tr>
               </thead>
+
               <tbody>
                 {items.map((item, index) => {
-                  const price = Number(item.price ?? 0);
-                  const qty = Number(item.quantity ?? 0);
+                  const price = Number(item.price || 0);
+                  const qty = Number(item.quantity || 0);
 
                   return (
                     <tr key={index}>
-                      <td className="product-name">
-                        {item.product_name}
-                      </td>
+                      <td className="product-name">{item.product_name}</td>
                       <td>₹{price.toFixed(2)}</td>
                       <td>{qty}</td>
                       <td>₹{(price * qty).toFixed(2)}</td>
@@ -78,9 +88,10 @@ export default function OrderDetails() {
           </div>
         </div>
 
-        {/* ===== RIGHT: SUMMARY ===== */}
+        {/* ================= RIGHT: SUMMARY ================= */}
         <div className="order-right">
           <div className="card summary-card">
+            
             <div className="summary-row">
               <span>Subtotal</span>
               <span>₹{subtotal.toFixed(2)}</span>
@@ -101,25 +112,30 @@ export default function OrderDetails() {
             <div className="divider"></div>
 
             <div className="payment-section">
-              <p>
-                <strong>Payment Method:</strong> {order.payment_method}
-              </p>
+              <p><strong>Payment Method:</strong> {order.payment_method}</p>
 
+              {/* ================= STATUS BADGES (Industry Standard) ================= */}
               <div className="badges">
-                <span className={`badge ${paymentStatus}`}>
+
+                <span className={`badge payment-${paymentStatus}`}>
                   {order.payment_status}
                 </span>
-                <span className={`badge ${deliveryStatus}`}>
+
+                <span className={`badge status-${deliveryStatus.replace(/ /g, "-")}`}>
                   {order.delivery_status}
                 </span>
+
               </div>
             </div>
+
           </div>
         </div>
+
       </div>
 
+      {/* ================= BACK BUTTON ================= */}
       <Link to="/orders" className="back-link">
-         Back to My Orders
+        ← Back to My Orders
       </Link>
     </div>
   );

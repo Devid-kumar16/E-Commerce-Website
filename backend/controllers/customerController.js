@@ -1,28 +1,70 @@
+// controllers/customerController.js
 import { pool } from "../config/db.js";
 
 /* ============================================================
-   1) ADMIN — LIST CUSTOMERS (pagination + search)
-   GET /api/admin/customers
-   Query: ?page=1&limit=10&q=abc
+   ADMIN — LIST CUSTOMERS (WITH PAGINATION + SEARCH SUPPORT)
 ============================================================ */
-export async function listCustomersAdmin(req, res) {
+export const listCustomersAdmin = async (req, res) => {
   try {
-    const page = Number(req.query.page || 1);
-    const limit = Number(req.query.limit || 10);
-    const offset = (page - 1) * limit;
+    let page = Number(req.query.page) || 1;
+    let limit = Number(req.query.limit) || 10;
+    let offset = (page - 1) * limit;
+    let search = (req.query.search || "").trim();
 
-    const q = req.query.q ? `%${req.query.q}%` : null;
+    // ============================
+    // SEARCH MODE → FULL LIST
+    // ============================
+    if (search.length > 0) {
+      const like = `%${search}%`;
 
-    const where = [`u.role = 'customer'`];
-    const params = [];
+      const [rows] = await pool.query(
+        `
+        SELECT 
+          u.id,
+          u.name,
+          u.email,
+          u.phone,
+          DATE(u.created_at) AS joined,
+          (
+            SELECT COUNT(*) 
+            FROM orders 
+            WHERE user_id = u.id
+          ) AS orders
+        FROM users u
+        WHERE u.role = 'customer'
+          AND (u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?)
+        ORDER BY u.id DESC
+        `,
+        [like, like, like]
+      );
 
-    if (q) {
-      where.push("(u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?)");
-      params.push(q, q, q);
+      return res.json({
+        ok: true,
+        customers: rows,
+        meta: {
+          total: rows.length,
+          page: 1,
+          limit: rows.length,
+        },
+      });
     }
 
-    const whereSql = `WHERE ${where.join(" AND ")}`;
+    // ============================
+    // NORMAL PAGINATION MODE
+    // ============================
 
+    // 1️⃣ Get total customers
+    const [[countRow]] = await pool.query(
+      `
+      SELECT COUNT(*) AS total
+      FROM users
+      WHERE role='customer'
+      `
+    );
+
+    const total = countRow.total;
+
+    // 2️⃣ Get paginated customers
     const [rows] = await pool.query(
       `
       SELECT 
@@ -30,55 +72,82 @@ export async function listCustomersAdmin(req, res) {
         u.name,
         u.email,
         u.phone,
-        u.area,
-        u.created_at,
-        COUNT(o.id) AS orders
+        DATE(u.created_at) AS joined,
+        (
+          SELECT COUNT(*)
+          FROM orders
+          WHERE user_id = u.id
+        ) AS orders
       FROM users u
-      LEFT JOIN orders o ON o.user_id = u.id
-      ${whereSql}
-      GROUP BY u.id
-      ORDER BY u.created_at DESC
+      WHERE u.role = 'customer'
+      ORDER BY u.id DESC
       LIMIT ? OFFSET ?
       `,
-      [...params, limit, offset]
+      [limit, offset]
     );
 
-    const [countRows] = await pool.query(
-      `
-      SELECT COUNT(*) AS total 
-      FROM users u 
-      ${whereSql}
-      `,
-      params
-    );
-
-    res.json({
+    return res.json({
+      ok: true,
       customers: rows,
       meta: {
-        total: countRows[0].total,
+        total,
         page,
         limit,
+        totalPages: Math.ceil(total / limit),
       },
     });
   } catch (err) {
-    console.error("listCustomersAdmin error:", err);
-    res.status(500).json({ message: "Server error fetching customers" });
+    console.error("Customer list error:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Failed to load customers",
+    });
   }
-}
+};
+
 
 /* ============================================================
-   2) ADMIN — SEARCH CUSTOMERS (phone auto-fill)
-   GET /api/admin/customers/search?q=xxxx
+   ADMIN — SEARCH CUSTOMERS (PARTIAL PHONE OR NAME)
 ============================================================ */
 export const searchCustomers = async (req, res) => {
   try {
     const q = (req.query.q || "").trim();
 
-    if (q.length < 3) {
-      return res.json({ customers: [] });
+    if (q.length < 2) {
+      return res.json({ ok: true, customers: [] });
     }
 
     const like = `%${q}%`;
+
+    const [rows] = await pool.query(
+      `
+      SELECT id, name, email, phone, area
+      FROM users
+      WHERE role='customer'
+        AND (phone LIKE ? OR name LIKE ?)
+      ORDER BY name ASC
+      LIMIT 10
+      `,
+      [like, like]
+    );
+
+    return res.json({ ok: true, customers: rows });
+  } catch (err) {
+    console.error("customer search error:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Failed to search customers",
+    });
+  }
+};
+
+
+/* ============================================================
+   ADMIN — GET SINGLE CUSTOMER BY PHONE (EXACT MATCH)
+============================================================ */
+export const getCustomerByPhone = async (req, res) => {
+  try {
+    const phone = req.query.phone;
 
     const [rows] = await pool.query(
       `
@@ -87,73 +156,92 @@ export const searchCustomers = async (req, res) => {
         name,
         email,
         phone,
-        area
+        area,
+        state,
+        pincode,
+        address
       FROM users
-      WHERE role = 'customer'
-        AND active = 1
-        AND (
-          phone LIKE ?
-          OR name LIKE ?
-          OR email LIKE ?
-        )
-      ORDER BY created_at DESC
-      LIMIT 10
+      WHERE phone = ? AND role='customer'
+      LIMIT 1
       `,
-      [like, like, like]
+      [phone]
     );
 
-    res.json({ customers: rows });
+    if (!rows.length) {
+      return res.json({ ok: false, message: "Customer not found" });
+    }
+
+    return res.json({
+      ok: true,
+      customer: rows[0],
+    });
   } catch (err) {
-    console.error("Customer search error:", err);
-    res.status(500).json({ message: "Failed to search customers" });
+    console.error("getCustomerByPhone error:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Server error",
+    });
   }
 };
 
 
+
+
+
 /* ============================================================
-   3) USER — GET PROFILE
-   GET /api/customers/profile
+   USER — GET PROFILE
 ============================================================ */
 export const getProfile = async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({
-        ok: false,
-        message: "Authentication required",
-      });
-    }
-
-    const [rows] = await pool.query(
+    const [[user]] = await pool.query(
       `
-      SELECT 
-        id, 
-        name, 
-        email, 
-        phone, 
-        role, 
-        created_at
+      SELECT
+        id, name, email, phone, address, state, pincode,
+        role, created_at
       FROM users
       WHERE id = ?
       `,
       [req.user.id]
     );
 
-    if (!rows.length) {
-      return res.status(404).json({
-        ok: false,
-        message: "User not found",
-      });
-    }
+    if (!user)
+      return res.status(404).json({ ok: false, message: "User not found" });
 
-    res.json({
-      ok: true,
-      user: rows[0],
-    });
+    return res.json({ ok: true, user });
   } catch (err) {
     console.error("getProfile error:", err);
-    res.status(500).json({
+    return res.status(500).json({
       ok: false,
       message: "Failed to load profile",
+    });
+  }
+};
+
+/* ============================================================
+   USER — UPDATE PROFILE
+============================================================ */
+export const updateProfile = async (req, res) => {
+  try {
+    const { name, phone, address, state, pincode } = req.body;
+
+    await pool.query(
+      `
+      UPDATE users 
+      SET name = ?, phone = ?, address = ?, state = ?, pincode = ?
+      WHERE id = ?
+      `,
+      [name, phone, address, state, pincode, req.user.id]
+    );
+
+    return res.json({
+      ok: true,
+      message: "Profile updated successfully",
+    });
+  } catch (err) {
+    console.error("updateProfile error:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Failed to update profile",
     });
   }
 };

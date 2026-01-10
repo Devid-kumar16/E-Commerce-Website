@@ -1,4 +1,7 @@
+// routes/orderRoutes.js
+
 import express from "express";
+
 import {
   createOrder,
   listOrdersForSession,
@@ -15,12 +18,10 @@ import {
 
 const router = express.Router();
 
-/* =====================================================
-   CUSTOMER / GUEST ORDERS
-   Base path: /api/orders
-===================================================== */
-
-// ✅ Guest + logged-in checkout
+/* ======================================================
+   CUSTOMER / GUEST — CREATE ORDER
+   Base: /api/orders
+====================================================== */
 router.post(
   "/",
   attachUserIfExists,
@@ -28,7 +29,9 @@ router.post(
   createOrder
 );
 
-// ✅ Guest + logged-in order history
+/* ======================================================
+   CUSTOMER / GUEST — LIST MY ORDERS
+====================================================== */
 router.get(
   "/my",
   attachUserIfExists,
@@ -36,19 +39,20 @@ router.get(
   listOrdersForSession
 );
 
-// ✅ Guest + logged-in order details
+/* ======================================================
+   CUSTOMER / GUEST — ORDER DETAILS
+====================================================== */
 router.get(
-  "/:id",
+  "/details/:id",
   attachUserIfExists,
   checkoutSession,
   getOrderWithItemsForSession
 );
 
-/* =====================================================
-   ADMIN ORDERS
-   Base path: /api/admin/orders
-===================================================== */
-
+/* ======================================================
+   ADMIN — CREATE ORDER MANUALLY
+   Base: /api/orders/admin
+====================================================== */
 router.post(
   "/admin",
   authRequired,

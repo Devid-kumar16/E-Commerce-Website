@@ -77,3 +77,31 @@
   object-fit: cover;
   margin-bottom: 4px;
 }
+
+
+.category-navbar {
+  display: flex;
+  gap: 18px;
+  padding: 10px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #eee;
+  overflow-x: auto;
+}
+
+.category-item {
+  font-size: 15px;
+  color: #333;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  padding-bottom: 8px;
+}
+
+.category-item:hover {
+  color: #0aa06e;
+}
+
+.active-category {
+  border-bottom: 2px solid #0aa06e;
+  color: #0aa06e !important;
+}

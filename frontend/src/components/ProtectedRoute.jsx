@@ -1,21 +1,28 @@
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuth();
+export default function ProtectedRoute() {
+  const { loading, isAuthenticated, isAdmin, isCustomer } = useAuth();
   const location = useLocation();
 
-  // 🔐 Not logged in → redirect to login
-  // (ONLY because this is a protected route)
+  // Wait for auth restore
+  if (loading) return null;
+
+  // Not logged in → go to login
   if (!isAuthenticated) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ from: location }}
-      />
-    );
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  return children;
+  // Admin trying to enter customer pages → redirect to admin dashboard
+  if (isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // Customer only
+  if (!isCustomer) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
 }
+

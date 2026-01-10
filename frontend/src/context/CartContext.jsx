@@ -5,16 +5,20 @@ import { useAuth } from "./AuthContext";
 const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { loading, isAuthenticated, isCustomer } = useAuth();
 
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
 
-  /* ======================================================
-     LOAD CART + WISHLIST WHEN USER LOGS IN OR OUT
-  ====================================================== */
+  /* ────────────────────────────────────────────────
+     SAFE AUTO LOAD (FIX FOR FIREFOX INFINITE LOOP)
+     ──────────────────────────────────────────────── */
   useEffect(() => {
-    if (!isAuthenticated) {
+    // 🔥 Do nothing until AuthContext finishes loading
+    if (loading) return;
+
+    // ❌ Not logged in or Admin → clear + stop loading
+    if (!isAuthenticated || !isCustomer) {
       setCart([]);
       setWishlist([]);
       localStorage.removeItem("cart");
@@ -22,9 +26,10 @@ export const CartProvider = ({ children }) => {
       return;
     }
 
+    // ✅ Customer logged in → load data safely
     loadCart();
     loadWishlist();
-  }, [isAuthenticated]);
+  }, [loading, isAuthenticated, isCustomer]);
 
   /* ================= LOAD CART ================= */
   const loadCart = async () => {
@@ -80,21 +85,18 @@ export const CartProvider = ({ children }) => {
     setCart(updated);
     localStorage.setItem("cart", JSON.stringify(updated));
 
-    // Sync to backend
     api.post("/cart/sync", { cart: updated }).catch(() => {});
   };
 
   /* ======================================================
-     UPDATE QUANTITY  (🔥 industry-standard)
+     UPDATE QUANTITY
   ====================================================== */
   const updateQty = async (productId, qty) => {
     const product = cart.find((item) => item.id === productId);
     if (!product) return;
 
-    // Prevent negative or zero qty
     if (qty < 1) qty = 1;
 
-    // Stock check
     if (qty > product.stock) {
       alert(`Only ${product.stock} available`);
       return;
@@ -128,7 +130,6 @@ export const CartProvider = ({ children }) => {
   const clearCart = async () => {
     setCart([]);
     localStorage.removeItem("cart");
-
     api.post("/cart/sync", { cart: [] }).catch(() => {});
   };
 
@@ -139,7 +140,6 @@ export const CartProvider = ({ children }) => {
     if (!product?.id) return;
 
     const exists = wishlist.some((i) => i.id === product.id);
-
     let updated;
 
     if (exists) {
@@ -154,20 +154,15 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem("wishlist", JSON.stringify(updated));
   };
 
-  /* ======================================================
-     PROVIDER EXPORT
-  ====================================================== */
   return (
     <CartContext.Provider
       value={{
         cart,
         wishlist,
-
         addToCart,
         updateQty,
         removeFromCart,
         clearCart,
-
         toggleWishlist,
       }}
     >

@@ -1,13 +1,23 @@
 import express from "express";
-import { searchCustomers } from "../controllers/customerController.js";
 import { authRequired, adminOnly } from "../middleware/authMiddleware.js";
+import {
+  listCustomersAdmin,
+  searchCustomers,
+  getCustomerByPhone,
+  getProfile,
+} from "../controllers/customerController.js";
 
 const router = express.Router();
 
-/**
- * Base path: /api/admin/customers
- * Purpose: Admin-only customer utilities
- */
-router.get("/customers/search", authRequired, adminOnly, searchCustomers);
+// ADMIN ONLY
+router.get("/", authRequired, adminOnly, listCustomersAdmin);
+router.get("/search", authRequired, adminOnly, searchCustomers);
+
+router.get("/get-by-phone", authRequired, adminOnly, getCustomerByPhone);
+
+// Admin view of a customer (optional)
+router.get("/:id", authRequired, adminOnly, getProfile);
 
 export default router;
+
+

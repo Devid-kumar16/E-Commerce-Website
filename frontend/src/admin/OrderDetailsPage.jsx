@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import useAdminApi from "./useAdminApi";
+import { toast } from "react-toastify";
 import "./OrderDetails.css";
 
 export default function OrderDetailsPage() {
-  
   const { id } = useParams();
   const api = useAdminApi();
 
@@ -14,215 +14,236 @@ export default function OrderDetailsPage() {
   const [error, setError] = useState("");
 
   /* ================= LOAD ORDER ================= */
-  useEffect(() => {
-    
-    let mounted = true;
+// FIXED: correct endpoint + stable load
 
-    const loadOrder = async () => {
-      try {
-        setLoading(true);
-        setError("");
+useEffect(() => {
+  loadOrder();
+}, [id]);
 
-        const res = await api.get(`/admin/orders/${id}`);
-        const data = res?.data;
+const loadOrder = async () => {
+  try {
+    setLoading(true);
 
-        if (!data?.order) throw new Error("Order not found");
+    // ⭐ Correct backend endpoint
+    const res = await api.get(`/admin/orders/${id}`);
 
-        const o = data.order;
+    const data = res?.data;
 
-const normalizedOrder = {
-  id: o.id,
+    if (!data?.order) {
+      throw new Error("Order not found");
+    }
 
-  // ✅ FIX TOTAL
-  totalAmount: Number(o.total_amount || 0),
+    const o = data.order;
 
-  // ✅ FIX PAYMENT
-  paymentMethod: o.payment_method,
-  paymentStatus: o.payment_status,
+    const normalized = {
+      id: o.id,
+      totalAmount: Number(o.final_amount ?? o.total_amount ?? 0),
+      paymentMethod: o.payment_method || "-",
+      deliveryStatus: o.delivery_status || "Pending",
+      createdAt: o.created_at,
 
-  // ✅ FIX STATUS (THIS WAS THE MAIN BUG)
-  deliveryStatus: o.delivery_status,
+      customerName: o.customer_name || "Unknown",
+      customerEmail: o.email || o.customer_email || "Not provided",
+      phone: o.phone || "Not provided",
+      address: o.address || "",
+      area: o.area || "",
+      state: o.state || "",
+      pincode: o.pincode || "",
+    };
 
-  createdAt: o.created_at,
-
-  customerName: o.customer_name,
-  customerEmail: o.email || o.customer_email || "",
-  phone: o.phone,
-  address: o.address,
-  area: o.area,
+    setOrder(normalized);
+    setItems(data.items || []);
+  } catch (err) {
+    console.error(err);
+    setError("Failed to load order");
+  } finally {
+    setLoading(false);
+  }
 };
 
 
-        if (mounted) {
-          setOrder(normalizedOrder);
-          setItems(data.items || []);
-           console.log("ORDER OBJECT:", normalizedOrder);
-        }
-      } catch (err) {
-        console.error(err);
-        if (mounted) setError("Failed to load order details");
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
 
-    loadOrder();
-    return () => (mounted = false);
-  }, [id, api]);
+
+  /* ============================================
+     INDUSTRY STANDARD STATUS OPTIONS
+  ============================================= */
+const STATUS_OPTIONS = [
+  "Pending",
+  "Processing",
+  "Packed",
+  "Shipped",
+  "Out For Delivery",
+  "Delivered",
+  "Cancelled",
+  "Returned"
+];
+
+const updateStatus = async (newStatus) => {
+  try {
+    const res = await api.patch(`/admin/orders/${id}/status`, {
+      status: newStatus
+    });
+
+    if (!res.data.ok) throw new Error();
+
+    toast.success("Status updated");
+    setOrder({ ...order, deliveryStatus: newStatus });
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to update status");
+  }
+};
+
+
 
   /* ================= INVOICE ================= */
-const printInvoice = () => {
-  const win = window.open("", "_blank");
+  const printInvoice = () => {
+    const win = window.open("", "_blank");
 
-  win.document.write(`
+    win.document.write(`
 <!DOCTYPE html>
 <html>
 <head>
   <title>Invoice ${order.id}</title>
+
   <style>
-    @page {
-      margin: 0;
-    }
+    @page { margin: 0; }
 
     body {
-      font-family: "Segoe UI", Arial, sans-serif;
-      background: #f4f6f8;
+      font-family: Arial, sans-serif;
       padding: 30px;
-      margin: 0;
+      background: #f3f4f6;
     }
 
-    .invoice {
-      max-width: 820px;
+    .invoice-box {
+      max-width: 850px;
       margin: auto;
       background: #fff;
-      padding: 40px;
-      border-radius: 10px;
-      box-shadow: 0 15px 40px rgba(0,0,0,.1);
+      padding: 35px;
+      border-radius: 12px;
+      box-shadow: 0 5px 30px rgba(0,0,0,0.15);
     }
 
-    .header {
+    .invoice-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
       border-bottom: 2px solid #eee;
       padding-bottom: 12px;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
 
     .brand {
-      font-size: 30px;
-      font-weight: 700;
+      font-size: 28px;
+      font-weight: bold;
       color: #4f46e5;
     }
 
-    .invoice-info {
+    .invoice-meta {
       text-align: right;
       font-size: 14px;
-      color: #444;
+      color: #555;
     }
 
-    .section {
+    .section-title {
+      font-size: 18px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .info-grid {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 35px;
-      gap: 25px;
+      margin-bottom: 25px;
     }
 
-    .box {
-      width: 50%;
+    .info-box {
+      width: 48%;
       font-size: 14px;
       line-height: 1.6;
-    }
-
-    h3 {
-      margin-bottom: 8px;
-      font-size: 16px;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 5px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 15px;
     }
 
     th {
-      background: #eef1ff;
-      text-align: left;
+      background: #eef2ff;
       padding: 10px;
+      text-align: left;
       font-size: 14px;
-      font-weight: 600;
     }
 
     td {
       padding: 10px;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid #f0f0f0;
       font-size: 14px;
     }
 
-    .right {
-      text-align: right;
-    }
+    .right { text-align: right; }
 
-    .total-section {
-      margin-top: 30px;
+    .total-box {
+      margin-top: 25px;
       text-align: right;
       font-size: 20px;
-      font-weight: 700;
+      font-weight: bold;
     }
 
-    .status {
+    .status-label {
       padding: 4px 10px;
+      background: #fde68a;
+      color: #92400e;
       border-radius: 20px;
       font-size: 12px;
       display: inline-block;
-      background: #fde68a;
-      color: #92400e;
       margin-top: 4px;
     }
 
     @media print {
-      body {
-        background: #fff;
-      }
-      .invoice {
-        box-shadow: none;
-      }
+      body { background: #fff; }
+      .invoice-box { box-shadow: none; }
     }
   </style>
+
 </head>
 
 <body>
-  <div class="invoice">
+  <div class="invoice-box">
 
-    <div class="header">
+    <div class="invoice-header">
       <div class="brand">E-Store</div>
 
-      <div class="invoice-info">
-        <b>Invoice ${order.id}</b><br>
-        ${new Date(order.createdAt).toLocaleDateString()}<br>
-        <span class="status">${order.deliveryStatus}</span>
+      <div class="invoice-meta">
+        <b>Invoice ${order.id}</b><br/>
+        Date: ${new Date(order.createdAt).toLocaleDateString()}<br/>
+        <span class="status-label">${order.deliveryStatus}</span>
       </div>
     </div>
 
-    <div class="section">
-      <div class="box">
-        <h3>Bill To</h3>
-        ${order.customerName || "N/A"}<br/>
-        ${order.customerEmail || "N/A"}<br/>
-        ${order.phone || "N/A"}<br/>
-        ${order.address || "N/A"}<br/>
+    <div class="info-grid">
+      <div class="info-box">
+        <div class="section-title">Bill To</div>
+        ${order.customerName}<br/>
+        ${order.customerEmail || "Not provided"}<br/>
+        ${order.phone || "Not provided"}<br/>
+        ${order.address || "Not provided"}<br/>
         ${order.area || ""}
+
       </div>
 
-      <div class="box">
-        <h3>Order Info</h3>
-        Payment: <b>${order.paymentMethod}</b><br/>
-        Status: <b>${order.deliveryStatus}</b><br/>
-        Date: ${new Date(order.createdAt).toLocaleString()}
+      <div class="info-box">
+        <div class="section-title">Order Info</div>
+        <b>Payment:</b> ${order.paymentMethod}<br/>
+        <b>Status:</b> ${order.deliveryStatus}<br/>
+        <b>Order Date:</b> ${new Date(order.createdAt).toLocaleString()}
       </div>
     </div>
+
+    <div class="section-title">Items</div>
 
     <table>
       <thead>
@@ -235,45 +256,40 @@ const printInvoice = () => {
       </thead>
       <tbody>
         ${items
-          .map(
-            (i) => `
+        .map(
+          (item) => `
           <tr>
-            <td>${i.product_name}</td>
-            <td class="right">₹${Number(i.price).toFixed(2)}</td>
-            <td class="right">${i.quantity}</td>
-            <td class="right">₹${Number(i.subtotal).toFixed(2)}</td>
-          </tr>
-        `
-          )
-          .join("")}
+            <td>${item.product_name}</td>
+            <td class="right">₹${Number(item.price).toFixed(2)}</td>
+            <td class="right">${item.quantity}</td>
+            <td class="right">₹${Number(item.subtotal).toFixed(2)}</td>
+          </tr>`
+        )
+        .join("")}
       </tbody>
     </table>
 
-    <div class="total-section">
+    <div class="total-box">
       Total: ₹${order.totalAmount.toFixed(2)}
     </div>
 
   </div>
 
-  <script>
-    window.print();
-  </script>
+<script> window.print(); </script>
+
 </body>
 </html>
-`);
+    `);
 
-  win.document.close();
-};
+    win.document.close();
+  };
 
-
-
-  /* ================= SAFE RENDER ================= */
+  /* ================= RENDER ================= */
   if (loading) return <div className="admin-page">Loading…</div>;
   if (error) return <div className="admin-error">{error}</div>;
   if (!order) return null;
 
   return (
-    
     <div className="admin-page">
       <div className="page-header">
         <h2>Order {order.id}</h2>
@@ -289,36 +305,47 @@ const printInvoice = () => {
         </div>
       </div>
 
-      {/* STATS */}
-<div className="order-stats">
-  <div className="stat-card total">
-    <h4>Total</h4>
-    <p>₹{order.totalAmount.toFixed(2)}</p>
-  </div>
+      <div className="order-stats">
+        <div className="stat-card total">
+          <h4>Total</h4>
+          <p>₹{order.totalAmount.toFixed(2)}</p>
+        </div>
 
-  <div className="stat-card payment">
-    <h4>Payment</h4>
-    <p>{order.paymentMethod}</p>
-  </div>
+        <div className="stat-card payment">
+          <h4>Payment</h4>
+          <p>{order.paymentMethod}</p>
+        </div>
 
-   <div className={`stat-card status status-${order.deliveryStatus.toLowerCase()}`}>
-    <h4>Status</h4>
-    <p>{order.deliveryStatus}</p>
+        {/* ⭐ INDUSTRY STANDARD STATUS BUTTONS */}
+<div className="card status-card">
+  <h3>Status</h3>
+
+  <div className="status-buttons">
+    {STATUS_OPTIONS.map((s) => (
+<button
+  key={s}
+  onClick={() => updateStatus(s)}
+  className={order.deliveryStatus === s ? "active-status" : ""}
+>
+  {s}
+</button>
+
+    ))}
   </div>
 </div>
 
-
-
-      {/* CUSTOMER */}
-      <div className="admin-card">
-        <h3>Customer Details</h3>
-        <p><b>Name:</b> {order.customerName}</p>
-        <p><b>Email:</b> {order.customerEmail || "Not provided"}</p>
-        <p><b>Phone:</b> {order.phone || "Not provided"}</p>
-        <p><b>Address:</b> {order.address}</p>
       </div>
 
-      {/* ITEMS */}
+      <div className="admin-card">
+        <h3>Customer Details</h3>
+
+        <p><b>Name:</b> {order.customerName}</p>
+        <p><b>Email:</b> {order.customerEmail}</p>
+        <p><b>Phone:</b> {order.phone}</p>
+        <p><b>Address:</b> {order.address}{order.area ? `, ${order.area}` : ""}</p>
+      </div>
+
+
       <div className="admin-card">
         <h3>Order Items</h3>
 
@@ -331,6 +358,7 @@ const printInvoice = () => {
               <th>Subtotal</th>
             </tr>
           </thead>
+
           <tbody>
             {items.map((item, i) => (
               <tr key={i}>

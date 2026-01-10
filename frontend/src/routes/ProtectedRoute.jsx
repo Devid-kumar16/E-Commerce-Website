@@ -1,15 +1,21 @@
-// src/routes/ProtectedRoute.jsx
-import React from "react";
-import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../context/AuthProvider";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-export default function ProtectedRoute() {
-  const { user, token } = useAuth();
+export default function AdminGuard({ children }) {
+  const { loading, isAuthenticated, isAdmin } = useAuth();
+  const location = useLocation();
 
-  if (!user || !token) {
-    return <Navigate to="/login" replace />;
+  if (loading) return null;
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  return <Outlet />;
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
 }
+
 

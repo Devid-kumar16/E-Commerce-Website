@@ -22,28 +22,30 @@ export const listPublicProducts = async (req, res) => {
 
 
 /* ================= ADMIN PRODUCTS ================= */
-export async function listAdminProducts(req, res) {
+export const listAdminProducts = async (req, res) => {
   try {
-    const [rows] = await pool.query(`
+    const [products] = await pool.query(
+      `
       SELECT 
         p.id,
         p.name,
         p.image_url,
         p.price,
         p.status,
-        p.active,
         c.name AS category_name
       FROM products p
       LEFT JOIN categories c ON c.id = p.category_id
       ORDER BY p.id DESC
-    `);
+      `
+    );
 
-    res.json({ products: rows });
+    res.json({ ok: true, products });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to load products" });
+    console.error("listAdminProducts error:", err);
+    res.status(500).json({ ok: false, message: err.message });
   }
-}
+};
+
 
 /* ================= SINGLE PRODUCT ================= */
 export const getProduct = async (req, res) => {

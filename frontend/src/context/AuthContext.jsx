@@ -1,82 +1,89 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
-/* ================= CONTEXT ================= */
 const AuthContext = createContext(null);
 
-/* ================= PROVIDER ================= */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* ================= INIT AUTH ON APP LOAD ================= */
+  /* =========================================================
+     INIT AUTH — Runs ONCE on first page load
+  ========================================================= */
   useEffect(() => {
-    try {
-      const token = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
+    const storedRole = localStorage.getItem("role");
 
-      if (token && storedUser) {
-        setUser(JSON.parse(storedUser));
-      } else {
-        clearAuth();
-      }
-    } catch (err) {
-      console.error("Auth init error:", err);
-      clearAuth();
-    } finally {
+    if (!storedRole) {
       setLoading(false);
+      return;
     }
+
+    // Select correct token
+    const token =
+      storedRole === "admin"
+        ? localStorage.getItem("admin_token")
+        : localStorage.getItem("user_token");
+
+    // Firefox FIX: role exists but token missing -> clear everything
+    if (!token) {
+      localStorage.removeItem("admin_token");
+      localStorage.removeItem("user_token");
+      localStorage.removeItem("role");
+      setUser(null);
+      setRole(null);
+      setLoading(false);
+      return;
+    }
+
+    // Valid user
+    setUser({ role: storedRole });
+    setRole(storedRole);
+    setLoading(false);
   }, []);
 
-  /* ================= LOGIN ================= */
+  /* =========================================================
+     LOGIN
+  ========================================================= */
   const login = ({ token, user }) => {
-    if (!token || !user) {
-      throw new Error("Invalid login payload");
+    const r = user.role;
+    localStorage.setItem("role", r);
+
+    if (r === "admin") {
+      localStorage.setItem("admin_token", token);
+      localStorage.removeItem("user_token");
+    } else {
+      localStorage.setItem("user_token", token);
+      localStorage.removeItem("admin_token");
     }
 
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(user));
     setUser(user);
+    setRole(r);
   };
 
-  /* ================= SIGNUP ================= */
-  const signup = ({ token, user }) => {
-    if (!token || !user) {
-      throw new Error("Invalid signup payload");
-    }
-
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(user));
-    setUser(user);
-  };
-
-  /* ================= LOGOUT ================= */
+  /* =========================================================
+     LOGOUT
+  ========================================================= */
   const logout = () => {
-    clearAuth();
-  };
-
-  /* ================= CLEAR AUTH ================= */
-  const clearAuth = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("user_token");
     setUser(null);
+    setRole(null);
   };
 
-  /* ================= CONTEXT VALUE ================= */
   const value = {
     user,
-    isAuthenticated: Boolean(user),
+    role,
     loading,
+
+    isAuthenticated: !!role,
+    isAdmin: role === "admin",
+    isCustomer: role === "customer",
+
     login,
-    signup,
     logout,
   };
 
-  /* ================= RENDER ================= */
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}
@@ -84,11 +91,6 @@ export function AuthProvider({ children }) {
   );
 }
 
-/* ================= HOOK ================= */
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-  return ctx;
+  return useContext(AuthContext);
 }

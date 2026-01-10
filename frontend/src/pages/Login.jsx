@@ -25,11 +25,7 @@ export default function Login() {
     try {
       setLoading(true);
 
-      // ✅ 1. CALL LOGIN API
-      const res = await api.post("/auth/login", {
-        email,
-        password,
-      });
+      const res = await api.post("/auth/login", { email, password });
 
       const { token, user } = res.data || {};
 
@@ -37,12 +33,12 @@ export default function Login() {
         throw new Error("Invalid login response");
       }
 
-      // ✅ 2. UPDATE AUTH CONTEXT
+      // Save to context + localStorage
       login({ token, user });
 
       toast.success("Login successful");
 
-      // ✅ 3. ROLE-BASED REDIRECT
+      // Redirect based on role
       if (user.role === "admin") {
         navigate("/admin", { replace: true });
       } else {

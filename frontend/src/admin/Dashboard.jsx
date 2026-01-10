@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import api from "../api/client";
+import useAdminApi from "./useAdminApi";
 import { useAuth } from "../context/AuthContext";
 import "./Dashboard.css";
 
 export default function Dashboard() {
+  const admin = useAdminApi();
   const { user, loading: authLoading } = useAuth();
 
   const [stats, setStats] = useState({
@@ -27,7 +28,7 @@ export default function Dashboard() {
 
     const loadDashboard = async () => {
       try {
-        const res = await api.get("/admin/dashboard");
+        const res = await admin.get("/admin/dashboard"); // 🟢 FIXED URL
 
         setStats({
           products: res.data?.counts?.products ?? 0,
@@ -47,7 +48,7 @@ export default function Dashboard() {
     };
 
     loadDashboard();
-  }, [user, authLoading]);
+  }, [user, authLoading, admin]);
 
   if (loading || authLoading) return <div className="admin-loading">Loading…</div>;
 
@@ -56,26 +57,17 @@ export default function Dashboard() {
       <h1 className="dashboard-title">Admin Dashboard</h1>
       <p className="dashboard-subtitle">Store performance overview</p>
 
-      {/* ===== STATS ===== */}
       <div className="stats-grid">
         <StatCard title="Products" value={stats.products} />
         <StatCard title="Categories" value={stats.categories} />
         <StatCard title="Orders" value={stats.orders} />
         <StatCard title="Customers" value={stats.customers} />
         <StatCard title="Coupons" value={stats.coupons} />
-
-        {/* ⭐ Revenue inside the SAME ROW */}
-        <StatCard
-          title="Revenue"
-          value={`₹${Number(stats.revenue).toLocaleString()}`}
-          highlight
-        />
+        <StatCard title="Revenue" value={`₹${stats.revenue.toLocaleString()}`} highlight />
       </div>
 
-      {/* ===== RECENT ORDERS ===== */}
       <div className="card">
         <h3 className="card-title">Recent Orders</h3>
-
         <table className="admin-table">
           <thead>
             <tr>
@@ -95,7 +87,8 @@ export default function Dashboard() {
               <tr key={o.id}>
                 <td>{index + 1}</td>
                 <td>{o.customer_name || "Guest"}</td>
-                <td>₹{Number(o.total_amount).toFixed(2)}</td>
+                <td>₹{Number(o.final_amount ?? o.total_amount ?? 0).toFixed(2)}</td>
+
                 <td>
                   <span className={`status ${o.payment_status?.toLowerCase()}`}>
                     {o.payment_status}
@@ -111,7 +104,6 @@ export default function Dashboard() {
   );
 }
 
-/* Stat Card */
 function StatCard({ title, value, highlight }) {
   return (
     <div className={`stat-card ${highlight ? "highlight" : ""}`}>

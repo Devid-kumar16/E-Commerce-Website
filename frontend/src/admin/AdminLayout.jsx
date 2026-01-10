@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink, Outlet, Navigate, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 import { ToastContainer } from "react-toastify";
@@ -7,17 +7,23 @@ import "react-toastify/dist/ReactToastify.css";
 import "./AdminStyles.css";
 
 export default function AdminLayout() {
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
 
-  // 🔐 Protect admin routes
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  /* =========================================================
+      IMPORTANT:
+      Do NOT redirect here.
+      AdminGuard already restricts access.
+      Here we only make sure the UI does not crash.
+  ========================================================= */
+
+  // Wait until user is fully restored from AuthContext
+  if (loading) return null;
 
   return (
     <div className="admin-container">
-      {/* 🔔 GLOBAL ADMIN TOAST (FIXED & VISIBLE) */}
+      
+      {/* GLOBAL ADMIN TOAST */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -27,40 +33,28 @@ export default function AdminLayout() {
         pauseOnHover
         draggable
         theme="light"
-        style={{ zIndex: 99999 }} // ✅ VERY IMPORTANT
+        style={{ zIndex: 99999 }}
       />
 
-      {/* ---------- SIDEBAR ---------- */}
+      {/* =================== SIDEBAR =================== */}
       <aside className="admin-sidebar">
         <div className="admin-brand">
           <h2>E-Store Admin</h2>
+
           <p>
-            Logged in as <strong>{user.name}</strong>
+            Logged in as:{" "}
+            <strong>{user?.name || user?.email || "Admin User"}</strong>
           </p>
         </div>
 
         <nav className="admin-nav">
-          <NavLink end to="/admin">
-            Dashboard
-          </NavLink>
-          <NavLink to="/admin/products">
-            Products
-          </NavLink>
-          <NavLink to="/admin/categories">
-            Categories
-          </NavLink>
-          <NavLink to="/admin/orders">
-            Orders
-          </NavLink>
-          <NavLink to="/admin/customers">
-            Customers
-          </NavLink>
-          <NavLink to="/admin/coupons" className="sidebar-link">
-            Coupons
-          </NavLink>
-          <NavLink to="/admin/cms">
-            CMS
-          </NavLink>
+          <NavLink end to="/admin">Dashboard</NavLink>
+          <NavLink to="/admin/products">Products</NavLink>
+          <NavLink to="/admin/categories">Categories</NavLink>
+          <NavLink to="/admin/orders">Orders</NavLink>
+          <NavLink to="/admin/customers">Customers</NavLink>
+          <NavLink to="/admin/coupons">Coupons</NavLink>
+          <NavLink to="/admin/cms">CMS</NavLink>
         </nav>
 
         <button
@@ -74,7 +68,7 @@ export default function AdminLayout() {
         </button>
       </aside>
 
-      {/* ---------- MAIN CONTENT ---------- */}
+      {/* =================== MAIN CONTENT =================== */}
       <main className="admin-main">
         <Outlet />
       </main>

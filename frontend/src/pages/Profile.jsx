@@ -3,18 +3,22 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function Profile() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, role, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
-  /* ================= AUTH GUARD ================= */
+  // ========== BLOCK ADMINS FROM OPENING CUSTOMER PROFILE ==========
+  if (isAuthenticated && role === "admin") {
+    navigate("/admin", { replace: true });
+    return null;
+  }
+
+  // ========== AUTH REQUIRED ==========
   if (!isAuthenticated || !user) {
     return (
       <div className="page account-page">
         <div className="account-card">
           <h1 className="account-title">My Account</h1>
-          <p className="account-subtitle">
-            Please sign in to view your profile and orders.
-          </p>
+          <p>Please sign in to view your profile and orders.</p>
           <div className="account-actions">
             <Link className="btn-primary" to="/login">
               Login
@@ -28,12 +32,8 @@ export default function Profile() {
     );
   }
 
-  /* ================= DATA ================= */
-  const displayName =
-    user.name || user.username || "Customer";
-
+  const displayName = user.name || "Customer";
   const email = user.email || "";
-  const phone = user.phone || "";
 
   const handleLogout = () => {
     logout();
@@ -43,7 +43,8 @@ export default function Profile() {
   return (
     <div className="page account-page">
       <div className="account-layout">
-        {/* ================= LEFT SIDEBAR ================= */}
+        
+        {/* LEFT SIDEBAR */}
         <aside className="account-sidebar">
           <div className="account-user">
             <div className="account-avatar">
@@ -51,9 +52,7 @@ export default function Profile() {
             </div>
             <div>
               <div className="account-user-name">{displayName}</div>
-              {email && (
-                <div className="account-user-email">{email}</div>
-              )}
+              {email && <div className="account-user-email">{email}</div>}
             </div>
           </div>
 
@@ -63,24 +62,6 @@ export default function Profile() {
               <Link to="/orders" className="account-nav-link">
                 My Orders
               </Link>
-            </div>
-
-            <div className="account-nav-group">
-              <div className="account-nav-label">
-                Account Settings
-              </div>
-              <button
-                type="button"
-                className="account-nav-link is-button"
-              >
-                Profile Information
-              </button>
-              <button
-                type="button"
-                className="account-nav-link is-button"
-              >
-                Saved Addresses
-              </button>
             </div>
 
             <div className="account-nav-group">
@@ -99,36 +80,30 @@ export default function Profile() {
           </nav>
         </aside>
 
-        {/* ================= RIGHT CONTENT ================= */}
+        {/* MAIN CONTENT */}
         <main className="account-main">
           <section className="account-main-card">
             <h1>Account Overview</h1>
 
             <div className="account-overview-grid">
-              <div className="account-overview-item">
+              <div>
                 <h3>Contact Information</h3>
                 <p>{displayName}</p>
                 {email && <p>{email}</p>}
-                {phone && <p>{phone}</p>}
               </div>
 
-              <div className="account-overview-item">
+              <div>
                 <h3>Quick Actions</h3>
                 <ul>
-                  <li>
-                    <Link to="/orders">Track Orders</Link>
-                  </li>
-                  <li>
-                    <Link to="/cart">Go to Cart</Link>
-                  </li>
-                  <li>
-                    <Link to="/">Continue Shopping</Link>
-                  </li>
+                  <li><Link to="/orders">Track Orders</Link></li>
+                  <li><Link to="/cart">Go to Cart</Link></li>
+                  <li><Link to="/">Continue Shopping</Link></li>
                 </ul>
               </div>
             </div>
           </section>
         </main>
+
       </div>
     </div>
   );

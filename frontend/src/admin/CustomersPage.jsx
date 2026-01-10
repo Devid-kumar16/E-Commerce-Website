@@ -9,28 +9,22 @@ const PAGE_SIZE = 10;
 export default function CustomersPage() {
   const { user, loading: authLoading } = useAuth();
 
-  const [items, setItems] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /* ============= DATE VARIANTS FOR SEARCH ============= */
-  const getDateVariants = (dateStr) => {
-    if (!dateStr) return [];
-    const d = new Date(dateStr);
-    if (isNaN(d)) return [];
-
-    const dd = String(d.getDate()).padStart(2, "0");
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const yyyy = d.getFullYear();
-
-    return [`${dd}/${mm}/${yyyy}`, `${mm}/${dd}/${yyyy}`, `${yyyy}-${mm}-${dd}`];
+  /* ======================= DATE FORMATTER ======================= */
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "—";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString();
   };
 
-  /* ============= LOAD CUSTOMERS ============= */
-  const load = useCallback(
+  /* ======================= LOAD CUSTOMERS ======================= */
+  const loadCustomers = useCallback(
     async (pageToLoad = 1) => {
       if (authLoading || !user || user.role !== "admin") return;
 
@@ -38,28 +32,42 @@ export default function CustomersPage() {
         setLoading(true);
         setError("");
 
-        // SEARCH → Load all customers
+        // 👉 SEARCH MODE — Load all once then filter
         if (search.trim()) {
-          const res = await api.get("/admin/customers", { params: { limit: 10000 } });
-          const customers = res.data?.customers || res.data?.data || [];
-          setItems(customers);
-          setTotalPages(1);
+          const res = await api.get("/admin/customers", {
+            params: { limit: 10000 },
+          });
+
+          let list = res.data?.customers || [];
+
+          // Sort (latest first)
+          list.sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at)
+          );
+
+          setCustomers(list);
           setPage(1);
+          setTotalPages(1);
           return;
         }
 
-        // PAGINATION → Load per page
+        // 👉 PAGINATION MODE
         const res = await api.get("/admin/customers", {
           params: { page: pageToLoad, limit: PAGE_SIZE },
         });
 
-        const customers = res.data?.customers || res.data?.data || [];
+        const list = res.data?.customers || [];
         const meta = res.data?.meta || {};
 
-        setItems(customers);
+        // Always sort (latest first)
+        list.sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+
+        setCustomers(list);
         setPage(meta.page || pageToLoad);
 
-        const total = meta.total ?? customers.length;
+        const total = meta.total ?? list.length;
         setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
       } catch (err) {
         setError(err.response?.data?.message || "Failed to load customers");
@@ -70,29 +78,29 @@ export default function CustomersPage() {
     [user, authLoading, search]
   );
 
+  /* ======================= AUTO LOAD ======================= */
   useEffect(() => {
-    load(1);
-  }, [load]);
+    loadCustomers(1);
+  }, [loadCustomers]);
 
-  /* ============= SEARCH FILTER ============= */
-  const filteredItems = items.filter((c) => {
-    const dateVariants = getDateVariants(c.created_at);
-
-    const searchText = `
+  /* ======================= FILTER SEARCH ======================= */
+  const filtered = customers.filter((c) => {
+    const text = `
       ${c.name}
       ${c.email}
       ${c.orders}
-      ${dateVariants.join(" ")}
+      ${formatDate(c.created_at)}
     `.toLowerCase();
 
-    return searchText.includes(search.toLowerCase());
+    return text.includes(search.toLowerCase());
   });
 
-  /* ============= AUTH CHECK ============= */
+  /* ======================= AUTH CHECK ======================= */
   if (authLoading) return <div className="admin-loading">Loading…</div>;
-  if (!user || user.role !== "admin") return <div className="admin-error">Access denied</div>;
+  if (!user || user.role !== "admin")
+    return <div className="admin-error">Access denied</div>;
 
-  /* ============= UI ============= */
+  /* ======================= UI ======================= */
   return (
     <div className="admin-page">
 
@@ -100,7 +108,9 @@ export default function CustomersPage() {
       <div className="page-header">
         <div>
           <h2 className="page-title">Customers</h2>
-          <p className="page-subtitle">View and manage registered customers</p>
+          <p className="page-subtitle">
+            View and manage registered customers
+          </p>
         </div>
 
         <div className="header-actions">
@@ -115,7 +125,13 @@ export default function CustomersPage() {
             />
 
             {search && (
-              <button className="clear-btn" onClick={() => setSearch("")}>
+              <button
+                className="clear-btn"
+                onClick={() => {
+                  setSearch("");
+                  loadCustomers(1); // Reload after clear
+                }}
+              >
                 ×
               </button>
             )}
@@ -135,7 +151,7 @@ export default function CustomersPage() {
         <table className="admin-table">
           <thead>
             <tr>
-              <th>ID</th>
+              <th>#</th>
               <th>Name</th>
               <th>Email</th>
               <th>Orders</th>
@@ -144,7 +160,7 @@ export default function CustomersPage() {
           </thead>
 
           <tbody>
-            {!loading && filteredItems.length === 0 && (
+            {!loading && filtered.length === 0 && (
               <tr>
                 <td colSpan="5" style={{ textAlign: "center" }}>
                   No customers found
@@ -152,26 +168,25 @@ export default function CustomersPage() {
               </tr>
             )}
 
-            {filteredItems.map((c, index) => (
+            {filtered.map((c, index) => (
               <tr key={c.id}>
                 <td>{!search ? (page - 1) * PAGE_SIZE + index + 1 : index + 1}</td>
                 <td>{c.name}</td>
                 <td>{c.email}</td>
                 <td>{c.orders ?? 0}</td>
-                <td>{c.created_at ? new Date(c.created_at).toLocaleDateString() : "—"}</td>
+                <td>{formatDate(c.created_at)}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* PAGINATION - FIXED (Left–Center–Right) */}
+        {/* PAGINATION */}
         {!search && totalPages > 1 && (
           <div className="pagination-wrapper">
-
             <button
               className="pagination-btn left-btn"
               disabled={page <= 1}
-              onClick={() => load(page - 1)}
+              onClick={() => loadCustomers(page - 1)}
             >
               Prev
             </button>
@@ -183,11 +198,10 @@ export default function CustomersPage() {
             <button
               className="pagination-btn right-btn"
               disabled={page >= totalPages}
-              onClick={() => load(page + 1)}
+              onClick={() => loadCustomers(page + 1)}
             >
               Next
             </button>
-
           </div>
         )}
       </div>

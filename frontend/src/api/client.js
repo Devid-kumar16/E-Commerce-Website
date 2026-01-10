@@ -8,9 +8,19 @@ const api = axios.create({
   },
 });
 
-/* ===== Attach JWT automatically ===== */
+/* ====================================================
+   ATTACH THE CORRECT TOKEN (Admin / Customer)
+==================================================== */
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+
+  let token = null;
+
+  if (role === "admin") {
+    token = localStorage.getItem("admin_token");
+  } else if (role === "customer") {
+    token = localStorage.getItem("user_token");
+  }
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -19,15 +29,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/* ===== Handle auth expiry ===== */
+/* ====================================================
+   SAFE 401 HANDLING — no redirect loop, no blinking
+==================================================== */
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
+    const status = err.response?.status;
+
+    if (status === 401) {
+      console.warn("⚠️ API returned 401 (unauthorized)");
+
+      // ⛔ DO NOT FORCE REDIRECT (this causes loops!)
+      // Just return the error and let AuthGuard handle it.
+      return Promise.reject(err);
     }
+
     return Promise.reject(err);
   }
 );
