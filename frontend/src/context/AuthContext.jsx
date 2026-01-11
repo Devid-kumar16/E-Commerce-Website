@@ -30,10 +30,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   /* =========================================================
-     LOGIN
+     LOGIN FIXED — store role + user
   ========================================================= */
   const login = ({ token, user }) => {
     localStorage.setItem("token", token);
+    localStorage.setItem("role", user.role);
+    localStorage.setItem("user", JSON.stringify(user));
     setUser(user);
   };
 
@@ -51,6 +53,8 @@ export function AuthProvider({ children }) {
   ========================================================= */
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("user");
     setUser(null);
   };
 

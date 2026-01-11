@@ -50,7 +50,7 @@ useEffect(() => {
 
   return (
     <div className="order-page">
-      <h1 className="order-title">Order #{order.id}</h1>
+      <h1 className="order-title">Order {order.id}</h1>
 
       <div className="order-grid">
         
