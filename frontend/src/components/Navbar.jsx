@@ -1,57 +1,66 @@
-import { useEffect, useState, useCallback } from "react";
-import { NavLink } from "react-router-dom";
-import { getAllCategories } from "../api/category";
-import "../styles/Categorystrip.css";
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import "../styles/Navbar.css";
 
-export default function CategoryNavbar() {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function Navbar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  const loadCategories = useCallback(async () => {
-    try {
-      const res = await getAllCategories();
-      if (Array.isArray(res.data)) {
-        setCategories(res.data);
-      } else {
-        setCategories([]);
-      }
-    } catch (err) {
-      console.error("Failed to load categories:", err);
-      setCategories([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadCategories();
-  }, [loadCategories]);
-
-  if (loading) {
-    return (
-      <nav className="category-navbar">
-        <span className="loading-text">Loading categories...</span>
-      </nav>
-    );
-  }
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
-    <nav className="category-navbar">
-      {categories.length === 0 ? (
-        <span className="no-categories">No categories available</span>
-      ) : (
-        categories.map((cat) => (
-          <NavLink
-            key={cat.id}
-            to={`/category/${cat.slug}`}
-            className={({ isActive }) =>
-              `category-item ${isActive ? "active-category" : ""}`
-            }
-          >
-            {cat.name}
-          </NavLink>
-        ))
-      )}
+    <nav className="main-navbar">
+
+      {/* LEFT SECTION — LOGO */}
+      <div className="nav-left">
+        <Link to="/" className="logo">
+          E-Store
+        </Link>
+      </div>
+
+      {/* MIDDLE — SEARCH BAR */}
+      <div className="nav-center">
+        <div className="search-box">
+          <input placeholder="Search for products, brands..." />
+          <button>Search</button>
+        </div>
+      </div>
+
+      {/* RIGHT SECTION */}
+      <div className="nav-right">
+
+        {/* Wishlist */}
+        <Link to="/wishlist" className="nav-btn">
+          Wishlist
+        </Link>
+
+        {/* Cart */}
+        <Link to="/cart" className="nav-btn">
+          Cart
+        </Link>
+
+        {/* ⭐ ADMIN PANEL — ONLY IF user.role === 'admin' */}
+        {user?.role === "admin" && (
+          <Link to="/admin" className="nav-btn admin-btn">
+            Admin Panel
+          </Link>
+        )}
+
+        {/* Auth Buttons */}
+        {!user ? (
+          <Link to="/login" className="nav-btn">
+            Sign In
+          </Link>
+        ) : (
+          <button onClick={handleLogout} className="nav-btn">
+            Logout
+          </button>
+        )}
+      </div>
     </nav>
   );
 }

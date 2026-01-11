@@ -7,7 +7,6 @@ const PAGE_SIZE = 10;
 export default function CouponsPage() {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -19,25 +18,24 @@ export default function CouponsPage() {
     value: "",
     min_order: "",
     max_discount: "",
-    expires_at: "",
+    expires_at: ""
   });
 
-  /* ================= LOAD COUPONS WITH PAGINATION ================= */
+  /* ================= LOAD COUPONS ================= */
   const loadCoupons = async (pageToLoad = 1) => {
     try {
       setLoading(true);
 
       const res = await api.get("/admin/coupons", {
-        params: { page: pageToLoad, limit: PAGE_SIZE },
+        params: { page: pageToLoad, limit: PAGE_SIZE }
       });
 
-      setCoupons(res.data?.coupons || res.data?.data || []);
+      const list = res.data?.coupons || [];
+      const meta = res.data?.meta || { total: list.length, page: 1 };
 
-      const meta = res.data?.meta || {};
-      const total = meta.total ?? (res.data?.coupons?.length || 0);
-
-      setPage(meta.page || pageToLoad);
-      setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
+      setCoupons(list);
+      setPage(meta.page);
+      setTotalPages(Math.ceil(meta.total / PAGE_SIZE));
     } catch (err) {
       console.error("Failed to load coupons:", err);
     } finally {
@@ -61,6 +59,7 @@ export default function CouponsPage() {
 
     await api.post("/admin/coupons", {
       ...form,
+      code: form.code.toUpperCase().trim(),
       value: Number(form.value),
       min_order: Number(form.min_order || 0),
       max_discount: form.max_discount ? Number(form.max_discount) : null,
@@ -73,7 +72,7 @@ export default function CouponsPage() {
       value: "",
       min_order: "",
       max_discount: "",
-      expires_at: "",
+      expires_at: ""
     });
 
     loadCoupons(1);
@@ -83,8 +82,6 @@ export default function CouponsPage() {
 
   return (
     <div className="admin-page">
-
-      {/* HEADER */}
       <div className="page-header">
         <h2 className="page-title">Coupons</h2>
 
@@ -93,7 +90,6 @@ export default function CouponsPage() {
         </button>
       </div>
 
-      {/* TABLE */}
       <div className="admin-card">
         <table className="admin-table">
           <thead>
@@ -107,38 +103,37 @@ export default function CouponsPage() {
           </thead>
 
           <tbody>
-            {coupons.length === 0 && (
+            {coupons.length === 0 ? (
               <tr>
                 <td colSpan="5" style={{ textAlign: "center" }}>
                   No coupons found
                 </td>
               </tr>
+            ) : (
+              coupons.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.code}</td>
+                  <td>{c.type}</td>
+                  <td>{c.type === "percentage" ? `${c.value}%` : `₹${c.value}`}</td>
+                  <td>{c.used_count}</td>
+
+                  <td>
+                    <button
+                      className={`status-badge ${c.is_active ? "badge-active" : "badge-inactive"}`}
+                      onClick={() => toggleStatus(c.id)}
+                    >
+                      {c.is_active ? "Active" : "Inactive"}
+                    </button>
+                  </td>
+                </tr>
+              ))
             )}
-
-            {coupons.map((c) => (
-              <tr key={c.id}>
-                <td>{c.code}</td>
-                <td>{c.type}</td>
-                <td>{c.type === "percentage" ? `${c.value}%` : `₹${c.value}`}</td>
-                <td>{c.used_count}</td>
-
-                <td>
-                  <button
-                    className={`status-badge ${c.is_active ? "badge-active" : "badge-inactive"}`}
-                    onClick={() => toggleStatus(c.id)}
-                  >
-                    {c.is_active ? "Active" : "Inactive"}
-                  </button>
-                </td>
-              </tr>
-            ))}
           </tbody>
         </table>
 
-        {/* ================= PAGINATION ================= */}
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="pagination-wrapper">
-
             <button
               className="pagination-btn left-btn"
               disabled={page <= 1}
@@ -158,13 +153,11 @@ export default function CouponsPage() {
             >
               Next
             </button>
-
           </div>
         )}
-
       </div>
 
-      {/* ADD COUPON MODAL */}
+      {/* Add Coupon Modal */}
       {showForm && (
         <div className="modal-backdrop">
           <form className="modal" onSubmit={submitCoupon}>
@@ -175,9 +168,7 @@ export default function CouponsPage() {
               <input
                 placeholder="Enter coupon code"
                 value={form.code}
-                onChange={(e) =>
-                  setForm({ ...form, code: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, code: e.target.value })}
                 required
               />
             </div>
@@ -186,9 +177,7 @@ export default function CouponsPage() {
               <label>Type</label>
               <select
                 value={form.type}
-                onChange={(e) =>
-                  setForm({ ...form, type: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, type: e.target.value })}
               >
                 <option value="flat">Flat</option>
                 <option value="percentage">Percentage</option>
@@ -201,9 +190,7 @@ export default function CouponsPage() {
                 type="number"
                 placeholder="Enter value"
                 value={form.value}
-                onChange={(e) =>
-                  setForm({ ...form, value: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, value: e.target.value })}
                 required
               />
             </div>
@@ -212,11 +199,8 @@ export default function CouponsPage() {
               <label>Minimum Order</label>
               <input
                 type="number"
-                placeholder="Enter minimum order"
                 value={form.min_order}
-                onChange={(e) =>
-                  setForm({ ...form, min_order: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, min_order: e.target.value })}
               />
             </div>
 
@@ -225,11 +209,8 @@ export default function CouponsPage() {
                 <label>Max Discount</label>
                 <input
                   type="number"
-                  placeholder="Enter max discount"
                   value={form.max_discount}
-                  onChange={(e) =>
-                    setForm({ ...form, max_discount: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, max_discount: e.target.value })}
                 />
               </div>
             )}
@@ -239,28 +220,19 @@ export default function CouponsPage() {
               <input
                 type="date"
                 value={form.expires_at}
-                onChange={(e) =>
-                  setForm({ ...form, expires_at: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, expires_at: e.target.value })}
               />
             </div>
 
             <div className="modal-actions">
-              <button type="submit" className="btn-primary">
-                Save
-              </button>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setShowForm(false)}
-              >
+              <button type="submit" className="btn-primary">Save</button>
+              <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>
                 Cancel
               </button>
             </div>
           </form>
         </div>
       )}
-
     </div>
   );
 }

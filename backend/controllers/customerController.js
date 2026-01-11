@@ -67,21 +67,23 @@ export const listCustomersAdmin = async (req, res) => {
     // 2️⃣ Get paginated customers
     const [rows] = await pool.query(
       `
-      SELECT 
-        u.id,
-        u.name,
-        u.email,
-        u.phone,
-        DATE(u.created_at) AS joined,
-        (
-          SELECT COUNT(*)
-          FROM orders
-          WHERE user_id = u.id
-        ) AS orders
-      FROM users u
-      WHERE u.role = 'customer'
-      ORDER BY u.id DESC
-      LIMIT ? OFFSET ?
+SELECT 
+  u.id,
+  u.name,
+  u.email,
+  u.phone,
+  u.created_at,
+  DATE(u.created_at) AS joined,
+  (
+    SELECT COUNT(*)
+    FROM orders
+    WHERE user_id = u.id
+  ) AS orders
+FROM users u
+WHERE u.role = 'customer'
+ORDER BY u.id DESC
+LIMIT ? OFFSET ?
+
       `,
       [limit, offset]
     );
@@ -242,6 +244,56 @@ export const updateProfile = async (req, res) => {
     return res.status(500).json({
       ok: false,
       message: "Failed to update profile",
+    });
+  }
+};
+
+
+/* ============================================================
+   ADMIN — CREATE CUSTOMER
+============================================================ */
+export const createCustomerAdmin = async (req, res) => {
+  try {
+    const { name, email, phone, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        ok: false,
+        message: "Name, email and password are required",
+      });
+    }
+
+    // check duplicate email
+    const [[existing]] = await pool.query(
+      "SELECT id FROM users WHERE email = ?",
+      [email]
+    );
+
+    if (existing) {
+      return res.status(400).json({
+        ok: false,
+        message: "Email already exists",
+      });
+    }
+
+    await pool.query(
+      `
+      INSERT INTO users 
+      (name, email, phone, password, role)
+      VALUES (?, ?, ?, ?, 'customer')
+      `,
+      [name, email, phone || null, password]
+    );
+
+    return res.json({
+      ok: true,
+      message: "Customer created successfully"
+    });
+  } catch (err) {
+    console.error("createCustomerAdmin error:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Failed to create customer"
     });
   }
 };

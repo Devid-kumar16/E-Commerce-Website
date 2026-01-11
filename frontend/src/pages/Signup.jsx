@@ -8,9 +8,11 @@ export default function Signup() {
   const { signup } = useAuth();
   const navigate = useNavigate();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -21,13 +23,12 @@ export default function Signup() {
     setError("");
     setSuccess("");
 
-    // 🔐 basic validation
-    if (!name || !email || !password) {
+    if (!form.name || !form.email || !form.password) {
       setError("All fields are required");
       return;
     }
 
-    if (password.length < 6) {
+    if (form.password.length < 6) {
       setError("Password must be at least 6 characters");
       return;
     }
@@ -35,21 +36,13 @@ export default function Signup() {
     try {
       setLoading(true);
 
-      // ✅ CORRECT call (matches AuthProvider)
-      await signup({ name, email, password });
+      // 🔥 Calls AuthContext.signup()
+      await signup(form);
 
-      setSuccess("Account created successfully! Redirecting to login...");
-
-      // ✅ redirect after short delay (UX friendly)
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500);
+      setSuccess("Account created successfully! Redirecting...");
+      setTimeout(() => navigate("/"), 1200);
     } catch (err) {
-      setError(
-        err?.message ||
-        err?.response?.data?.message ||
-        "Signup failed"
-      );
+      setError(err?.response?.data?.message || "Signup failed");
     } finally {
       setLoading(false);
     }
@@ -71,11 +64,11 @@ export default function Signup() {
             <label>Full Name</label>
             <input
               type="text"
+              value={form.name}
+              onChange={(e) =>
+                setForm({ ...form, name: e.target.value })
+              }
               placeholder="Enter your full name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={loading}
-              required
             />
           </div>
 
@@ -83,11 +76,11 @@ export default function Signup() {
             <label>Email</label>
             <input
               type="email"
+              value={form.email}
+              onChange={(e) =>
+                setForm({ ...form, email: e.target.value })
+              }
               placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-              required
             />
           </div>
 
@@ -95,22 +88,21 @@ export default function Signup() {
             <label>Password</label>
             <input
               type="password"
+              value={form.password}
+              onChange={(e) =>
+                setForm({ ...form, password: e.target.value })
+              }
               placeholder="Create a password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              required
             />
           </div>
 
-          <button className="auth-btn" type="submit" disabled={loading}>
-            {loading ? "Creating account..." : "Sign Up"}
+          <button className="auth-btn" disabled={loading}>
+            {loading ? "Creating..." : "Sign Up"}
           </button>
         </form>
 
         <p className="auth-footer">
-          Already have an account?{" "}
-          <Link to="/login">Login</Link>
+          Already have an account? <Link to="/login">Login</Link>
         </p>
       </div>
     </div>

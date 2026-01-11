@@ -89,7 +89,7 @@ export default function CustomersPage() {
       ${c.name}
       ${c.email}
       ${c.orders}
-      ${formatDate(c.created_at)}
+      ${formatDate(c.joined)}
     `.toLowerCase();
 
     return text.includes(search.toLowerCase());
@@ -151,7 +151,7 @@ export default function CustomersPage() {
         <table className="admin-table">
           <thead>
             <tr>
-              <th>#</th>
+              <th>S.No.</th>
               <th>Name</th>
               <th>Email</th>
               <th>Orders</th>
@@ -174,7 +174,7 @@ export default function CustomersPage() {
                 <td>{c.name}</td>
                 <td>{c.email}</td>
                 <td>{c.orders ?? 0}</td>
-                <td>{formatDate(c.created_at)}</td>
+                <td>{formatDate(c.joined)}</td>
               </tr>
             ))}
           </tbody>

@@ -6,58 +6,39 @@ import {
   createOrder,
   listOrdersForSession,
   getOrderWithItemsForSession,
-  createOrderAdmin,
+  createOrderAdmin
 } from "../controllers/orderController.js";
 
 import {
-  attachUserIfExists,
-  checkoutSession,
   authRequired,
-  adminOnly,
+  adminOnly
 } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 /* ======================================================
    CUSTOMER / GUEST — CREATE ORDER
-   Base: /api/orders
+   POST /api/orders
 ====================================================== */
-router.post(
-  "/",
-  attachUserIfExists,
-  checkoutSession,
-  createOrder
-);
+router.post("/", createOrder);
 
 /* ======================================================
    CUSTOMER / GUEST — LIST MY ORDERS
+   GET /api/orders/my
 ====================================================== */
-router.get(
-  "/my",
-  attachUserIfExists,
-  checkoutSession,
-  listOrdersForSession
-);
+router.get("/my", listOrdersForSession);
 
 /* ======================================================
    CUSTOMER / GUEST — ORDER DETAILS
+   GET /api/orders/details/:id
 ====================================================== */
-router.get(
-  "/details/:id",
-  attachUserIfExists,
-  checkoutSession,
-  getOrderWithItemsForSession
-);
+router.get("/details/:id", getOrderWithItemsForSession);
 
 /* ======================================================
    ADMIN — CREATE ORDER MANUALLY
-   Base: /api/orders/admin
+   POST /api/orders/admin
 ====================================================== */
-router.post(
-  "/admin",
-  authRequired,
-  adminOnly,
-  createOrderAdmin
-);
+router.post("/admin", authRequired, adminOnly, createOrderAdmin);
 
 export default router;
+

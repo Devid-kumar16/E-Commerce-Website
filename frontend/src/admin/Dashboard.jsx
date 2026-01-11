@@ -28,15 +28,16 @@ export default function Dashboard() {
 
     const loadDashboard = async () => {
       try {
-        const res = await admin.get("/admin/dashboard"); // 🟢 FIXED URL
+        const res = await admin.get("/dashboard"); // 🟢 FIXED URL
 
         setStats({
-          products: res.data?.counts?.products ?? 0,
-          categories: res.data?.counts?.categories ?? 0,
-          orders: res.data?.counts?.orders ?? 0,
-          customers: res.data?.counts?.customers ?? 0,
-          coupons: res.data?.counts?.coupons ?? 0,
-          revenue: res.data?.revenue ?? 0,
+products: Number(res.data.counts.products || 0),
+categories: Number(res.data.counts.categories || 0),
+orders: Number(res.data.counts.orders || 0),
+customers: Number(res.data.counts.customers || 0),
+coupons: Number(res.data.counts.coupons || 0),
+revenue: Number(res.data.revenue || 0)
+
         });
 
         setRecentOrders(res.data?.recentOrders || []);

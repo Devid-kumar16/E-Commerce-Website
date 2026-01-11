@@ -5,14 +5,12 @@ import crypto from "crypto";
 dotenv.config();
 
 /* ======================================================
-   1️⃣ OPTIONAL AUTH (Non-blocking)
-   - Reads JWT if present
-   - Used for: cart, wishlist, checkout page, public pages
+   OPTIONAL AUTH — Reads token if present
 ====================================================== */
 export function attachUserIfExists(req, res, next) {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader?.startsWith("Bearer ")) {
     req.user = null;
     return next();
   }
@@ -26,21 +24,21 @@ export function attachUserIfExists(req, res, next) {
       email: decoded.email,
       role: decoded.role,
     };
-  } catch (err) {
-    req.user = null; // Invalid token → treat as guest
+  } catch {
+    req.user = null;
   }
 
   next();
 }
 
+
 /* ======================================================
-   2️⃣ HARD AUTH (Required Login)
-   - Protects user profile, orders, admin pages
+   REQUIRED LOGIN — Protects secure routes
 ====================================================== */
 export function authRequired(req, res, next) {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader?.startsWith("Bearer ")) {
     return res.status(401).json({
       ok: false,
       message: "Authentication required",
@@ -67,17 +65,10 @@ export function authRequired(req, res, next) {
 }
 
 /* ======================================================
-   3️⃣ ADMIN CHECK
+   ADMIN ONLY — protects all admin routes
 ====================================================== */
 export function adminOnly(req, res, next) {
-  if (!req.user) {
-    return res.status(401).json({
-      ok: false,
-      message: "Authentication required",
-    });
-  }
-
-  if (req.user.role !== "admin") {
+  if (!req.user || req.user.role !== "admin") {
     return res.status(403).json({
       ok: false,
       message: "Admin access only",
@@ -87,21 +78,18 @@ export function adminOnly(req, res, next) {
   next();
 }
 
+
+
 /* ======================================================
-   4️⃣ CHECKOUT SESSION (For GUEST checkout only)
-   - Logged-in user ALWAYS uses req.user
-   - Guest gets a temporary checkout session ID
-   - This does NOT create fake users
+   CHECKOUT SESSION (Guest checkout support)
 ====================================================== */
 export function checkoutSession(req, res, next) {
-  // Logged-in user → skip guest checkout session
   if (req.user) {
-    req.sessionUser = req.user; // always real user
+    req.sessionUser = req.user;
     req.checkoutSessionId = null;
     return next();
   }
 
-  // Guest user → create checkout session
   let sessionId = req.cookies?.checkout_session_id;
 
   if (!sessionId) {
@@ -111,11 +99,11 @@ export function checkoutSession(req, res, next) {
       httpOnly: true,
       sameSite: "Lax",
       secure: process.env.NODE_ENV === "production",
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     });
   }
 
-  req.sessionUser = { id: null };      // very important
+  req.sessionUser = { id: null };
   req.checkoutSessionId = sessionId;
 
   next();

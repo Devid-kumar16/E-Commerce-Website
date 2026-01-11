@@ -25,7 +25,7 @@ const loadOrder = async () => {
     setLoading(true);
 
     // ⭐ Correct backend endpoint
-    const res = await api.get(`/admin/orders/${id}`);
+    const res = await api.get(`/orders/${id}`);
 
     const data = res?.data;
 
@@ -43,7 +43,8 @@ const loadOrder = async () => {
       createdAt: o.created_at,
 
       customerName: o.customer_name || "Unknown",
-      customerEmail: o.email || o.customer_email || "Not provided",
+      customerEmail: o.account_email || o.customer_email || "Not provided",
+
       phone: o.phone || "Not provided",
       address: o.address || "",
       area: o.area || "",
@@ -80,7 +81,7 @@ const STATUS_OPTIONS = [
 
 const updateStatus = async (newStatus) => {
   try {
-    const res = await api.patch(`/admin/orders/${id}/status`, {
+    const res = await api.patch(`/orders/${id}/status`, {
       status: newStatus
     });
 

@@ -43,7 +43,7 @@ export default function OrdersPage() {
       }
 
       // PAGINATION MODE
-      const res = await api.get("/admin/orders", {
+      const res = await api.get("/orders", {
         params: { page, limit: PAGE_SIZE },
       });
 
@@ -95,7 +95,7 @@ export default function OrdersPage() {
     if (!window.confirm("Delete this order?")) return;
 
     try {
-      await api.delete(`/admin/orders/${id}`);
+      await api.delete(`/orders/${id}`);
       toast.success("Order deleted");
 
       setOrders((prev) => prev.filter((o) => o.id !== id));

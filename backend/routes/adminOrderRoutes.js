@@ -1,10 +1,11 @@
 import express from "express";
+
 import {
-  getAdminOrders,        // ✅ PAGINATION FIXED
-  createOrderAdmin,
-  deleteOrderAdmin,
-  getOrderWithItemsAdmin,
-  updateOrderStatus,
+  listOrdersAdmin,              // LIST ORDERS
+  createOrderAdmin,             // CREATE ORDER (ADMIN MANUAL)
+  deleteOrderAdmin,             // DELETE ORDER
+  getOrderWithItemsAdmin,       // ORDER DETAILS
+  updateOrderStatusAdmin        // FIXED NAME
 } from "../controllers/orderController.js";
 
 import { authRequired, adminOnly } from "../middleware/authMiddleware.js";
@@ -12,36 +13,29 @@ import { authRequired, adminOnly } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 /* ======================================================
-   ADMIN — LIST ORDERS WITH PAGINATION
-   GET /admin/orders?page=1&limit=10
+   ADMIN — LIST ORDERS (NO PAGINATION REQUIRED)
 ====================================================== */
-router.get("/", authRequired, adminOnly, getAdminOrders);
+router.get("/", authRequired, adminOnly, listOrdersAdmin);
 
 /* ======================================================
-   ADMIN — GET SINGLE ORDER
-   GET /admin/orders/:id
+   ADMIN — GET SINGLE ORDER DETAILS
 ====================================================== */
 router.get("/:id", authRequired, adminOnly, getOrderWithItemsAdmin);
 
 /* ======================================================
-   ADMIN — CREATE ORDER (Manual Entry)
-   POST /admin/orders
+   ADMIN — CREATE ORDER (MANUAL ENTRY)
 ====================================================== */
 router.post("/", authRequired, adminOnly, createOrderAdmin);
 
 /* ======================================================
    ADMIN — UPDATE ORDER STATUS
-   PUT/PATCH /admin/orders/:id/status
 ====================================================== */
-router.put("/:id/status", authRequired, adminOnly, updateOrderStatus);
-router.patch("/:id/status", authRequired, adminOnly, updateOrderStatus);
+router.put("/:id/status", authRequired, adminOnly, updateOrderStatusAdmin);
+router.patch("/:id/status", authRequired, adminOnly, updateOrderStatusAdmin);
 
 /* ======================================================
    ADMIN — DELETE ORDER
-   DELETE /admin/orders/:id
 ====================================================== */
 router.delete("/:id", authRequired, adminOnly, deleteOrderAdmin);
 
 export default router;
-
-

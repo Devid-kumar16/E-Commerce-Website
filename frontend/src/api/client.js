@@ -1,3 +1,4 @@
+// src/api/client.js
 import axios from "axios";
 
 const api = axios.create({
@@ -8,45 +9,31 @@ const api = axios.create({
   },
 });
 
-/* ====================================================
-   ATTACH THE CORRECT TOKEN (Admin / Customer)
-==================================================== */
+/* ======================================================
+   ATTACH JWT TOKEN
+====================================================== */
 api.interceptors.request.use((config) => {
-  const role = localStorage.getItem("role");
+  const token = localStorage.getItem("token");
 
-  let token = null;
-
-  if (role === "admin") {
-    token = localStorage.getItem("admin_token");
-  } else if (role === "customer") {
-    token = localStorage.getItem("user_token");
-  }
-
-  if (token) {
+  if (token && token !== "undefined" && token !== "null") {
     config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    delete config.headers.Authorization;
   }
 
   return config;
 });
 
-/* ====================================================
-   SAFE 401 HANDLING — no redirect loop, no blinking
-==================================================== */
+/* ======================================================
+   SAFER ERROR HANDLING
+====================================================== */
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    const status = err.response?.status;
-
-    if (status === 401) {
-      console.warn("⚠️ API returned 401 (unauthorized)");
-
-      // ⛔ DO NOT FORCE REDIRECT (this causes loops!)
-      // Just return the error and let AuthGuard handle it.
-      return Promise.reject(err);
-    }
-
+    // Do not force redirect here
     return Promise.reject(err);
   }
 );
 
 export default api;
+

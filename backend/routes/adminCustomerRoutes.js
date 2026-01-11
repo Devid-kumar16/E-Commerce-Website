@@ -5,19 +5,24 @@ import {
   searchCustomers,
   getCustomerByPhone,
   getProfile,
+  createCustomerAdmin
 } from "../controllers/customerController.js";
 
 const router = express.Router();
 
-// ADMIN ONLY
+// LIST customers
 router.get("/", authRequired, adminOnly, listCustomersAdmin);
+
+// SEARCH customers
 router.get("/search", authRequired, adminOnly, searchCustomers);
 
+// GET customer by phone
 router.get("/get-by-phone", authRequired, adminOnly, getCustomerByPhone);
 
-// Admin view of a customer (optional)
+// CREATE a customer (ADMIN)  ⭐ FIX ADDED
+router.post("/", authRequired, adminOnly, createCustomerAdmin);
+
+// Admin view single customer (optional)
 router.get("/:id", authRequired, adminOnly, getProfile);
 
 export default router;
-
-

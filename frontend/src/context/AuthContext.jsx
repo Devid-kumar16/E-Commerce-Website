@@ -1,86 +1,69 @@
+// src/context/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState } from "react";
+import api from "../api/client";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
   /* =========================================================
-     INIT AUTH — Runs ONCE on first page load
+     RESTORE SESSION FROM TOKEN
   ========================================================= */
   useEffect(() => {
-    const storedRole = localStorage.getItem("role");
-
-    if (!storedRole) {
-      setLoading(false);
-      return;
-    }
-
-    // Select correct token
-    const token =
-      storedRole === "admin"
-        ? localStorage.getItem("admin_token")
-        : localStorage.getItem("user_token");
-
-    // Firefox FIX: role exists but token missing -> clear everything
+    const token = localStorage.getItem("token");
     if (!token) {
-      localStorage.removeItem("admin_token");
-      localStorage.removeItem("user_token");
-      localStorage.removeItem("role");
-      setUser(null);
-      setRole(null);
       setLoading(false);
       return;
     }
 
-    // Valid user
-    setUser({ role: storedRole });
-    setRole(storedRole);
-    setLoading(false);
+    api
+      .get("/auth/profile")
+      .then((res) => {
+        setUser(res.data.user);
+      })
+      .catch(() => {
+        logout();
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   /* =========================================================
      LOGIN
   ========================================================= */
   const login = ({ token, user }) => {
-    const r = user.role;
-    localStorage.setItem("role", r);
-
-    if (r === "admin") {
-      localStorage.setItem("admin_token", token);
-      localStorage.removeItem("user_token");
-    } else {
-      localStorage.setItem("user_token", token);
-      localStorage.removeItem("admin_token");
-    }
-
+    localStorage.setItem("token", token);
     setUser(user);
-    setRole(r);
+  };
+
+  /* =========================================================
+     SIGNUP
+  ========================================================= */
+  const signup = async ({ name, email, password }) => {
+    const res = await api.post("/auth/register", { name, email, password });
+    login({ token: res.data.token, user: res.data.user });
+    return res.data;
   };
 
   /* =========================================================
      LOGOUT
   ========================================================= */
   const logout = () => {
-    localStorage.removeItem("role");
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("user_token");
+    localStorage.removeItem("token");
     setUser(null);
-    setRole(null);
   };
 
   const value = {
     user,
-    role,
     loading,
 
-    isAuthenticated: !!role,
-    isAdmin: role === "admin",
-    isCustomer: role === "customer",
+    isAuthenticated: !!user,
+    isAdmin: user?.role === "admin",
+    isCustomer: user?.role === "customer",
 
     login,
+    signup,
     logout,
   };
 
